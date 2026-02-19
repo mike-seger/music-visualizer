@@ -174,3 +174,31 @@ Example
 ```
 node scripts/classify-milk.cjs --batch src/presets/milkdrop --csv
 ```
+
+
+# Find broken visualizers
+
+## Static scanner
+```
+# Scan all presets under public/butterchurn-presets/
+node scripts/scan-broken-presets.mjs
+
+# Scan a specific group
+node scripts/scan-broken-presets.mjs public/butterchurn-presets/cream-of-the-crop
+
+# Write JSON report
+node scripts/scan-broken-presets.mjs --output tmp/broken-report.json
+
+# TSV output (file<tab>error), one row per broken field — pipe-friendly
+node scripts/scan-broken-presets.mjs --tsv
+node scripts/scan-broken-presets.mjs --tsv public/butterchurn-presets/cream-of-the-crop > tmp/broken.tsv
+
+# Move broken files into a broken/ subdir with _broken_ prefix
+node scripts/scan-broken-presets.mjs --move
+node scripts/scan-broken-presets.mjs --move public/butterchurn-presets/cream-of-the-crop
+```
+
+Files already inside a `broken/` subdirectory (or named with a `_broken_` prefix) are skipped by the scanner and never moved again.
+
+The WebGL warnings (GL_INVALID_OPERATION: glDrawElements: Vertex buffer is not big enough) cannot be caught this way — those are a runtime rendering bug inside Butterchurn that requires actual GPU execution.
+
