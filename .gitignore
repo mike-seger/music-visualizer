@@ -1,0 +1,8 @@
+node_modules
+.cache
+.parcel-cache
+package-lock.json
+dist
+.DS_Store
+/tmp
+.symlink2file

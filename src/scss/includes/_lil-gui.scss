@@ -1,0 +1,188 @@
+@import url('https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,400,0,0');
+
+/* Override lil-gui default colors globally */
+.lil-gui {
+  --widget-color: #2b2c2d !important;
+  --background-color: #0f1219 !important;
+}
+
+/* Root panel: constrained to 60 vh, no outer scrollbar.
+   Only .fv3-scroll inside the FV3 folder scrolls.
+   Styled to match the FV3 modal overlay. */
+.lil-gui.lil-root {
+  /* Prefer 445px but shrink gracefully in narrow iframes;
+     never exceed max(35vw, 350px) so long preset names don't blow out the panel. */
+  --width: min(445px, calc(100vw - 24px), max(35vw, 350px));
+  --widget-color: #2b2c2d !important;
+  --background-color: #0f1219 !important;
+  position: relative;
+  max-height: 60vh;
+  overflow: hidden;
+  background: #0f1219 !important;
+  border: 1px solid #2b2f3a !important;
+  border-radius: 10px !important;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35) !important;
+  padding: 10px !important;
+  padding-top: 4px !important;
+  box-sizing: border-box !important;
+}
+
+/* Hide the collapse arrow - lil-gui adds it via ::before content */
+.lil-gui.lil-root > button.lil-title:not(.gui-title-close-btn)::before {
+  content: '' !important;
+  width: 0 !important;
+  margin-right: 0 !important;
+}
+
+/* Make title button non-collapsible - exclude close button */
+.lil-gui.lil-root > button.lil-title:not(.gui-title-close-btn) {
+  cursor: default !important;
+  pointer-events: none !important;
+  padding-left: 0 !important;
+  margin-top: 0 !important;
+  margin-left: 0 !important;
+  flex: 0 0 auto !important;
+}
+
+/* Make lil-root container positioned for absolute children */
+.lil-gui.lil-root {
+  position: relative;
+}
+
+/* Pop-out hotzone button (fixed at top-right, visible on hover) */
+.gui-popout-btn {
+  position: fixed;
+  top: 12px;
+  right: 12px;
+  width: 48px;
+  height: 48px;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  border-radius: 10px;
+  background: rgba(15, 18, 25, 0.75);
+  color: #e6e9f0;
+  font-size: 26px;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity 0.3s, background 0.2s, border-color 0.2s;
+  z-index: 2500;
+}
+
+.gui-popout-btn:hover {
+  opacity: 1;
+  background: rgba(15, 18, 25, 0.9);
+  border-color: rgba(255, 255, 255, 0.5);
+}
+
+.viz-nav-btns {
+  position: fixed;
+  bottom: 162px;
+  right: 12px;
+  display: flex;
+  gap: 8px;
+  z-index: 2500;
+}
+
+.viz-nav-btn {
+  position: static !important;
+  top: auto !important;
+  width: 96px !important;
+  height: 96px !important;
+  font-size: 52px;
+}
+
+.viz-like-btn {
+  font-size: 46px !important;
+  color: rgba(255, 255, 255, 0.7) !important;
+  transition: color 0.2s ease, text-shadow 0.2s ease;
+}
+
+.viz-like-btn.liked {
+  color: #ff4d6a !important;
+  text-shadow: 0 0 12px rgba(255, 77, 106, 0.6);
+}
+
+.lil-gui.lil-root > .lil-children {
+  overflow: visible !important;
+  max-height: none !important;
+  height: auto !important;
+}
+
+/* Global dark inputs (helps Firefox render select in dark mode) */
+.lil-gui select,
+.lil-gui input[type="text"],
+.lil-gui input[type="number"],
+.lil-gui input[type="checkbox"] {
+  background: #1a1a1c !important;
+  color: #e6e9f0;
+  border: 1px solid #3a3f4d;
+  -moz-appearance: none;
+}
+
+/* Dropdown display divs */
+.lil-gui .lil-option .lil-display {
+  background: #1a1a1c !important;
+}
+
+/* Number slider backgrounds */
+.lil-gui .lil-number input {
+  background: #11141c !important;
+}
+
+.lil-gui .lil-slider {
+  background: #1a1a1c !important;
+}
+
+.lil-gui select:focus,
+.lil-gui input[type="text"]:focus,
+.lil-gui input[type="number"]:focus,
+.lil-gui input[type="checkbox"]:focus {
+  outline: 1px solid #6ea8ff;
+  border-color: #6ea8ff;
+  box-shadow: 0 0 0 1px rgba(110, 168, 255, 0.25);
+}
+
+/* ---- Merged-row helpers ---- */
+
+/* Inline label injected before a merged control (e.g. "transient") */
+.lil-gui .lil-widget .merged-label {
+  flex: 0 0 auto;
+  margin-left: 8px;
+  margin-right: 3px;
+  font-size: 11px;
+  opacity: 0.7;
+  white-space: nowrap;
+  user-select: none;
+}
+
+/* Compact side-by-side buttons (P+Q values row) */
+.lil-gui .lil-compact-buttons .lil-widget {
+  display: flex !important;
+}
+.lil-gui .lil-compact-buttons .lil-widget button {
+  width: auto !important;
+  flex: 0 0 auto;
+  white-space: nowrap;
+}
+
+/* Global lil-gui button style (exclude folder titles) */
+.lil-gui button:not(.lil-title) {
+  background: #1a73e8 !important;
+  color: #fff !important;
+  border: none !important;
+  border-radius: 4px !important;
+  padding: 1px 8px !important;
+  cursor: pointer;
+  font-size: inherit;
+  transition: background 0.15s ease;
+}
+.lil-gui button:not(.lil-title):hover {
+  background: #1b66cc !important;
+}
+.lil-gui button:not(.lil-title):active {
+  background: #155ab2 !important;
+}

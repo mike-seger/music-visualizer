@@ -1,0 +1,388 @@
+@use 'includes/reset';
+@use 'includes/base';
+@use 'includes/lil-gui';
+@use 'includes/fv3-controls';
+
+@font-face {
+  font-family: 'Local Material Symbols Rounded';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('/player-fill0.woff2') format('woff2');
+}
+
+/* Player Controls */
+#player-controls {
+  position: fixed;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+
+  background: #0f1219 !important;
+  border: 1px solid #2b2f3a !important;
+  border-radius: 10px !important;
+  box-shadow: 0 8px 24px #00000059 !important;
+
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 16px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s ease;
+  z-index: 100;
+ // backdrop-filter: blur(10px);
+}
+
+#player-controls button {
+  font-family: 'Material Symbols Rounded', 'Local Material Symbols Rounded', 'Inter', system-ui, -apple-system, sans-serif;
+  font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+  font-variant-ligatures: normal;
+  font-feature-settings: 'liga' 1;
+  font-size: 28px;
+  line-height: 1;
+  letter-spacing: normal;
+  text-transform: none;
+}
+
+/* Safety: ensure these remain icon buttons even if a class (like .letter-btn) is present. */
+#play-pause-btn,
+#mute-btn,
+#mic-btn,
+#fullscreen-btn,
+#lock-btn,
+#open-controls-btn,
+#copy-liked-btn {
+  font-family: 'Material Symbols Rounded', 'Local Material Symbols Rounded', 'Inter', system-ui, -apple-system, sans-serif;
+  font-variant-ligatures: normal;
+  font-feature-settings: 'liga' 1;
+}
+
+/* Hide ligature names (e.g. "volume_off") until the icon font is ready. */
+html:not(.icons-ready) #player-controls button {
+  visibility: hidden;
+}
+
+#play-pause-btn,
+#mute-btn,
+#mic-btn,
+#fullscreen-btn,
+#lock-btn,
+#open-controls-btn,
+#copy-liked-btn {
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  color: white;
+  font-size: 19px;
+  width: 35px;
+  height: 35px;
+  border-radius: 50%;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+}
+
+/* Like / Prev / Next buttons inside player-controls */
+.pc-viz-btn {
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  color: white;
+  font-size: 19px;
+  width: 35px;
+  height: 35px;
+  border-radius: 50%;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  padding-bottom: 7px;
+  box-sizing: border-box;
+  line-height: 1;
+  font-family: system-ui, -apple-system, sans-serif;
+}
+
+.pc-viz-btn:hover {
+  background: rgba(255, 255, 255, 0.2);
+  border-color: rgba(255, 255, 255, 0.5);
+  transform: scale(1.05);
+}
+
+#pc-like-btn {
+  margin-left: 15px;
+  margin-right: 15px;
+}
+
+#pc-like-btn.liked {
+  color: #ff4d6a;
+  text-shadow: 0 0 12px rgba(255, 77, 106, 0.6);
+}
+
+#play-pause-btn:hover,
+#mute-btn:hover,
+#mic-btn:hover,
+#fullscreen-btn:hover,
+#lock-btn:hover,
+#open-controls-btn:hover,
+#copy-liked-btn:hover {
+  background: rgba(255, 255, 255, 0.2);
+  border-color: rgba(255, 255, 255, 0.5);
+  transform: scale(1.05);
+}
+
+/* Sync toggle (mounted by SyncClient ToggleButton) */
+#syncButton {
+  width: 35px;
+  height: 35px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+#syncButton label {
+  width: 35px !important;
+  height: 35px !important;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 50%;
+  transition: all 0.2s ease;
+  display: flex !important;
+  align-items: center;
+  justify-content: center;
+}
+
+#syncButton label:hover {
+  background: rgba(255, 255, 255, 0.2);
+  border-color: rgba(255, 255, 255, 0.5);
+  transform: scale(1.05);
+}
+
+#player-metrics {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+#fps-display {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
+  font-size: 12px;
+  line-height: 1.2;
+  color: rgba(255, 255, 255, 0.75);
+  user-select: none;
+}
+
+.letter-btn {
+  background: rgba(0, 0, 0, 0.5);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  color: white;
+  font-size: 16px;
+  font-weight: bold;
+  width: 35px;
+  height: 35px;
+  border-radius: 50%;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: monospace;
+}
+
+.letter-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.5);
+  transform: scale(1.05);
+}
+
+.letter-btn.active {
+  color: red;
+}
+
+.fv3-edit-row {
+  display: flex;
+  align-items: center;
+  font-size: 11px;
+  line-height: 16px;
+  padding: 4px 5px;
+
+  .property-name {
+    width: 40%;
+    padding-right: 4px;
+    text-align: left;
+    color: #e0e0e0;
+  }
+
+  .c {
+    width: 60%;
+  }
+
+  button {
+    width: 100%;
+    padding: 4px 8px;
+    font-size: 11px;
+    border: 1px solid #1a1a1a;
+    background: linear-gradient(#3c3c3c, #2b2b2b);
+    color: #f0f0f0;
+    border-radius: 2px;
+    cursor: pointer;
+    transition: background 0.12s ease, border-color 0.12s ease, color 0.12s ease;
+
+    &:hover {
+      background: linear-gradient(#4a4a4a, #333);
+    }
+
+    &:active {
+      background: linear-gradient(#2e2e2e, #222);
+      border-color: #000;
+    }
+  }
+}
+
+#position-slider {
+  width: 350px;
+  height: 4px;
+  -webkit-appearance: none;
+  appearance: none;
+  background: rgba(255, 255, 255, 0.2);
+  outline: none;
+  border-radius: 2px;
+  cursor: pointer;
+}
+
+#position-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 12px;
+  height: 12px;
+  background: white;
+  border-radius: 50%;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+#position-slider::-webkit-slider-thumb:hover {
+  transform: scale(1.2);
+  background: rgba(255, 255, 255, 0.9);
+}
+
+#position-slider::-moz-range-thumb {
+  width: 12px;
+  height: 12px;
+  background: white;
+  border: none;
+  border-radius: 50%;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+#position-slider::-moz-range-thumb:hover {
+  transform: scale(1.2);
+  background: rgba(255, 255, 255, 0.9);
+}
+
+#time-display {
+  font-family: 'Courier New', monospace;
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.8);
+  text-align: center;
+}
+
+/* lil-gui (visualizer dropdown) layout fixes */
+.lil-gui {
+  /* Ensure widgets fill available horizontal space */
+  .lil-controller .lil-widget {
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+
+  /* Ensure select display fills widget space */
+  .lil-controller.lil-option .lil-display {
+    width: 100%;
+  }
+
+  /* Dark mode for select elements */
+  select {
+    box-sizing: border-box;
+    display: block;
+    width: 100%;
+    min-width: 0;             /* allow flex shrink below intrinsic width */
+    margin: 0;
+    background-color: #2b2c2d !important;
+    color: white !important;
+    border: 1px solid #3a3a3a !important;
+    padding: 4px 8px;
+    border-radius: 3px;
+    text-overflow: ellipsis;  /* show … when name is clipped */
+    
+    option {
+      background-color: #2b2c2d !important;
+      color: white !important;
+    }
+  }
+
+  /* Dark mode styling for input fields */
+  input[type="text"],
+  input[type="number"] {
+    background-color: #2b2c2d !important;
+    color: white !important;
+    border: 1px solid #3a3a3a !important;
+    padding: 4px 8px;
+    border-radius: 3px;
+  }
+
+  /* Dark mode styling for checkboxes */
+  input[type="checkbox"] {
+    appearance: none;
+    -webkit-appearance: none;
+    width: 16px;
+    height: 16px;
+    background-color: #2b2c2d !important;
+    border: 1px solid #3a3a3a !important;
+    border-radius: 3px;
+    cursor: pointer;
+    position: relative;
+    
+    &:checked::after {
+      content: '✓';
+      position: absolute;
+      top: -2px;
+      left: 2px;
+      color: white;
+      font-size: 14px;
+    }
+  }
+
+  /* Host row for the injected close X inside the VISUALIZER TYPE title */
+  .title.gui-close-host {
+    position: relative;
+    padding-right: 34px; /* reserve space so the label doesn't overlap the X */
+  }
+
+  .title.gui-close-host .gui-close-x {
+    position: absolute;
+    right: 10px;
+    top: 0;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 0;
+    background: transparent;
+    color: inherit;
+    font: inherit;
+    line-height: 1;
+    cursor: pointer;
+    padding: 0;
+  }
+
+  .title.gui-close-host .gui-close-x:hover {
+    color: #fff;
+  }
+}

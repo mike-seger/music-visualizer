@@ -1,0 +1,20 @@
+{
+  "_comment": "presets: list names to include ([\"*\"] or [] = all). excludePatterns: regex patterns to exclude (case-insensitive).",
+  "presets": ["*"],
+  "excludePatterns": [
+    ".*Infusion 2 flexi - Why The Sky.*",
+    ".*alien fish.*",
+    ".*neon mindblob.*",
+    ".*singh grooves.*",
+    ".*chain breaker.*",
+    ".*extreme heat.*",
+    ".*Khazad.*",
+    ".*witchcraft reloaded.*",
+    ".*camille.*",
+    ".*sawtooth.*",
+    ".*dark tides.*",
+    ".*hydroponic.*",
+    ".*Desert Rose.*",
+    "^G.*Desert Rose 2.*"
+  ]
+}

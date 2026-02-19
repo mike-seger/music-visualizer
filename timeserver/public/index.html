@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="icon" href="data:,">
+    <title>Time Sync Server</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/lil-gui@0.18/dist/lil-gui.min.css" />
+    <link rel="stylesheet" href="./style.css" />
+    <style>
+    </style>
+  </head>
+  <body>
+    <div id="app">
+      <header>
+        <h1>Time Sync Server</h1>
+        <span id="status" class="tag paused">paused</span>
+      </header>
+      <div class="clock" id="clock">00:00:00.000</div>
+      <div id="gui"></div>
+      <div id="clients">
+        <div class="clients-title">Clients</div>
+        <div class="clients-table-wrap">
+          <table class="clients-table">
+            <thead>
+              <tr><th>Connected</th><th>Name</th><th>IP</th><th>Port</th></tr>
+            </thead>
+            <tbody id="clients-body"></tbody>
+          </table>
+          <div id="clients-empty" class="clients-empty">No clients connected</div>
+        </div>
+      </div>
+    </div>
+
+    <div id="toast" class="toast"></div>
+
+    <script src="https://cdn.jsdelivr.net/npm/lil-gui@0.18/dist/lil-gui.umd.min.js"></script>
+    <script type="module" src="/admin.js"></script>
+  </body>
+</html>
