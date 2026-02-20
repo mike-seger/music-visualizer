@@ -146,7 +146,14 @@ body.has-status { padding-top: 68px; }
   var statusBar = document.getElementById('status-bar')
   var tilesByName = Object.create(null) // presetName → tile element
   var activeName = ''
-  var selected = new Set()  // persists across re-renders; reset when group changes
+  var selected = (function () {
+    try { return new Set(JSON.parse(localStorage.getItem('visualizer-selected') ?? '[]')) }
+    catch { return new Set() }
+  })()  // persists across re-renders and page reloads; reset when group changes
+
+  function saveSelected() {
+    try { localStorage.setItem('visualizer-selected', JSON.stringify([...selected])) } catch { /* ignore */ }
+  }
 
   function setStatus(text) {
     if (!text) {
@@ -189,6 +196,7 @@ body.has-status { padding-top: 68px; }
       setStatus('')
       // Reset selection when a new group's data arrives
       selected.clear()
+      saveSelected()
       updateCount()
       render(e.data.items, e.data.activePreset || '')
       return
@@ -259,8 +267,9 @@ body.has-status { padding-top: 68px; }
 
     cb.addEventListener('change', function (e) {
       e.stopPropagation()
-      if (cb.checked) { selected.add(item.jsonPath); tile.classList.add('selected') }
-      else            { selected.delete(item.jsonPath); tile.classList.remove('selected') }
+      if (cb.checked) { selected.add(item.hash); tile.classList.add('selected') }
+      else            { selected.delete(item.hash); tile.classList.remove('selected') }
+      saveSelected()
       updateCount()
     })
     cb.addEventListener('click', function (e) { e.stopPropagation() })
@@ -278,6 +287,13 @@ body.has-status { padding-top: 68px; }
     })
 
     tile.appendChild(img)
+
+    // Restore persisted checked state
+    if (selected.has(item.hash)) {
+      cb.checked = true
+      tile.classList.add('selected')
+    }
+
     tile.appendChild(cb)
     return tile
   }

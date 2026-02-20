@@ -34,6 +34,17 @@ export default class PreviewBatch {
   cancel() { if (this._running) this._cancelled = true }
   getCount() { return _store.size }
 
+  /**
+   * Synchronous reverse-lookup: find the stored hash for a (group, presetName) pair.
+   * Returns null if that preset hasn't been captured yet this session.
+   */
+  findHash(group, presetName) {
+    for (const [hash, entry] of _store) {
+      if (entry.group === group && entry.presetName === presetName) return hash
+    }
+    return null
+  }
+
   /** Revoke all preview blob URLs (call when the panel popup closes). */
   closePreview() {
     for (const url of _previewUrls.values()) URL.revokeObjectURL(url)
