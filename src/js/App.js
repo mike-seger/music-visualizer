@@ -162,7 +162,11 @@ export default class App {
   static _groupDisplayMap = {}                    // { internalName: displayName } for the dropdown
   static _allBcSourceGroup = new Map()            // presetName → actual groupName (for "all butterchurn")
   static _failedPresets = new Set()                // presets that threw during init (skipped by cycleVisualizer)
-  static _likedPresets = new Set()                 // liked presets as "<group>/<name>.json"
+  // Liked presets stored as SHA-256 hashes (first 12 hex chars) and persisted to localStorage
+  static _likedPresets = (() => {
+    try { return new Set(JSON.parse(localStorage.getItem('visualizer-liked') ?? '[]')) }
+    catch { return new Set() }
+  })()
 
   constructor() {
     this.onClickBinder = () => this.init()
@@ -267,6 +271,7 @@ export default class App {
 
     // Preview batch capture
     this.previewBatch = new PreviewBatch()
+    this._currentPresetHash = null  // 12-char SHA-256 hash of the active preset's JSON
     this._previewAutoStart = null  // debounce timer for auto-start
     this._previewConfig = {
       settleDelay: 300,
@@ -360,9 +365,12 @@ export default class App {
         break
 
       case 'preview-ready': {
-        // Send any already-captured images immediately
-        const items = this.previewBatch.openPreview()
+        // Send any already-captured images immediately (current group only)
+        const items = this.previewBatch.openPreview(App.currentGroup)
         if (items) this._broadcastToControls({ type: 'preview-data', items, activePreset: App.visualizerType })
+        // Sync current name filter so the preview panel starts filtered
+        const currentFilter = this.visualizerSwitcherConfig?.presetFilter || ''
+        if (currentFilter) this._broadcastToControls({ type: 'preview-filter', filter: currentFilter })
         // Auto-start capture for the current group (unless already running)
         clearTimeout(this._previewAutoStart)
         if (!this.previewBatch.isRunning()) this._startPreviewCapture()
@@ -2822,8 +2830,11 @@ export default class App {
     App.visualizerType = type
     this.saveVisualizerType(type)
 
-    // Update like button state before toast so prefix and button reflect current preset
+    // Refresh the hash for the new preset so like-button state is correct.
+    // Sync path: already in preview store.  Async fallback: fetch the JSON.
+    this._currentPresetHash = this.previewBatch?.findHash(App.currentGroup, type) ?? null
     this._updateLikeButtonState()
+    if (!this._currentPresetHash) this._refreshCurrentPresetHash(App.currentGroup, type)  // fire-and-forget
     this.updateVisualizerToast(type)
 
     // Keep the GUI dropdown in sync with the active visualizer.
@@ -2886,8 +2897,7 @@ export default class App {
   }
 
   _isCurrentPresetLiked() {
-    const key = this._getCurrentPresetKey()
-    return key ? App._likedPresets.has(key) : false
+    return this._currentPresetHash ? App._likedPresets.has(this._currentPresetHash) : false
   }
 
   _updateLikeButtonState() {
@@ -2899,16 +2909,48 @@ export default class App {
   }
 
   _toggleLikeCurrentPreset() {
-    const key = this._getCurrentPresetKey()
-    if (!key) return
-    const liked = App._likedPresets.has(key)
+    if (!this._currentPresetHash) return
+    const hash = this._currentPresetHash
+    const liked = App._likedPresets.has(hash)
     if (liked) {
-      App._likedPresets.delete(key)
+      App._likedPresets.delete(hash)
     } else {
-      App._likedPresets.add(key)
+      App._likedPresets.add(hash)
     }
+    try { localStorage.setItem('visualizer-liked', JSON.stringify([...App._likedPresets])) } catch { /* ignore */ }
     this._updateLikeButtonState()
     this._flashLikeToast(liked ? 'Unliked' : 'Liked')
+  }
+
+  /**
+   * Compute and cache the SHA-256 hash for the given preset, then refresh the like button.
+   * Checks the preview store synchronously first; falls back to fetching the JSON.
+   */
+  async _refreshCurrentPresetHash(group, name) {
+    const cached = this.previewBatch?.findHash(group, name)
+    if (cached) {
+      if (App.currentGroup === group && App.visualizerType === name) {
+        this._currentPresetHash = cached
+        this._updateLikeButtonState()
+      }
+      return
+    }
+    try {
+      const url = `butterchurn-presets/${encodeURIComponent(group)}/${encodeURIComponent(name)}.json`
+      const resp = await fetch(url)
+      if (!resp.ok) return
+      const hash = await App._hashText(await resp.text())
+      if (App.currentGroup === group && App.visualizerType === name) {
+        this._currentPresetHash = hash
+        this._updateLikeButtonState()
+      }
+    } catch { /* ignore — like button stays unset */ }
+  }
+
+  /** SHA-256 of text, first 12 hex chars — matches PreviewBatch._sha256short. */
+  static async _hashText(text) {
+    const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(text))
+    return [...new Uint8Array(buf)].map(b => b.toString(16).padStart(2, '0')).join('').slice(0, 12)
   }
 
   _flashCenteredHeart() {
@@ -3301,9 +3343,9 @@ export default class App {
       await this.switchVisualizer(originalPreset, { notify: false })
     }
 
-    // Push the completed batch to the preview panel
+    // Push the completed batch to the preview panel (current group only)
     if (this._controlsPopup && !this._controlsPopup.closed) {
-      const items = this.previewBatch.openPreview()
+      const items = this.previewBatch.openPreview(group)
       if (items) this._broadcastToControls({ type: 'preview-data', items, activePreset: App.visualizerType })
     }
   }
@@ -4848,6 +4890,10 @@ export default class App {
       this._authorFilterController.updateDisplay()
     }
     requestAnimationFrame(() => this._updateGuiWidthToFitVisualizerSelect())
+    // Keep preview panel in sync with the name filter
+    if (this._controlsPopup && !this._controlsPopup.closed) {
+      this._broadcastToControls({ type: 'preview-filter', filter: raw })
+    }
   }
 
   /**

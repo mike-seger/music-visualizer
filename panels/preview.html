@@ -146,6 +146,16 @@ body.has-status { padding-top: 68px; }
   var statusBar = document.getElementById('status-bar')
   var tilesByName = Object.create(null) // presetName → tile element
   var activeName = ''
+  var allItems = []  // full unfiltered list for the current group
+  var currentFilter = ''  // tracks the viz-controls name filter
+  var selected = (function () {
+    try { return new Set(JSON.parse(localStorage.getItem('visualizer-selected') ?? '[]')) }
+    catch { return new Set() }
+  })()  // persists across re-renders and page reloads; reset when group changes
+
+  function saveSelected() {
+    try { localStorage.setItem('visualizer-selected', JSON.stringify([...selected])) } catch { /* ignore */ }
+  }
 
   function setStatus(text) {
     if (!text) {
@@ -164,6 +174,19 @@ body.has-status { padding-top: 68px; }
     if (activeName && tilesByName[activeName]) tilesByName[activeName].classList.add('active')
   }
 
+  // ── Copy selected ── (wired once; `selected` is module-level)
+  var copyCountEl = document.getElementById('copy-count')
+  function updateCount() { copyCountEl.textContent = selected.size }
+  document.getElementById('copy-btn').addEventListener('click', function () {
+    var arr = Array.from(selected).sort()
+    var text = JSON.stringify(arr, null, 2)
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).catch(function () { fallbackCopy(text) })
+    } else {
+      fallbackCopy(text)
+    }
+  })
+
   // ── Receive messages via BroadcastChannel ──
   if (ch) ch.addEventListener('message', function (e) {
     if (!e.data) return
@@ -173,7 +196,17 @@ body.has-status { padding-top: 68px; }
     }
     if (e.data.type === 'preview-data') {
       setStatus('')
-      render(e.data.items, e.data.activePreset || '')
+      // Reset selection when a new group's data arrives
+      selected.clear()
+      saveSelected()
+      updateCount()
+      allItems = e.data.items || []
+      applyFilter(e.data.activePreset || '')
+      return
+    }
+    if (e.data.type === 'preview-filter') {
+      currentFilter = e.data.filter || ''
+      applyFilter()
       return
     }
     if (e.data.type === 'visualizer-changed' && e.data.name) {
@@ -186,8 +219,24 @@ body.has-status { padding-top: 68px; }
     if (ch) ch.postMessage({ type: 'preview-zip' })
   })
 
-  // ── Render ──
-  function render(items, activePreset) {
+  // ── Filter + render ──
+  function applyFilter(activePreset) {
+    var raw = currentFilter
+    var items
+    if (!raw.trim()) {
+      items = allItems
+    } else {
+      try {
+        var re = new RegExp(raw, 'i')
+        items = allItems.filter(function (it) { return re.test(it.presetName) })
+      } catch (e) {
+        items = allItems  // invalid regex — show all
+      }
+    }
+    render(items, activePreset != null ? activePreset : activeName, allItems.length)
+  }
+
+  function render(items, activePreset, totalCount) {
     tilesByName = Object.create(null)
     activeName = ''
     // Detect aspect ratio from the first image and size all tiles to fit
@@ -206,66 +255,26 @@ body.has-status { padding-top: 68px; }
     var root = document.getElementById('root')
     var titleEl = document.getElementById('title')
     root.innerHTML = ''
-    titleEl.textContent = items.length + ' Presets'
+    var total = (totalCount != null) ? totalCount : items.length
+    if (total !== items.length) {
+      titleEl.textContent = 'Matching ' + items.length + ' of ' + total + ' presets'
+    } else {
+      titleEl.textContent = items.length + ' Presets'
+    }
 
-    // Group by group field
-    var groups = []
-    var groupMap = Object.create(null)
+    // All items are for the same group — render flat grid, no group header needed
+    var grid = document.createElement('div')
+    grid.className = 'grid'
     for (var i = 0; i < items.length; i++) {
-      var item = items[i]
-      var g = item.group || ''
-      if (!groupMap[g]) { groupMap[g] = []; groups.push(g) }
-      groupMap[g].push(item)
+      grid.appendChild(makeTile(items[i]))
     }
-
-    var selected = new Set()
-    var copyCountEl = document.getElementById('copy-count')
-
-    function updateCount() { copyCountEl.textContent = selected.size }
-
-    for (var gi = 0; gi < groups.length; gi++) {
-      var groupName = groups[gi]
-      var groupItems = groupMap[groupName]
-
-      var section = document.createElement('div')
-      section.className = 'group-section'
-
-      var hdr = document.createElement('div')
-      hdr.className = 'group-header'
-      hdr.innerHTML =
-        '<span class="group-label">' + esc(groupName || '(root)') + '</span>' +
-        '<span class="group-line"></span>' +
-        '<span class="group-count">' + groupItems.length + '</span>'
-      section.appendChild(hdr)
-
-      var grid = document.createElement('div')
-      grid.className = 'grid'
-
-      for (var ii = 0; ii < groupItems.length; ii++) {
-        grid.appendChild(makeTile(groupItems[ii], selected, updateCount))
-      }
-
-      section.appendChild(grid)
-      root.appendChild(section)
-    }
+    root.appendChild(grid)
 
     // Mark the active preset after all tiles are in the DOM
     if (activePreset) setActive(activePreset)
-
-    // ── Copy selected ──
-    var copyBtn = document.getElementById('copy-btn')
-    copyBtn.addEventListener('click', function () {
-      var arr = Array.from(selected).sort()
-      var text = JSON.stringify(arr, null, 2)
-      if (navigator.clipboard && navigator.clipboard.writeText) {
-        navigator.clipboard.writeText(text).catch(function () { fallbackCopy(text) })
-      } else {
-        fallbackCopy(text)
-      }
-    })
   }
 
-  function makeTile(item, selected, updateCount) {
+  function makeTile(item) {
     var overlay = document.getElementById('overlay')
     var overlayImg = document.getElementById('overlay-img')
     var overlayLbl = document.getElementById('overlay-label')
@@ -287,8 +296,9 @@ body.has-status { padding-top: 68px; }
 
     cb.addEventListener('change', function (e) {
       e.stopPropagation()
-      if (cb.checked) { selected.add(item.jsonPath); tile.classList.add('selected') }
-      else            { selected.delete(item.jsonPath); tile.classList.remove('selected') }
+      if (cb.checked) { selected.add(item.hash); tile.classList.add('selected') }
+      else            { selected.delete(item.hash); tile.classList.remove('selected') }
+      saveSelected()
       updateCount()
     })
     cb.addEventListener('click', function (e) { e.stopPropagation() })
@@ -306,6 +316,13 @@ body.has-status { padding-top: 68px; }
     })
 
     tile.appendChild(img)
+
+    // Restore persisted checked state
+    if (selected.has(item.hash)) {
+      cb.checked = true
+      tile.classList.add('selected')
+    }
+
     tile.appendChild(cb)
     return tile
   }

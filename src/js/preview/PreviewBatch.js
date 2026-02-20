@@ -34,6 +34,17 @@ export default class PreviewBatch {
   cancel() { if (this._running) this._cancelled = true }
   getCount() { return _store.size }
 
+  /**
+   * Synchronous reverse-lookup: find the stored hash for a (group, presetName) pair.
+   * Returns null if that preset hasn't been captured yet this session.
+   */
+  findHash(group, presetName) {
+    for (const [hash, entry] of _store) {
+      if (entry.group === group && entry.presetName === presetName) return hash
+    }
+    return null
+  }
+
   /** Revoke all preview blob URLs (call when the panel popup closes). */
   closePreview() {
     for (const url of _previewUrls.values()) URL.revokeObjectURL(url)
@@ -88,35 +99,89 @@ export default class PreviewBatch {
     const urlFor = getPresetUrl ??
       ((g, n) => `butterchurn-presets/${encodeURIComponent(g)}/${encodeURIComponent(n)}.json`)
 
-    onStatus?.(`Starting capture (0 / ${total})…`)
+    // ── Load pre-built previews for this group (if any) ──
+    // Returns { byHash: Map<hash,{imageUrl,imgExt}>, byName: Map<presetName,hash> }
+    const prebuilt = await _loadPreviewIndex(group)
+    onStatus?.(`Starting…`)
 
     let captured = 0
     let skipped = 0
+    let fromDisk = 0
 
+    // Phase 1 -- load pre-built images in parallel, no JSON fetches needed.
+    // The index maps presetName -> hash directly, so we skip the expensive
+    // per-preset JSON fetch entirely.  Images are fetched CONCURRENCY at a
+    // time so we don't open thousands of connections at once.
+    const CONCURRENCY = 64
+
+    if (prebuilt.byName.size > 0) {
+      const prebuiltWork = []
+      for (let i = 0; i < total; i++) {
+        const name = list[i]
+        if (!name) continue
+        const hash = prebuilt.byName.get(name)
+        if (!hash) continue
+        if (_store.has(hash)) { skipped++; continue }
+        prebuiltWork.push({ name, hash })
+      }
+
+      onStatus?.(`Loading 0 / ${prebuiltWork.length} pre-built previews…`)
+
+      for (let i = 0; i < prebuiltWork.length && !this._cancelled; i += CONCURRENCY) {
+        const batch = prebuiltWork.slice(i, i + CONCURRENCY)
+        await Promise.all(batch.map(async ({ name, hash }) => {
+          const pb = prebuilt.byHash.get(hash)
+          if (!pb) return
+          try {
+            const imgResp = await fetch(pb.imageUrl)
+            if (imgResp.ok) {
+              const blob = await imgResp.blob()
+              const filename = `${groupFolder}/${_sanitize(name)}.${pb.imgExt}`
+              const jsonPath = `${group}/${name}.json`
+              _store.set(hash, { filename, blob, presetName: name, group, jsonPath })
+              fromDisk++
+            }
+          } catch { /* image unavailable -- will fall through to canvas capture */ }
+        }))
+        onStatus?.(`Loading ${fromDisk} / ${prebuiltWork.length} pre-built…`)
+      }
+    }
+
+    // Phase 2 -- sequential canvas capture for everything not yet in store.
+    // Covers (a) presets absent from the index, (b) prebuilt images that
+    // failed to fetch.  Starts from startIndex so the current preset is captured first.
+    const toCapture = []
     for (let i = 0; i < total; i++) {
-      if (this._cancelled) break
-
       const idx = (startIndex + i) % total
       const name = list[idx]
+      if (!name) continue
+      const knownHash = prebuilt.byName.get(name)
+      if (knownHash && _store.has(knownHash)) continue
+      toCapture.push(name)
+    }
 
-      if (!name) continue  // skip empty/falsy entries in the list
+    if (toCapture.length > 0 && !this._cancelled) {
+      onStatus?.(`Capturing 0 / ${toCapture.length} new presets…`)
+    }
 
-      // ── Hash preset JSON for a stable ID; skip if already in store ──
-      let hash = null
-      try {
-        const resp = await fetch(urlFor(group, name))
-        if (resp.ok) {
-          hash = await _sha256short(await resp.text())
-        }
-      } catch { /* network failure — fall through */ }
+    for (const name of toCapture) {
+      if (this._cancelled) break
 
-      if (hash !== null && _store.has(hash)) {
-        skipped++
-        onStatus?.(`Capturing ${captured} / ${total} (${skipped} skipped)`)
+      let hash = prebuilt.byName.get(name) ?? null
+      if (!hash) {
+        try {
+          const resp = await fetch(urlFor(group, name))
+          if (resp.ok) hash = await _sha256short(await resp.text())
+        } catch { /* network failure */ }
+      }
+
+      if (hash !== null && _store.has(hash)) { skipped++; continue }
+
+      if (hash === null) {
+        console.warn(`[PreviewBatch] skipping "${name}" — could not fetch / hash preset JSON`)
         continue
       }
 
-      // Switch to preset
       try {
         await switchTo(name)
       } catch (err) {
@@ -124,12 +189,9 @@ export default class PreviewBatch {
         continue
       }
 
-      // Settle: allow the preset a few rendered frames
       await _sleep(settleDelay)
-
       if (this._cancelled) break
 
-      // Capture inside the next RAF callback so the WebGL backbuffer is intact
       const canvas = getCanvas()
       if (!canvas) {
         console.warn('[PreviewBatch] No canvas available for', name)
@@ -146,20 +208,19 @@ export default class PreviewBatch {
       if (blob) {
         const filename = `${groupFolder}/${_sanitize(name)}.${ext}`
         const jsonPath = `${group}/${name}.json`
-        const key = hash ?? `nohash-${_sanitize(name)}`
-        _store.set(key, { filename, blob, presetName: name, group, jsonPath })
+        _store.set(hash, { filename, blob, presetName: name, group, jsonPath })
         captured++
       }
 
-      onStatus?.(`Capturing ${captured} / ${total}`)
+      onStatus?.(`Capturing ${captured} / ${toCapture.length}`)
     }
 
     this._running = false
 
     if (this._cancelled) {
-      onStatus?.(`Cancelled — ${captured} captured${skipped ? `, ${skipped} skipped` : ''}. Press Z to ZIP.`)
+      onStatus?.(`Cancelled — ${fromDisk + captured} loaded${skipped ? `, ${skipped} skipped` : ''}${ fromDisk ? ` (${fromDisk} pre-built)` : ''}. Press Z to ZIP.`)
     } else {
-      onStatus?.(`Done — ${captured} captured${skipped ? `, ${skipped} skipped` : ''}. Press Z to ZIP.`)
+      onStatus?.(`Done — ${fromDisk + captured} loaded${skipped ? `, ${skipped} skipped` : ''}${ fromDisk ? ` (${fromDisk} pre-built, ${captured} new)` : ''}. Press Z to ZIP.`)
     }
   }
 
@@ -170,8 +231,10 @@ export default class PreviewBatch {
    * @param {string} groupName  Used only in the downloaded ZIP filename
    */
   async downloadZip(groupName) {
-    if (_store.size === 0) {
-      console.warn('[PreviewBatch] Nothing to ZIP — capture previews first (X key).')
+    // Only ZIP entries for the currently active group
+    const groupEntries = [..._store.entries()].filter(([, e]) => e.group === groupName)
+    if (groupEntries.length === 0) {
+      console.warn('[PreviewBatch] Nothing to ZIP for group', groupName, '— capture previews first (X key).')
       return false
     }
 
@@ -182,14 +245,14 @@ export default class PreviewBatch {
     const files = {}
 
     // Image files (keyed by relative path within ZIP)
-    for (const { filename, blob } of _store.values()) {
+    for (const [, { filename, blob }] of groupEntries) {
       files[filename] = new Uint8Array(await blob.arrayBuffer())
     }
 
     // index.js — defines previewMeta Map, loaded by index.html via <script src>
     // Map<hash, jsonPath>  (filename derived: replace .json → .<ext>)
-    const ext = [..._store.values()][0]?.filename.match(/\.(png|jpg)$/i)?.[1] ?? 'png'
-    const mapEntries = [..._store.entries()]
+    const ext = groupEntries[0][1].filename.match(/\.(png|jpg)$/i)?.[1] ?? 'png'
+    const mapEntries = groupEntries
       .sort(([, a], [, b]) => a.filename.localeCompare(b.filename))
       .map(([hash, { jsonPath }]) =>
         `  [${JSON.stringify(hash)}, ${JSON.stringify(jsonPath)}]`
@@ -216,19 +279,19 @@ export default class PreviewBatch {
   /**
    * Build the items array the preview panel needs.
    * Creates (or refreshes) blob URLs for every stored image.
-   * Returns null if the store is empty.
+   * Returns null if there are no entries for the given group.
    *
+   * @param {string} group  Only items whose group matches are returned
    * @returns {Array|null}
    */
-  openPreview() {
-    if (_store.size === 0) return null
-
-    // Revoke stale URLs and create fresh ones
+  openPreview(group) {
+    // Revoke stale URLs first (always, so we don't leak)
     for (const url of _previewUrls.values()) URL.revokeObjectURL(url)
     _previewUrls.clear()
 
     const items = []
     for (const [hash, entry] of _store) {
+      if (entry.group !== group) continue
       const blobUrl = URL.createObjectURL(entry.blob)
       _previewUrls.set(hash, blobUrl)
       items.push({
@@ -239,7 +302,7 @@ export default class PreviewBatch {
         jsonPath: entry.jsonPath,
       })
     }
-    return items
+    return items.length > 0 ? items : null
   }
 }
 
@@ -255,6 +318,55 @@ function _sanitize(str) {
 
 function _enc(str) {
   return new TextEncoder().encode(str)
+}
+
+/**
+ * Fetch and parse the pre-built previews index for a group.
+ *
+ * The file at `butterchurn-presets/<group>/previews/index.js` is a plain JS
+ * file that defines `previewMeta` (Map<hash, jsonPath>) and `previewExt`.
+ * We execute it with `new Function` to extract those values.
+ *
+* Returns a Map<hash, { imageUrl, imgExt }> so the capture loop can look up
+ * pre-built images by the preset JSON's SHA-256 hash instead of by filename.
+ */
+async function _loadPreviewIndex(group) {
+  const url = `butterchurn-presets/${encodeURIComponent(group)}/previews/index.js`
+  try {
+    const resp = await fetch(url)
+    if (!resp.ok) return { byHash: new Map(), byName: new Map() }
+    const code = await resp.text()
+    // Execute the script to extract its exported values
+    // eslint-disable-next-line no-new-func
+    const { previewMeta, previewExt: ext } = new Function(`${code}\nreturn { previewMeta, previewExt }`)() 
+    if (!(previewMeta instanceof Map) || !ext) return { byHash: new Map(), byName: new Map() }
+
+    const base = `butterchurn-presets/${encodeURIComponent(group)}/previews/`
+    const byHash = new Map()  // hash → { imageUrl, imgExt }
+    const byName = new Map()  // presetName → hash  (inverse index for O(1) name lookup)
+    for (const [hash, jsonPath] of previewMeta) {
+      if (!hash || hash.startsWith('nohash')) continue
+      // Reconstruct the on-disk filename using the same _sanitize() logic the
+      // capture loop uses when saving images.  The raw jsonPath may contain ':'
+      // and other chars that _sanitize replaces with '_', so we must not
+      // URL-encode the original path directly — that would produce %3A instead
+      // of the underscore that's actually in the filename.
+      const slash = jsonPath.lastIndexOf('/')
+      const dir = slash >= 0 ? jsonPath.slice(0, slash) : ''
+      const fileBase = jsonPath.slice(slash + 1).replace(/\.json$/i, '')
+      const sanitizedFile = _sanitize(fileBase) + '.' + ext
+      const relPath = dir ? `${dir}/${sanitizedFile}` : sanitizedFile
+      const imageUrl = base + relPath.split('/').map(encodeURIComponent).join('/')
+      byHash.set(hash, { imageUrl, imgExt: ext })
+      // byName: presetName is the raw fileBase (before sanitization) — matches list entries
+      byName.set(fileBase, hash)
+    }
+    console.log(`[PreviewBatch] pre-built index for "${group}": ${byHash.size} entries`)
+    return { byHash, byName }
+  } catch (err) {
+    console.warn('[PreviewBatch] could not load preview index:', err)
+    return { byHash: new Map(), byName: new Map() }
+  }
 }
 
 /**
