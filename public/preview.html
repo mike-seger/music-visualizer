@@ -49,7 +49,7 @@ body {
 /* ── Tile ── */
 .tile {
   position: relative;
-  width: 160px; height: 160px;
+  width: var(--tile-w, 160px); height: var(--tile-h, 160px);
   flex-shrink: 0;
   background: #111;
   border-radius: 2px; overflow: hidden;
@@ -128,6 +128,19 @@ body {
 
   // ── Render ──
   function render(items) {
+    // Detect aspect ratio from the first image and size all tiles to fit 160×160
+    if (items.length > 0) {
+      var probe = new Image()
+      probe.onload = function () {
+        var scale = Math.min(160 / probe.naturalWidth, 160 / probe.naturalHeight)
+        var tw = Math.round(probe.naturalWidth  * scale)
+        var th = Math.round(probe.naturalHeight * scale)
+        document.documentElement.style.setProperty('--tile-w', tw + 'px')
+        document.documentElement.style.setProperty('--tile-h', th + 'px')
+      }
+      probe.src = items[0].blobUrl
+    }
+
     var root = document.getElementById('root')
     var titleEl = document.getElementById('title')
     root.innerHTML = ''

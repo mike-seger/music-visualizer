@@ -369,7 +369,7 @@ body {
 .group-line { flex: 1; height: 1px; background: #2a2a2a; }
 .grid { display: flex; flex-wrap: wrap; gap: 3px; }
 .tile {
-  position: relative; width: 160px; height: 160px;
+  position: relative; width: var(--tile-w, 160px); height: var(--tile-h, 160px);
   cursor: pointer; flex-shrink: 0; border-radius: 2px; overflow: hidden;
   background: #111; outline: 2px solid transparent; outline-offset: 0;
 }
@@ -427,6 +427,17 @@ body {
     return { hash, filename, jsonPath, group, name }
   })
   titleEl.textContent = entries.length + ' previews'
+
+  // Size tiles to match first image's aspect ratio (max 160px per side)
+  if (entries.length > 0) {
+    const probe = new Image()
+    probe.onload = function () {
+      const scale = Math.min(160 / probe.naturalWidth, 160 / probe.naturalHeight)
+      document.documentElement.style.setProperty('--tile-w', Math.round(probe.naturalWidth  * scale) + 'px')
+      document.documentElement.style.setProperty('--tile-h', Math.round(probe.naturalHeight * scale) + 'px')
+    }
+    probe.src = entries[0].filename
+  }
 
   const groups = new Map()
   for (const e of entries) {
