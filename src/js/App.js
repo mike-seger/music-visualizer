@@ -1,7 +1,7 @@
 import * as THREE from 'three'
 import { ENTITY_VISUALIZER_NAMES, createEntityVisualizerByName } from './visualizers/entityRegistry'
 import { SHADER_VISUALIZER_NAMES, createShaderVisualizerByName } from './visualizers/shaderRegistry'
-import ScreenshotBatch from './screenshot/ScreenshotBatch'
+import PreviewBatch from './preview/PreviewBatch'
 
 // MilkDrop (Butterchurn) presets are lazy-loaded to keep the initial bundle small.
 // The module and its heavy dependencies (~800 kB) are fetched on first use.
@@ -265,11 +265,11 @@ export default class App {
     // Important: a lifetime average reacts far too slowly after a sudden perf drop.
     this.qualityWindow = { frames: 0, sumDt: 0, maxDt: 0, startAt: 0 }
 
-    // Screenshot batch capture
-    this.screenshotBatch = new ScreenshotBatch()
-    this._screenshotPreviewPopup = null
-    this._screenshotPreviewMsgHandler = null
-    this._screenshotConfig = {
+    // Preview batch capture
+    this.previewBatch = new PreviewBatch()
+    this._previewPopup = null
+    this._previewMsgHandler = null
+    this._previewConfig = {
       settleDelay: 300,
       resolution: 'fixed',
       width: 160,
@@ -360,21 +360,17 @@ export default class App {
         }
         break
 
-      case 'screenshot-start': {
+      case 'preview-start': {
         // Update stored config from popup then start capture
         if (msg.config && typeof msg.config === 'object') {
-          Object.assign(this._screenshotConfig, msg.config)
+          Object.assign(this._previewConfig, msg.config)
         }
-        this._startScreenshotCapture()
+        this._startPreviewCapture()
         break
       }
 
-      case 'screenshot-zip':
-        this._downloadScreenshotZip()
-        break
-
-      case 'screenshot-preview':
-        this._openScreenshotPreview()
+      case 'preview-zip':
+        this._downloadPreviewZip()
         break
 
       case 'set-fv3-param':
@@ -1382,9 +1378,9 @@ export default class App {
       resetVisibility()
     })
 
-    // Preview screenshots button  (lives in main window → no popup-blocker issue)
-    document.getElementById('preview-screenshots-btn')?.addEventListener('click', () => {
-      this._openScreenshotPreview()
+    // Preview button (lives in main window → no popup-blocker issue)
+    document.getElementById('preview-btn')?.addEventListener('click', () => {
+      this._openPreviewPopup()
       resetVisibility()
     })
 
@@ -1448,9 +1444,9 @@ export default class App {
     window.addEventListener('beforeunload', () => {
       // Close all pop-out windows so they don't linger after the page unloads
       try { if (this._controlsPopup && !this._controlsPopup.closed) this._controlsPopup.close() } catch { /* */ }
-      try { if (this._screenshotPreviewPopup && !this._screenshotPreviewPopup.closed) this._screenshotPreviewPopup.close() } catch { /* */ }
+      try { if (this._previewPopup && !this._previewPopup.closed) this._previewPopup.close() } catch { /* */ }
       // Revoke any lingering preview blob URLs
-      try { this.screenshotBatch?.closePreview() } catch { /* */ }
+      try { this.previewBatch?.closePreview() } catch { /* */ }
     })
 
     window.addEventListener('beforeunload', () => {
@@ -3184,8 +3180,8 @@ export default class App {
     if (step !== 0 && (!isFormElement || event.code === 'NumpadAdd' || event.code === 'NumpadSubtract')) {
       event.preventDefault()
       event.stopPropagation()   // prevent lil-gui from also handling the key
-      // Cancel any in-progress screenshot batch so the user can navigate freely
-      if (this.screenshotBatch?.isRunning()) this.screenshotBatch.cancel()
+      // Cancel any in-progress preview batch so the user can navigate freely
+      if (this.previewBatch?.isRunning()) this.previewBatch.cancel()
       this.cycleVisualizer(step)
       return
     }
@@ -3233,23 +3229,23 @@ export default class App {
       return
     }
 
-    // X key — start/restart screenshot batch capture
+    // X key — start/restart preview batch capture
     if (event.key === 'x' || event.key === 'X') {
       event.preventDefault()
-      this._startScreenshotCapture()
+      this._startPreviewCapture()
       return
     }
 
-    // Z key — download screenshot ZIP
+    // Z key — download preview ZIP
     if (event.key === 'z' || event.key === 'Z') {
       event.preventDefault()
-      this._downloadScreenshotZip()
+      this._downloadPreviewZip()
       return
     }
   }
 
   // -------------------------------------------------------------------
-  // Screenshot batch helpers
+  // Preview batch helpers
   // -------------------------------------------------------------------
 
   /**
@@ -3263,10 +3259,10 @@ export default class App {
     return this.renderer?.domElement ?? null
   }
 
-  /** Build capture params from stored config, feed them to ScreenshotBatch. */
-  _startScreenshotCapture() {
-    if (this.screenshotBatch.isRunning()) {
-      this.screenshotBatch.cancel()
+  /** Build capture params from stored config, feed them to PreviewBatch. */
+  _startPreviewCapture() {
+    if (this.previewBatch.isRunning()) {
+      this.previewBatch.cancel()
       return
     }
 
@@ -3275,7 +3271,7 @@ export default class App {
 
     const startIndex = Math.max(0, list.indexOf(App.visualizerType))
     const group = App.currentGroup
-    const cfg = this._screenshotConfig
+    const cfg = this._previewConfig
 
     const onStatus = (text) => {
       // Show in the visualizer toast area
@@ -3285,12 +3281,12 @@ export default class App {
         if (el) el.style.opacity = '0.9'
       }
       // Forward to controls popup
-      this._broadcastToControls({ type: 'screenshot-status', text })
+      this._broadcastToControls({ type: 'preview-status', text })
     }
 
     onStatus(`Capturing group "${group}"…`)
 
-    this.screenshotBatch.startCapture({
+    this.previewBatch.startCapture({
       list,
       startIndex,
       group,
@@ -3305,52 +3301,52 @@ export default class App {
     })
   }
 
-  /** Trigger ZIP download of all captured screenshots. */
-  _downloadScreenshotZip() {
+  /** Trigger ZIP download of all captured previews. */
+  _downloadPreviewZip() {
     const group = App.currentGroup
-    this.screenshotBatch.downloadZip(group).then((ok) => {
+    this.previewBatch.downloadZip(group).then((ok) => {
       if (!ok) {
-        const msg = 'No screenshots yet — press X to capture first.'
-        this._broadcastToControls({ type: 'screenshot-status', text: msg })
-        console.info('[Screenshots]', msg)
+        const msg = 'No previews yet — press X to capture first.'
+        this._broadcastToControls({ type: 'preview-status', text: msg })
+        console.info('[Previews]', msg)
       }
     })
   }
 
-  /** Open the live preview popup showing all captured screenshots. */
-  _openScreenshotPreview() {
-    if (this.screenshotBatch.getCount() === 0) {
-      const msg = 'No screenshots yet — press X to capture first.'
-      this._broadcastToControls({ type: 'screenshot-status', text: msg })
+  /** Open the live preview popup showing all captured previews. */
+  _openPreviewPopup() {
+    if (this.previewBatch.getCount() === 0) {
+      const msg = 'No previews yet — press X to capture first.'
+      this._broadcastToControls({ type: 'preview-status', text: msg })
       return
     }
     // Close old popup if still open
-    try { if (this._screenshotPreviewPopup && !this._screenshotPreviewPopup.closed) this._screenshotPreviewPopup.close() } catch { /* */ }
+    try { if (this._previewPopup && !this._previewPopup.closed) this._previewPopup.close() } catch { /* */ }
     // Remove stale message handler if any
-    if (this._screenshotPreviewMsgHandler) {
-      window.removeEventListener('message', this._screenshotPreviewMsgHandler)
-      this._screenshotPreviewMsgHandler = null
+    if (this._previewMsgHandler) {
+      window.removeEventListener('message', this._previewMsgHandler)
+      this._previewMsgHandler = null
     }
 
-    const result = this.screenshotBatch.openPreview()
+    const result = this.previewBatch.openPreview()
     if (!result) {
       const msg = 'Preview popup was blocked by the browser.'
-      this._broadcastToControls({ type: 'screenshot-status', text: msg })
+      this._broadcastToControls({ type: 'preview-status', text: msg })
       return
     }
 
     const { popup, items } = result
-    this._screenshotPreviewPopup = popup
+    this._previewPopup = popup
 
     // When preview.html signals it has loaded, send the image data
     const origin = location.origin
-    this._screenshotPreviewMsgHandler = (e) => {
+    this._previewMsgHandler = (e) => {
       if (e.source !== popup || e.data?.type !== 'preview-ready') return
-      window.removeEventListener('message', this._screenshotPreviewMsgHandler)
-      this._screenshotPreviewMsgHandler = null
+      window.removeEventListener('message', this._previewMsgHandler)
+      this._previewMsgHandler = null
       popup.postMessage({ type: 'preview-data', items }, origin)
     }
-    window.addEventListener('message', this._screenshotPreviewMsgHandler)
+    window.addEventListener('message', this._previewMsgHandler)
   }
 
   /**

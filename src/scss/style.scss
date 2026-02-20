@@ -54,7 +54,7 @@
 #fullscreen-btn,
 #lock-btn,
 #open-controls-btn,
-#preview-screenshots-btn,
+#preview-btn,
 #copy-liked-btn {
   font-family: 'Material Symbols Rounded', 'Local Material Symbols Rounded', 'Inter', system-ui, -apple-system, sans-serif;
   font-variant-ligatures: normal;
@@ -72,7 +72,7 @@ html:not(.icons-ready) #player-controls button {
 #fullscreen-btn,
 #lock-btn,
 #open-controls-btn,
-#preview-screenshots-btn,
+#preview-btn,
 #copy-liked-btn {
   background: rgba(255, 255, 255, 0.1);
   border: 1px solid rgba(255, 255, 255, 0.3);
@@ -132,7 +132,7 @@ html:not(.icons-ready) #player-controls button {
 #fullscreen-btn:hover,
 #lock-btn:hover,
 #open-controls-btn:hover,
-#preview-screenshots-btn:hover,
+#preview-btn:hover,
 #copy-liked-btn:hover {
   background: rgba(255, 255, 255, 0.2);
   border-color: rgba(255, 255, 255, 0.5);

@@ -86,9 +86,9 @@ export default class ControlsApp {
       fv3SelectedPreset: 'visualizer.fv3.selectedPreset',
     }
 
-    // Screenshot controls state
-    this.screenshotFolder = null
-    this._screenshotConfig = {
+    // Preview controls state
+    this.previewFolder = null
+    this._previewConfig = {
       resolution: 'dynamic',
       format: 'PNG',
       width: 640,
@@ -96,9 +96,9 @@ export default class ControlsApp {
       settleDelay: 300,
       status: 'Idle',
     }
-    this._screenshotStatusCtrl = null
-    this._screenshotWidthCtrl = null
-    this._screenshotHeightCtrl = null
+    this._previewStatusCtrl = null
+    this._previewWidthCtrl = null
+    this._previewHeightCtrl = null
 
     // BroadcastChannel for communicating with the main page
     this.channel = new BroadcastChannel(CHANNEL_NAME)
@@ -196,10 +196,10 @@ export default class ControlsApp {
       case 'fv3-params':
         this.syncFV3Controls(msg.params)
         break
-      case 'screenshot-status':
-        if (this._screenshotConfig) {
-          this._screenshotConfig.status = msg.text || ''
-          this._screenshotStatusCtrl?.updateDisplay?.()
+      case 'preview-status':
+        if (this._previewConfig) {
+          this._previewConfig.status = msg.text || ''
+          this._previewStatusCtrl?.updateDisplay?.()
         }
         break
       default:
@@ -220,7 +220,7 @@ export default class ControlsApp {
     this.setupGuiCloseButton()
     this.addVisualizerSwitcher()
     this.addPerformanceQualityControls()
-    this.addScreenshotControls()
+    this.addPreviewControls()
     // Apply initial perf folder visibility
     if (this._perfHidden && this.performanceQualityFolder) {
       this.performanceQualityFolder.domElement.style.display = 'none'
@@ -946,57 +946,57 @@ export default class ControlsApp {
   }
 
   // -------------------------------------------------------------------
-  // Screenshots controls
+  // Preview controls
   // -------------------------------------------------------------------
 
-  addScreenshotControls() {
-    if (this.screenshotFolder) return
-    const cfg = this._screenshotConfig
+  addPreviewControls() {
+    if (this.previewFolder) return
+    const cfg = this._previewConfig
 
-    const folder = this.gui.addFolder('SCREENSHOTS')
+    const folder = this.gui.addFolder('PREVIEWS')
     folder.close()
-    this.screenshotFolder = folder
+    this.previewFolder = folder
 
     folder
       .add(cfg, 'resolution', ['dynamic', 'fixed'])
       .name('Resolution')
       .onChange((v) => {
-        this._screenshotWidthCtrl?.show(v === 'fixed')
-        this._screenshotHeightCtrl?.show(v === 'fixed')
+        this._previewWidthCtrl?.show(v === 'fixed')
+        this._previewHeightCtrl?.show(v === 'fixed')
       })
 
-    this._screenshotWidthCtrl = folder
+    this._previewWidthCtrl = folder
       .add(cfg, 'width', 1, 3840, 1)
       .name('Width')
-    this._screenshotHeightCtrl = folder
+    this._previewHeightCtrl = folder
       .add(cfg, 'height', 1, 2160, 1)
       .name('Height')
 
     // Show/hide W/H depending on current resolution mode
-    this._screenshotWidthCtrl.show(cfg.resolution === 'fixed')
-    this._screenshotHeightCtrl.show(cfg.resolution === 'fixed')
+    this._previewWidthCtrl.show(cfg.resolution === 'fixed')
+    this._previewHeightCtrl.show(cfg.resolution === 'fixed')
 
     folder.add(cfg, 'format', ['PNG', 'JPG']).name('Format')
 
     folder.add(cfg, 'settleDelay', 0, 2000, 50).name('Settle ms')
 
-    this._screenshotStatusCtrl = folder
+    this._previewStatusCtrl = folder
       .add(cfg, 'status')
       .name('Status')
       .disable()
 
     // Two action buttons on one merged row
     const captureCtrl = folder
-      .add({ capture: () => this._send({ type: 'screenshot-start', config: { ...cfg } }) }, 'capture')
+      .add({ capture: () => this._send({ type: 'preview-start', config: { ...cfg } }) }, 'capture')
       .name('Capture')
 
     const zipCtrl = folder
-      .add({ zip: () => this._send({ type: 'screenshot-zip' }) }, 'zip')
+      .add({ zip: () => this._send({ type: 'preview-zip' }) }, 'zip')
       .name('ZIP')
 
-    // Merge into one row labelled "Screenshots" with compact side-by-side buttons
+    // Merge into one row labelled "Previews" with compact side-by-side buttons
     this._mergeLilGuiRows(captureCtrl, zipCtrl, {
-      label: 'Screenshots',
+      label: 'Previews',
       gap: '6px',
       compactButtons: true,
     })
