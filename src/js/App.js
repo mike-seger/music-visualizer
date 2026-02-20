@@ -267,6 +267,7 @@ export default class App {
 
     // Preview batch capture
     this.previewBatch = new PreviewBatch()
+    this._previewAutoStart = null  // debounce timer for auto-start
     this._previewConfig = {
       settleDelay: 300,
       resolution: 'fixed',
@@ -359,9 +360,12 @@ export default class App {
         break
 
       case 'preview-ready': {
-        // preview.html (in the panels iframe) is ready — send it the captured images
+        // Send any already-captured images immediately
         const items = this.previewBatch.openPreview()
         if (items) this._broadcastToControls({ type: 'preview-data', items })
+        // Auto-start capture for the current group (unless already running)
+        clearTimeout(this._previewAutoStart)
+        if (!this.previewBatch.isRunning()) this._startPreviewCapture()
         break
       }
 
@@ -3251,7 +3255,7 @@ export default class App {
   }
 
   /** Build capture params from stored config, feed them to PreviewBatch. */
-  _startPreviewCapture() {
+  async _startPreviewCapture() {
     if (this.previewBatch.isRunning()) {
       this.previewBatch.cancel()
       return
@@ -3277,7 +3281,7 @@ export default class App {
 
     onStatus(`Capturing group "${group}"…`)
 
-    this.previewBatch.startCapture({
+    await this.previewBatch.startCapture({
       list,
       startIndex,
       group,
@@ -3290,6 +3294,12 @@ export default class App {
       format: cfg.format,
       onStatus,
     })
+
+    // Push the completed batch to the preview panel
+    if (this._controlsPopup && !this._controlsPopup.closed) {
+      const items = this.previewBatch.openPreview()
+      if (items) this._broadcastToControls({ type: 'preview-data', items })
+    }
   }
 
   /** Trigger ZIP download of all captured previews. */
@@ -4611,6 +4621,13 @@ export default class App {
       activeVisualizer: target,
       perfHidden: this._isButterchurnGroup(groupName),
     })
+
+    // Auto-regenerate previews if the panels popup is open
+    if (this._controlsPopup && !this._controlsPopup.closed) {
+      this.previewBatch.cancel()
+      clearTimeout(this._previewAutoStart)
+      this._previewAutoStart = setTimeout(() => this._startPreviewCapture(), 250)
+    }
 
     // Switch visualizer if needed
     if (switchToFirst && target && target !== App.visualizerType) {

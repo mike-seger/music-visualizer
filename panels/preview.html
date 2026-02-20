@@ -30,6 +30,18 @@ body {
 #copy-btn:hover { background: #2e2e2e; }
 #copy-btn .count { color: #fa4; }
 
+/* ── Status bar ── */
+#status-bar {
+  position: fixed; top: 41px; left: 0; right: 0; z-index: 99;
+  background: #1a1a2e; border-bottom: 1px solid #2a2a4a;
+  padding: 5px 12px;
+  font-size: 11px; color: #89a; letter-spacing: .02em;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  display: none;
+}
+#status-bar.visible { display: block; }
+body.has-status { padding-top: 68px; }
+
 /* ── Group sections ── */
 .group-section { margin-bottom: 20px; }
 .group-header {
@@ -104,6 +116,8 @@ body {
   <button id="copy-btn">Copy selected as JSON (<span class="count" id="copy-count">0</span>)</button>
 </div>
 
+<div id="status-bar"></div>
+
 <div id="root"><p style="color:#555;padding:20px">Waiting for data…</p></div>
 
 <div id="overlay">
@@ -120,10 +134,30 @@ body {
   // ── Notify main app we are ready (via BroadcastChannel) ──
   if (ch) ch.postMessage({ type: 'preview-ready' })
 
-  // ── Receive preview data via BroadcastChannel ──
+  var statusBar = document.getElementById('status-bar')
+
+  function setStatus(text) {
+    if (!text) {
+      statusBar.classList.remove('visible')
+      document.body.classList.remove('has-status')
+    } else {
+      statusBar.textContent = text
+      statusBar.classList.add('visible')
+      document.body.classList.add('has-status')
+    }
+  }
+
+  // ── Receive messages via BroadcastChannel ──
   if (ch) ch.addEventListener('message', function (e) {
-    if (!e.data || e.data.type !== 'preview-data') return
-    render(e.data.items)
+    if (!e.data) return
+    if (e.data.type === 'preview-status') {
+      setStatus(e.data.text || '')
+      return
+    }
+    if (e.data.type === 'preview-data') {
+      setStatus('')
+      render(e.data.items)
+    }
   })
 
   // ── Render ──
