@@ -13,6 +13,13 @@ body {
   padding: 48px 10px 40px;
 }
 
+/* ── Scrollbar ── */
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-track { background: #0d0d0d; }
+::-webkit-scrollbar-thumb { background: #333; border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: #444; }
+* { scrollbar-color: #333 #0d0d0d; scrollbar-width: thin; }
+
 /* ── Floating toolbar ── */
 #toolbar {
   position: fixed; top: 0; left: 0; right: 0; z-index: 100;
@@ -88,7 +95,7 @@ body.has-status { padding-top: 68px; }
   -webkit-appearance: none;
   appearance: none;
   background: transparent;
-  border: 1px solid rgba(255,255,255,0.9);
+  border: 1px solid transparent;
   border-radius: 2px;
   flex-shrink: 0;
 }
@@ -98,9 +105,9 @@ body.has-status { padding-top: 68px; }
   background-repeat: no-repeat;
   background-position: center;
   background-size: 10px 10px;
-  border-color: #44ff9a;
 }
-.tile:hover .tile-cb { opacity: 1; }
+.tile:hover .tile-cb { opacity: 1; border-color: rgba(255,255,255,0.9); }
+.tile:hover .tile-cb:checked { border-color: #44ff9a; }
 .tile.selected .tile-cb { opacity: 1; }
 
 /* Heart — like state, appears on hover */

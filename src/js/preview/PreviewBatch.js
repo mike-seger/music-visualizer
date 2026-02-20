@@ -256,16 +256,25 @@ export default class PreviewBatch {
       files[filename] = new Uint8Array(await blob.arrayBuffer())
     }
 
-    // previews/index.js — defines previewMeta Map (hash → presetName), served from previews/ folder
+    // index.js — defines previewMeta Map (hash → presetName), at the group root
     const ext = groupEntries[0][1].filename.match(/\.(png|jpg)$/i)?.[1] ?? 'png'
     const mapEntries = groupEntries
       .sort(([, a], [, b]) => a.presetName.localeCompare(b.presetName))
       .map(([hash, { jsonPath }]) =>
         `  [${JSON.stringify(hash)}, ${JSON.stringify(jsonPath)}]`
       )
-    files['previews/index.js'] = _enc(
+    files['index.js'] = _enc(
       `const previewExt = ${JSON.stringify(ext)};\nconst previewMeta = new Map([\n${mapEntries.join(',\n')}\n]);\n`
     )
+
+    // presets/<sanitized>.json — the raw preset JSON for each captured preview
+    await Promise.all(groupEntries.map(async ([, entry]) => {
+      const g = encodeURIComponent(entry.group)
+      const n = encodeURIComponent(entry.jsonPath)
+      let resp = await fetch(`butterchurn-presets/${g}/presets/${n}.json`).catch(() => null)
+      if (!resp?.ok) resp = await fetch(`butterchurn-presets/${g}/${n}.json`).catch(() => null)
+      if (resp?.ok) files[`presets/${_sanitize(entry.jsonPath)}.json`] = new Uint8Array(await resp.arrayBuffer())
+    }))
 
     // index.html — static viewer
     files['index.html'] = _enc(_buildIndexHtml())
@@ -348,7 +357,7 @@ function _enc(str) {
  * pre-built images by the preset JSON's SHA-256 hash instead of by filename.
  */
 async function _loadPreviewIndex(group) {
-  const url = `butterchurn-presets/${encodeURIComponent(group)}/previews/index.js`
+  const url = `butterchurn-presets/${encodeURIComponent(group)}/index.js`
   try {
     const resp = await fetch(url)
     if (!resp.ok) return { byHash: new Map(), byName: new Map() }
@@ -433,7 +442,7 @@ function _buildIndexHtml() {
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Previews</title>
-<script src="previews/index.js"><\/script>
+<script src="index.js"><\/script>
 <style>
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 body {
@@ -470,16 +479,17 @@ body {
   position: absolute; bottom: 5px; right: 5px;
   width: 15px; height: 15px; cursor: pointer;
   -webkit-appearance: none; appearance: none;
-  background: transparent; border: 1px solid rgba(255,255,255,.9); border-radius: 2px;
+  background: transparent; border: 1px solid transparent; border-radius: 2px;
   opacity: 0; transition: opacity 0.1s;
 }
 .tile-cb:checked {
   background: transparent;
   background-image: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'><polyline points='2,6 5,9 10,3' stroke='%2344ff9a' stroke-width='2.5' fill='none' stroke-linecap='round' stroke-linejoin='round'/><\/svg>");
   background-repeat: no-repeat; background-position: center; background-size: 10px;
-  border-color: #44ff9a;
 }
-.tile:hover .tile-cb, .tile.selected .tile-cb { opacity: 1; }
+.tile:hover .tile-cb { opacity: 1; border-color: rgba(255,255,255,.9); }
+.tile:hover .tile-cb:checked { border-color: #44ff9a; }
+.tile.selected .tile-cb { opacity: 1; }
 #overlay {
   display: none; position: fixed; inset: 0; z-index: 200;
   background: rgba(0,0,0,.88); justify-content: center; align-items: center; cursor: pointer;
