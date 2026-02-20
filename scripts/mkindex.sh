@@ -34,12 +34,14 @@ fi
     # Counter to track if we need a comma between items
     first_item=true
 
-    find "$1" -maxdepth 1 -type f -exec basename {} \; | while read file; do
+    find "$1" -maxdepth 1 -type f -not -name '.*' -exec basename {} \; | while read file; do
 	# skip the index itself
         [[ "$file" == "index.json" ]] && continue
 
         # Get the filename without extension
         name="${file%.*}"
+        # Skip dotfiles or entries that lost their name after stripping the extension
+        [[ -z "$name" ]] && continue
         # Replace _Mig_ or _mig_ with "mig - " (bash pattern substitution)
         name="${name//_[Mm]ig_/mig - }"
         # Lowercase (bash 4+)
