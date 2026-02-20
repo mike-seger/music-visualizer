@@ -238,8 +238,8 @@ export default class App {
     // Auto-cycle state
     this._cycleTimerHandle = null
     this._cycleEnabled = this._getStoredBool(this.storageKeys.cycleEnabled, false)
-    this._cycleTime = this._getStoredNumber(this.storageKeys.cycleTime, 30, 5, 300)
-    this._transitionTime = this._getStoredNumber(this.storageKeys.transitionTime, 5.7, 0, 20)
+    this._cycleTime = this._getStoredNumber(this.storageKeys.cycleTime, 25, 5, 300)
+    this._transitionTime = this._getStoredNumber(this.storageKeys.transitionTime, 2.4, 0, 20)
 
     // Per-visualizer quality overrides (localStorage keys are derived from visualizer type).
     this.performanceQualityFolder = null
@@ -395,7 +395,7 @@ export default class App {
       }
 
       case 'preview-zip':
-        this._downloadPreviewZip()
+        this._downloadPreviewZip(msg.hashes)
         break
 
       case 'set-fv3-param':
@@ -2736,7 +2736,7 @@ export default class App {
     this.updateVisualizerToastMetricsContent()
   }
   
-  async switchVisualizer(type, { notify = true } = {}) {
+  async switchVisualizer(type, { notify = true, blendTime: blendTimeOverride = undefined } = {}) {
     // Reset auto-cycle timer so the full interval starts fresh after each switch
     this._resetCycleTimer()
 
@@ -2764,7 +2764,7 @@ export default class App {
       }
 
       if (presetData) {
-        App.currentVisualizer.loadPreset(presetData, this._transitionTime)
+        App.currentVisualizer.loadPreset(presetData, blendTimeOverride ?? this._transitionTime)
         App.currentVisualizer.name = type
         App.visualizerType = type
         this.saveVisualizerType(type)
@@ -3397,7 +3397,7 @@ export default class App {
       list,
       startIndex,
       group,
-      switchTo: (name) => this.switchVisualizer(name, { notify: false }),
+      switchTo: (name) => this.switchVisualizer(name, { notify: false, blendTime: 0 }),
       getCanvas: () => this.getActiveCanvas(),
       settleDelay: cfg.settleDelay,
       resolution: cfg.resolution,
@@ -3419,10 +3419,11 @@ export default class App {
     }
   }
 
-  /** Trigger ZIP download of all captured previews. */
-  _downloadPreviewZip() {
+  /** Trigger ZIP download of captured previews, optionally filtered to a hash set. */
+  _downloadPreviewZip(hashes) {
     const group = App.currentGroup
-    this.previewBatch.downloadZip(group).then((ok) => {
+    const filterSet = hashes && hashes.length > 0 ? new Set(hashes) : null
+    this.previewBatch.downloadZip(group, filterSet).then((ok) => {
       if (!ok) {
         const msg = 'No previews yet — press X to capture first.'
         this._broadcastToControls({ type: 'preview-status', text: msg })
@@ -4684,7 +4685,11 @@ export default class App {
 
     const baseUrl = import.meta.env.BASE_URL
     try {
-      const resp = await fetch(`${baseUrl}butterchurn-presets/${encodeURIComponent(groupName)}/${encodeURIComponent(entry.file)}`)
+      // Try new presets/ subfolder first, fall back to old top-level layout
+      let resp = await fetch(`${baseUrl}butterchurn-presets/${encodeURIComponent(groupName)}/presets/${encodeURIComponent(entry.file)}`)
+      if (!resp.ok) {
+        resp = await fetch(`${baseUrl}butterchurn-presets/${encodeURIComponent(groupName)}/${encodeURIComponent(entry.file)}`)
+      }
       if (!resp.ok) return null
       const data = await resp.json()
       App._userGroupPresetCache.set(cacheKey, data)

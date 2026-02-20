@@ -42,16 +42,17 @@ const index = files
   .filter(e => !excludeRegexes.some(re => re.test(e.name)))
 
 mkdirSync(outDir, { recursive: true })
+mkdirSync(resolve(outDir, 'presets'), { recursive: true })
 writeFileSync(resolve(outDir, 'index.json'), JSON.stringify(index, null, 2) + '\n')
 
-// Copy individual preset JSON files (only those in the index)
+// Copy individual preset JSON files (only those in the index) into the presets/ subfolder
 const indexedFiles = new Set(index.map(e => e.file))
 let copied = 0
 let skipped = 0
 let replaced = 0
 for (const f of files) {
   if (!indexedFiles.has(f)) continue
-  const dest = resolve(outDir, f)
+  const dest = resolve(outDir, 'presets', f)
   const src = resolve(srcDir, f)
 
   // Check if dest already exists (as real file or symlink)
@@ -85,4 +86,4 @@ for (const f of files) {
 
 const excluded = files.length - index.length
 console.log(`Wrote ${index.length} entries to public/butterchurn-presets/default/index.json (${excluded} excluded)`)
-console.log(`Copied ${copied} new, updated ${replaced}, skipped ${skipped} unchanged`)
+console.log(`Copied ${copied} new, updated ${replaced}, skipped ${skipped} unchanged (dest: default/presets/)`)

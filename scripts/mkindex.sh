@@ -17,9 +17,16 @@ function findCandidates() {
 
 [[ -z "$1" || ! -d "$1" ]] && usage && exit 1
 
-# Skip if index.json exists and is newer than all other files in the directory
+# Prefer presets/ subfolder if it exists, otherwise scan top-level
+if [[ -d "$1/presets" ]]; then
+    scan_dir="$1/presets"
+else
+    scan_dir="$1"
+fi
+
+# Skip if index.json exists and is newer than all other files in the scan directory
 if [[ -f "$index_file" ]]; then
-    n=$(findCandidates "$1" | wc -l)
+    n=$(findCandidates "$scan_dir" | wc -l)
     if [ $n == 0 ]; then
         echo "$1 is up to date, $(countEntries $index_file) entries." >&2
         exit 0
@@ -34,7 +41,7 @@ fi
     # Counter to track if we need a comma between items
     first_item=true
 
-    find "$1" -maxdepth 1 \( -type f -o -type l \) -not -name '.*' -exec basename {} \; | while read file; do
+    find "$scan_dir" -maxdepth 1 \( -type f -o -type l \) -not -name '.*' -exec basename {} \; | while read file; do
 	# skip the index itself
         [[ "$file" == "index.json" ]] && continue
         # skip non-JSON files (e.g. .zip downloads, .png previews, etc.)

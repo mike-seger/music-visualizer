@@ -53,8 +53,8 @@ export default class ControlsApp {
     this.debugInformationEnabled = false
     this.toastTransientEnabled = true
     this._cycleEnabled = false
-    this._cycleTime = 30
-    this._transitionTime = 5.7
+    this._cycleTime = 25
+    this._transitionTime = 2.4
     this._cycleEnabledController = null
     this._cycleTimeController = null
     this._transitionTimeController = null
@@ -139,7 +139,7 @@ export default class ControlsApp {
         this.toastTransientEnabled = msg.toastTransientEnabled !== false
         this._cycleEnabled = !!msg.cycleEnabled
         this._cycleTime = Number.isFinite(msg.cycleTime) ? msg.cycleTime : 30
-        this._transitionTime = Number.isFinite(msg.transitionTime) ? msg.transitionTime : 5.7
+        this._transitionTime = Number.isFinite(msg.transitionTime) ? msg.transitionTime : 2.4
         this.groupNames = msg.groupNames || []
         this.groupDisplayMap = msg.groupDisplayMap || {}
         this.currentGroup = msg.currentGroup || ''

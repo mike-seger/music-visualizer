@@ -97,7 +97,7 @@ export default class PreviewBatch {
     const groupFolder = _sanitize(group)
 
     const urlFor = getPresetUrl ??
-      ((g, n) => `butterchurn-presets/${encodeURIComponent(g)}/${encodeURIComponent(n)}.json`)
+      ((g, n) => `butterchurn-presets/${encodeURIComponent(g)}/presets/${encodeURIComponent(n)}.json`)
 
     // ── Load pre-built previews for this group (if any) ──
     // Returns { byHash: Map<hash,{imageUrl,imgExt}>, byName: Map<presetName,hash> }
@@ -136,8 +136,8 @@ export default class PreviewBatch {
             const imgResp = await fetch(pb.imageUrl)
             if (imgResp.ok) {
               const blob = await imgResp.blob()
-              const filename = `${groupFolder}/${_sanitize(name)}.${pb.imgExt}`
-              const jsonPath = `${group}/${name}.json`
+              const filename = `previews/${_sanitize(name)}.${pb.imgExt}`
+              const jsonPath = name
               _store.set(hash, { filename, blob, presetName: name, group, jsonPath })
               fromDisk++
             }
@@ -170,7 +170,11 @@ export default class PreviewBatch {
       let hash = prebuilt.byName.get(name) ?? null
       if (!hash) {
         try {
-          const resp = await fetch(urlFor(group, name))
+          let resp = await fetch(urlFor(group, name))
+          if (!resp.ok && !getPresetUrl) {
+            // Fallback: try old top-level location
+            resp = await fetch(`butterchurn-presets/${encodeURIComponent(group)}/${encodeURIComponent(name)}.json`)
+          }
           if (resp.ok) hash = await _sha256short(await resp.text())
         } catch { /* network failure */ }
       }
@@ -206,8 +210,8 @@ export default class PreviewBatch {
       }
 
       if (blob) {
-        const filename = `${groupFolder}/${_sanitize(name)}.${ext}`
-        const jsonPath = `${group}/${name}.json`
+        const filename = `previews/${_sanitize(name)}.${ext}`
+        const jsonPath = name
         _store.set(hash, { filename, blob, presetName: name, group, jsonPath })
         captured++
       }
@@ -230,9 +234,11 @@ export default class PreviewBatch {
    *
    * @param {string} groupName  Used only in the downloaded ZIP filename
    */
-  async downloadZip(groupName) {
-    // Only ZIP entries for the currently active group
-    const groupEntries = [..._store.entries()].filter(([, e]) => e.group === groupName)
+  async downloadZip(groupName, filterHashes = null) {
+    // Only ZIP entries for the currently active group; optionally restricted to selected hashes
+    const groupEntries = [..._store.entries()].filter(([hash, e]) =>
+      e.group === groupName && (!filterHashes || filterHashes.has(hash))
+    )
     if (groupEntries.length === 0) {
       console.warn('[PreviewBatch] Nothing to ZIP for group', groupName, '— capture previews first (X key).')
       return false
@@ -240,24 +246,24 @@ export default class PreviewBatch {
 
     const dt = new Date().toISOString()
       .replace('T', '_').replace(/[:.]/g, '-').slice(0, 19)
-    const zipName = `previews-${_sanitize(groupName)}-${dt}.zip`
+    const selSuffix = filterHashes ? `-${filterHashes.size}sel` : ''
+    const zipName = `previews-${_sanitize(groupName)}${selSuffix}-${dt}.zip`
 
     const files = {}
 
-    // Image files (keyed by relative path within ZIP)
+    // Image files — at previews/<sanitized>.<ext> within the ZIP
     for (const [, { filename, blob }] of groupEntries) {
       files[filename] = new Uint8Array(await blob.arrayBuffer())
     }
 
-    // index.js — defines previewMeta Map, loaded by index.html via <script src>
-    // Map<hash, jsonPath>  (filename derived: replace .json → .<ext>)
+    // previews/index.js — defines previewMeta Map (hash → presetName), served from previews/ folder
     const ext = groupEntries[0][1].filename.match(/\.(png|jpg)$/i)?.[1] ?? 'png'
     const mapEntries = groupEntries
-      .sort(([, a], [, b]) => a.filename.localeCompare(b.filename))
+      .sort(([, a], [, b]) => a.presetName.localeCompare(b.presetName))
       .map(([hash, { jsonPath }]) =>
         `  [${JSON.stringify(hash)}, ${JSON.stringify(jsonPath)}]`
       )
-    files['index.js'] = _enc(
+    files['previews/index.js'] = _enc(
       `const previewExt = ${JSON.stringify(ext)};\nconst previewMeta = new Map([\n${mapEntries.join(',\n')}\n]);\n`
     )
 
@@ -427,7 +433,7 @@ function _buildIndexHtml() {
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Previews</title>
-<script src="index.js"><\/script>
+<script src="previews/index.js"><\/script>
 <style>
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 body {
@@ -440,24 +446,18 @@ body {
   position: fixed; top: 0; left: 0; right: 0; z-index: 100;
   background: rgba(17,17,17,.92); backdrop-filter: blur(6px);
   border-bottom: 1px solid #2a2a2a;
-  display: flex; align-items: center; justify-content: space-between;
+  display: flex; align-items: center;
   padding: 8px 12px; gap: 8px;
 }
-#title { color: #888; }
-#copy-btn {
+#title { color: #888; flex: 1; }
+.tbtn {
   background: #222; border: 1px solid #444; color: #ddd;
-  padding: 5px 14px; border-radius: 4px; font-size: 12px; cursor: pointer;
+  padding: 5px 12px; border-radius: 4px; font-size: 12px; cursor: pointer;
+  white-space: nowrap;
 }
-#copy-btn:hover { background: #2e2e2e; }
-#copy-btn .count { color: #fa4; }
-.group-section { margin-bottom: 20px; }
-.group-header {
-  display: flex; align-items: center; gap: 8px; margin-bottom: 8px;
-}
-.group-label { color: #999; font-size: 11px; text-transform: uppercase; letter-spacing: .07em; }
-.group-count { color: #555; font-size: 11px; }
-.group-line { flex: 1; height: 1px; background: #2a2a2a; }
-.grid { display: flex; flex-wrap: wrap; gap: 3px; }
+.tbtn:hover { background: #2e2e2e; }
+#copy-count { color: #fa4; }
+.grid { display: flex; flex-wrap: wrap; gap: 5px; }
 .tile {
   position: relative; width: var(--tile-w, 160px); height: var(--tile-h, 160px);
   cursor: pointer; flex-shrink: 0; border-radius: 2px; overflow: hidden;
@@ -468,15 +468,21 @@ body {
 .tile.selected { outline-color: #fa4; }
 .tile-cb {
   position: absolute; bottom: 5px; right: 5px;
-  width: 15px; height: 15px; cursor: pointer; accent-color: #fa4;
+  width: 15px; height: 15px; cursor: pointer;
+  -webkit-appearance: none; appearance: none;
+  background: transparent; border: 1px solid rgba(255,255,255,.9); border-radius: 2px;
   opacity: 0; transition: opacity 0.1s;
 }
-.tile:hover .tile-cb { opacity: 0.5; }
-.tile.selected .tile-cb { opacity: 0.8; }
+.tile-cb:checked {
+  background: transparent;
+  background-image: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'><polyline points='2,6 5,9 10,3' stroke='%2344ff9a' stroke-width='2.5' fill='none' stroke-linecap='round' stroke-linejoin='round'/><\/svg>");
+  background-repeat: no-repeat; background-position: center; background-size: 10px;
+  border-color: #44ff9a;
+}
+.tile:hover .tile-cb, .tile.selected .tile-cb { opacity: 1; }
 #overlay {
   display: none; position: fixed; inset: 0; z-index: 200;
-  background: rgba(0,0,0,.88);
-  justify-content: center; align-items: center; cursor: pointer;
+  background: rgba(0,0,0,.88); justify-content: center; align-items: center; cursor: pointer;
 }
 #overlay.open { display: flex; }
 #overlay-img { max-width: 94vw; max-height: 94vh; object-fit: contain; border-radius: 3px; cursor: default; }
@@ -490,7 +496,9 @@ body {
 <body>
 <div id="toolbar">
   <span id="title">Previews</span>
-  <button id="copy-btn">Copy selected (<span class="count" id="copy-count">0</span>)</button>
+  <button class="tbtn" id="select-all-btn">Select All</button>
+  <button class="tbtn" id="toggle-btn">Toggle</button>
+  <button class="tbtn" id="copy-btn">Copy IDs (<span id="copy-count">all</span>)</button>
 </div>
 <div id="root"></div>
 <div id="overlay">
@@ -499,8 +507,9 @@ body {
 </div>
 <script>
 (function () {
-  // previewMeta is injected by index.js (Map<hash, jsonPath>)
-  // filename is derived: jsonPath.replace(/\.json$/i, '.' + previewExt)
+  // previewMeta is injected by previews/index.js (Map<hash, presetName>)
+  function sanitize(s) { return s.replace(/[\/\\:*?"<>|]/g, '_').trim() }
+
   const root = document.getElementById('root')
   const overlay = document.getElementById('overlay')
   const overlayImg = document.getElementById('overlay-img')
@@ -509,16 +518,13 @@ body {
   const copyCountEl = document.getElementById('copy-count')
   const titleEl = document.getElementById('title')
 
-  const entries = [...previewMeta.entries()].map(([hash, jsonPath]) => {
-    const filename = jsonPath.replace(/\.json$/i, '.' + previewExt)
-    const slash = jsonPath.indexOf('/')
-    const group = slash > -1 ? jsonPath.slice(0, slash) : ''
-    const name  = jsonPath.slice(slash + 1).replace(/\.json$/i, '')
-    return { hash, filename, jsonPath, group, name }
-  })
+  const entries = [...previewMeta.entries()].map(([hash, name]) => ({
+    hash,
+    name,
+    filename: 'previews/' + sanitize(name) + '.' + previewExt,
+  }))
   titleEl.textContent = entries.length + ' previews'
 
-  // Size tiles to match first image's aspect ratio (max 160px per side)
   if (entries.length > 0) {
     const probe = new Image()
     probe.onload = function () {
@@ -529,59 +535,64 @@ body {
     probe.src = entries[0].filename
   }
 
-  const groups = new Map()
-  for (const e of entries) {
-    if (!groups.has(e.group)) groups.set(e.group, [])
-    groups.get(e.group).push(e)
-  }
-
   const selected = new Set()
-  function updateCount() { copyCountEl.textContent = selected.size }
+  function updateCount() { copyCountEl.textContent = selected.size > 0 ? selected.size : 'all' }
 
-  for (const [group, items] of groups) {
-    const section = document.createElement('div')
-    section.className = 'group-section'
-    const hdr = document.createElement('div')
-    hdr.className = 'group-header'
-    hdr.innerHTML =
-      '<span class="group-label">' + esc(group || '(root)') + '</span>' +
-      '<span class="group-line"></span>' +
-      '<span class="group-count">' + items.length + '</span>'
-    section.appendChild(hdr)
-
-    const grid = document.createElement('div')
-    grid.className = 'grid'
-    for (const { filename, jsonPath, name } of items) {
-      const tile = document.createElement('div')
-      tile.className = 'tile'; tile.title = name
-      const img = document.createElement('img')
-      img.src = filename; img.alt = name; img.loading = 'lazy'
-      const cb = document.createElement('input')
-      cb.type = 'checkbox'; cb.className = 'tile-cb'
-      cb.addEventListener('change', (e) => {
-        e.stopPropagation()
-        if (cb.checked) { selected.add(jsonPath); tile.classList.add('selected') }
-        else            { selected.delete(jsonPath); tile.classList.remove('selected') }
-        updateCount()
-      })
-      cb.addEventListener('click', (e) => e.stopPropagation())
-      tile.addEventListener('click', () => {
-        overlayImg.src = filename; overlayLabel.textContent = name
-        overlay.classList.add('open')
-      })
-      tile.appendChild(img); tile.appendChild(cb); grid.appendChild(tile)
-    }
-    section.appendChild(grid); root.appendChild(section)
+  const grid = document.createElement('div')
+  grid.className = 'grid'
+  for (const { hash, filename, name } of entries) {
+    const tile = document.createElement('div')
+    tile.className = 'tile'; tile.title = name
+    const img = document.createElement('img')
+    img.src = filename; img.alt = name; img.loading = 'lazy'
+    const cb = document.createElement('input')
+    cb.type = 'checkbox'; cb.className = 'tile-cb'
+    cb.addEventListener('change', (e) => {
+      e.stopPropagation()
+      if (cb.checked) { selected.add(hash); tile.classList.add('selected') }
+      else            { selected.delete(hash); tile.classList.remove('selected') }
+      updateCount()
+    })
+    cb.addEventListener('click', (e) => e.stopPropagation())
+    tile.addEventListener('click', () => {
+      overlayImg.src = filename; overlayLabel.textContent = name
+      overlay.classList.add('open')
+    })
+    tile.appendChild(img); tile.appendChild(cb); grid.appendChild(tile)
   }
+  root.appendChild(grid)
+
+  document.getElementById('select-all-btn').addEventListener('click', () => {
+    entries.forEach(({ hash }) => selected.add(hash))
+    root.querySelectorAll('.tile').forEach((t) => {
+      t.classList.add('selected')
+      const cb = t.querySelector('.tile-cb'); if (cb) cb.checked = true
+    })
+    updateCount()
+  })
+
+  document.getElementById('toggle-btn').addEventListener('click', () => {
+    const tiles = [...root.querySelectorAll('.tile')]
+    entries.forEach(({ hash }, i) => {
+      const tile = tiles[i]; const cb = tile?.querySelector('.tile-cb')
+      if (selected.has(hash)) {
+        selected.delete(hash); tile?.classList.remove('selected'); if (cb) cb.checked = false
+      } else {
+        selected.add(hash); tile?.classList.add('selected'); if (cb) cb.checked = true
+      }
+    })
+    updateCount()
+  })
 
   overlay.addEventListener('click', (e) => { if (e.target !== overlayImg) overlay.classList.remove('open') })
   document.addEventListener('keydown', (e) => { if (e.key === 'Escape') overlay.classList.remove('open') })
 
   copyBtn.addEventListener('click', () => {
-    const json = JSON.stringify([...selected].sort(), null, 2)
+    const ids = selected.size > 0 ? [...selected] : entries.map((e) => e.hash)
+    const text = ids.sort().join('\\n')
     if (navigator.clipboard?.writeText) {
-      navigator.clipboard.writeText(json).catch(() => fallback(json))
-    } else { fallback(json) }
+      navigator.clipboard.writeText(text).catch(() => fallback(text))
+    } else { fallback(text) }
   })
   function fallback(text) {
     const ta = document.createElement('textarea')
@@ -590,11 +601,8 @@ body {
     try { document.execCommand('copy') } catch {}
     document.body.removeChild(ta)
   }
-  function esc(s) {
-    return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
-  }
 })()
-</script>
+<\/script>
 </body>
 </html>`
 }

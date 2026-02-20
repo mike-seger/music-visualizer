@@ -22,19 +22,13 @@ body {
   padding: 8px 12px; gap: 10px;
 }
 #title { color: #888; flex: 1; }
-#copy-btn {
+.toolbar-btn {
   background: #222; border: 1px solid #444; color: #ddd;
-  padding: 5px 14px; border-radius: 4px; font-size: 12px; cursor: pointer;
+  padding: 5px 12px; border-radius: 4px; font-size: 12px; cursor: pointer;
   white-space: nowrap;
 }
-#copy-btn:hover { background: #2e2e2e; }
-#copy-btn .count { color: #fa4; }
-#zip-btn {
-  background: #222; border: 1px solid #444; color: #ddd;
-  padding: 5px 14px; border-radius: 4px; font-size: 12px; cursor: pointer;
-  white-space: nowrap;
-}
-#zip-btn:hover { background: #2e2e2e; }
+.toolbar-btn:hover { background: #2e2e2e; }
+#copy-count { color: #fa4; }
 
 /* ── Status bar ── */
 #status-bar {
@@ -153,8 +147,10 @@ body.has-status { padding-top: 68px; }
 
 <div id="toolbar">
   <span id="title">Preset Preview</span>
-  <button id="zip-btn">Download ZIP</button>
-  <button id="copy-btn">Copy selected as JSON (<span class="count" id="copy-count">0</span>)</button>
+  <button class="toolbar-btn" id="select-all-btn">Select All</button>
+  <button class="toolbar-btn" id="toggle-btn">Toggle</button>
+  <button class="toolbar-btn" id="zip-btn">Download ZIP</button>
+  <button class="toolbar-btn" id="copy-btn">Copy IDs (<span id="copy-count">all</span>)</button>
 </div>
 
 <div id="status-bar"></div>
@@ -180,6 +176,8 @@ body.has-status { padding-top: 68px; }
   var activeName = ''
   var allItems = []  // full unfiltered list for the current group
   var currentFilter = ''  // tracks the viz-controls name filter
+  var filteredItems = []  // current rendered items (after filter)
+
   var selected = (function () {
     try { return new Set(JSON.parse(localStorage.getItem('visualizer-selected') ?? '[]')) }
     catch { return new Set() }
@@ -218,17 +216,49 @@ body.has-status { padding-top: 68px; }
     }
   }
 
-  // ── Copy selected ── (wired once; `selected` is module-level)
+  // ── Copy IDs ── (wired once; `selected` and `filteredItems` are module-level)
   var copyCountEl = document.getElementById('copy-count')
-  function updateCount() { copyCountEl.textContent = selected.size }
+  function updateCount() { copyCountEl.textContent = selected.size > 0 ? selected.size : 'all' }
   document.getElementById('copy-btn').addEventListener('click', function () {
-    var arr = Array.from(selected).sort()
-    var text = JSON.stringify(arr, null, 2)
+    var hashes = selected.size > 0
+      ? Array.from(selected).sort()
+      : filteredItems.map(function (it) { return it.hash }).sort()
+    var text = hashes.join('\n')
     if (navigator.clipboard && navigator.clipboard.writeText) {
       navigator.clipboard.writeText(text).catch(function () { fallbackCopy(text) })
     } else {
       fallbackCopy(text)
     }
+  })
+
+  // ── Select All ──
+  document.getElementById('select-all-btn').addEventListener('click', function () {
+    filteredItems.forEach(function (it) { selected.add(it.hash) })
+    Object.keys(tilesByName).forEach(function (name) {
+      var tile = tilesByName[name]
+      if (!tile) return
+      tile.classList.add('selected')
+      var cb = tile.querySelector('.tile-cb'); if (cb) cb.checked = true
+    })
+    saveSelected(); updateCount()
+  })
+
+  // ── Toggle selection ──
+  document.getElementById('toggle-btn').addEventListener('click', function () {
+    filteredItems.forEach(function (it) {
+      var tile = tilesByName[it.presetName]
+      var cb = tile && tile.querySelector('.tile-cb')
+      if (selected.has(it.hash)) {
+        selected.delete(it.hash)
+        if (tile) tile.classList.remove('selected')
+        if (cb) cb.checked = false
+      } else {
+        selected.add(it.hash)
+        if (tile) tile.classList.add('selected')
+        if (cb) cb.checked = true
+      }
+    })
+    saveSelected(); updateCount()
   })
 
   // ── Receive messages via BroadcastChannel ──
@@ -260,7 +290,8 @@ body.has-status { padding-top: 68px; }
 
   // ── ZIP button ──
   document.getElementById('zip-btn').addEventListener('click', function () {
-    if (ch) ch.postMessage({ type: 'preview-zip' })
+    var hashes = selected.size > 0 ? Array.from(selected) : null
+    if (ch) ch.postMessage({ type: 'preview-zip', hashes: hashes })
   })
 
   // ── Filter + render ──
@@ -306,6 +337,7 @@ body.has-status { padding-top: 68px; }
       titleEl.textContent = items.length + ' Presets'
     }
 
+    filteredItems = items
     // All items are for the same group — render flat grid, no group header needed
     var grid = document.createElement('div')
     grid.className = 'grid'
