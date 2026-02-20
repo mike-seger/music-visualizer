@@ -151,6 +151,10 @@ export default class ScreenshotBatch {
     const allPaths = [..._store.keys()].sort()
     files['index.json'] = _enc(JSON.stringify(allPaths, null, 2))
 
+    // index.js — data file loaded by index.html via <script src>
+    // Using a JS file instead of fetch() so it works from file:// without a server
+    files['index.js'] = _enc(`const PATHS = ${JSON.stringify(allPaths)};`)
+
     // index.html — static viewer
     files['index.html'] = _enc(_buildIndexHtml())
 
@@ -229,6 +233,7 @@ function _buildIndexHtml() {
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Screenshots</title>
+<script src="index.js"><\/script>
 <style>
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 body {
@@ -331,7 +336,8 @@ body {
 </div>
 
 <script>
-(async () => {
+(function () {
+  // PATHS is defined by index.js loaded in <head>
   const root = document.getElementById('root')
   const overlay = document.getElementById('overlay')
   const overlayImg = document.getElementById('overlay-img')
@@ -340,16 +346,8 @@ body {
   const copyCountEl = document.getElementById('copy-count')
   const titleEl = document.getElementById('title')
 
-  // ── Load index ──
-  let paths = []
-  try {
-    const r = await fetch('index.json')
-    if (!r.ok) throw new Error('HTTP ' + r.status)
-    paths = await r.json()
-  } catch (e) {
-    root.innerHTML = '<p style="padding:20px;color:#a55">Failed to load index.json: ' + esc(String(e)) + '</p>'
-    return
-  }
+  // ── PATHS is defined in index.js, loaded via <script src> in <head> ──
+  const paths = PATHS
 
   titleEl.textContent = paths.length + ' screenshots'
 
