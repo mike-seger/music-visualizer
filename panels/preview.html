@@ -29,6 +29,24 @@ body {
 }
 #copy-btn:hover { background: #2e2e2e; }
 #copy-btn .count { color: #fa4; }
+#zip-btn {
+  background: #222; border: 1px solid #444; color: #ddd;
+  padding: 5px 14px; border-radius: 4px; font-size: 12px; cursor: pointer;
+  white-space: nowrap;
+}
+#zip-btn:hover { background: #2e2e2e; }
+
+/* ── Status bar ── */
+#status-bar {
+  position: fixed; top: 41px; left: 0; right: 0; z-index: 99;
+  background: #1a1a2e; border-bottom: 1px solid #2a2a4a;
+  padding: 5px 12px;
+  font-size: 11px; color: #89a; letter-spacing: .02em;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  display: none;
+}
+#status-bar.visible { display: block; }
+body.has-status { padding-top: 68px; }
 
 /* ── Group sections ── */
 .group-section { margin-bottom: 20px; }
@@ -63,6 +81,8 @@ body {
 }
 .tile:hover { outline-color: #48c; }
 .tile.selected { outline-color: #fa4; }
+.tile.active { outline-color: #44ff9a; }
+.tile.active.selected { outline-color: #fa4; }
 
 /* Checkbox — hidden until hover, 50% opacity on hover, 80% when checked */
 .tile-cb {
@@ -101,8 +121,11 @@ body {
 
 <div id="toolbar">
   <span id="title">Preset Preview</span>
+  <button id="zip-btn">Download ZIP</button>
   <button id="copy-btn">Copy selected as JSON (<span class="count" id="copy-count">0</span>)</button>
 </div>
+
+<div id="status-bar"></div>
 
 <div id="root"><p style="color:#555;padding:20px">Waiting for data…</p></div>
 
@@ -117,18 +140,57 @@ body {
   var ch
   try { ch = new BroadcastChannel('visualizer-controls') } catch (e) { ch = null }
 
-  // ── Notify opener we are ready ──
-  try { window.opener && window.opener.postMessage({ type: 'preview-ready' }, '*') } catch (e) {}
+  // ── Notify main app we are ready (via BroadcastChannel) ──
+  if (ch) ch.postMessage({ type: 'preview-ready' })
 
-  // ── Receive data ──
-  window.addEventListener('message', function (e) {
-    if (!e.data || e.data.type !== 'preview-data') return
-    render(e.data.items)
+  var statusBar = document.getElementById('status-bar')
+  var tilesByName = Object.create(null) // presetName → tile element
+  var activeName = ''
+
+  function setStatus(text) {
+    if (!text) {
+      statusBar.classList.remove('visible')
+      document.body.classList.remove('has-status')
+    } else {
+      statusBar.textContent = text
+      statusBar.classList.add('visible')
+      document.body.classList.add('has-status')
+    }
+  }
+
+  function setActive(name) {
+    if (activeName && tilesByName[activeName]) tilesByName[activeName].classList.remove('active')
+    activeName = name || ''
+    if (activeName && tilesByName[activeName]) tilesByName[activeName].classList.add('active')
+  }
+
+  // ── Receive messages via BroadcastChannel ──
+  if (ch) ch.addEventListener('message', function (e) {
+    if (!e.data) return
+    if (e.data.type === 'preview-status') {
+      setStatus(e.data.text || '')
+      return
+    }
+    if (e.data.type === 'preview-data') {
+      setStatus('')
+      render(e.data.items, e.data.activePreset || '')
+      return
+    }
+    if (e.data.type === 'visualizer-changed' && e.data.name) {
+      setActive(e.data.name)
+    }
+  })
+
+  // ── ZIP button ──
+  document.getElementById('zip-btn').addEventListener('click', function () {
+    if (ch) ch.postMessage({ type: 'preview-zip' })
   })
 
   // ── Render ──
-  function render(items) {
-    // Detect aspect ratio from the first image and size all tiles to fit 160×160
+  function render(items, activePreset) {
+    tilesByName = Object.create(null)
+    activeName = ''
+    // Detect aspect ratio from the first image and size all tiles to fit
     if (items.length > 0) {
       var probe = new Image()
       probe.onload = function () {
@@ -144,7 +206,7 @@ body {
     var root = document.getElementById('root')
     var titleEl = document.getElementById('title')
     root.innerHTML = ''
-    titleEl.textContent = items.length + ' previews'
+    titleEl.textContent = items.length + ' Presets'
 
     // Group by group field
     var groups = []
@@ -187,6 +249,9 @@ body {
       root.appendChild(section)
     }
 
+    // Mark the active preset after all tiles are in the DOM
+    if (activePreset) setActive(activePreset)
+
     // ── Copy selected ──
     var copyBtn = document.getElementById('copy-btn')
     copyBtn.addEventListener('click', function () {
@@ -208,6 +273,7 @@ body {
     var tile = document.createElement('div')
     tile.className = 'tile'
     tile.title = item.presetName
+    tilesByName[item.presetName] = tile
 
     var img = document.createElement('img')
     img.src = item.blobUrl

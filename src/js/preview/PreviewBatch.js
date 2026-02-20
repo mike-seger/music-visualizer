@@ -21,9 +21,8 @@ import { zipSync } from 'fflate'
  */
 const _store = new Map()
 
-/** Revocable object URLs for the live preview popup */
+/** Revocable object URLs for the live preview panel */
 const _previewUrls = new Map() // hash → object URL
-let _previewWindow = null
 
 export default class PreviewBatch {
   constructor() {
@@ -35,10 +34,8 @@ export default class PreviewBatch {
   cancel() { if (this._running) this._cancelled = true }
   getCount() { return _store.size }
 
-  /** Close preview popup and revoke all blob URLs. */
+  /** Revoke all preview blob URLs (call when the panel popup closes). */
   closePreview() {
-    try { if (_previewWindow && !_previewWindow.closed) _previewWindow.close() } catch { /* */ }
-    _previewWindow = null
     for (const url of _previewUrls.values()) URL.revokeObjectURL(url)
     _previewUrls.clear()
   }
@@ -217,17 +214,18 @@ export default class PreviewBatch {
   }
 
   /**
-   * Open the preview popup (`preview.html`) for browsing captured images.
-   * Returns `{ popup, items }` so the caller can complete the postMessage
-   * handshake — preview.html sends `'preview-ready'`, caller sends back
-   * `{ type: 'preview-data', items }`.
+   * Build the items array the preview panel needs.
+   * Creates (or refreshes) blob URLs for every stored image.
+   * Returns null if the store is empty.
    *
-   * @returns {{ popup: Window, items: Array }|null}
+   * @returns {Array|null}
    */
   openPreview() {
     if (_store.size === 0) return null
 
-    this.closePreview() // close any stale popup and revoke old URLs
+    // Revoke stale URLs and create fresh ones
+    for (const url of _previewUrls.values()) URL.revokeObjectURL(url)
+    _previewUrls.clear()
 
     const items = []
     for (const [hash, entry] of _store) {
@@ -241,38 +239,7 @@ export default class PreviewBatch {
         jsonPath: entry.jsonPath,
       })
     }
-
-    const previewUrl = new URL('preview.html', location.href).href
-    const w = Math.min(1400, screen.availWidth - 20)
-    const h = Math.min(900, screen.availHeight - 40)
-    const left = Math.round((screen.availWidth - w) / 2)
-    const top = Math.round((screen.availHeight - h) / 2)
-
-    const popup = window.open(
-      previewUrl,
-      '_blank',
-      `popup=yes,width=${w},height=${h},left=${left},top=${top},resizable=yes,scrollbars=yes`
-    )
-
-    if (!popup) {
-      for (const u of _previewUrls.values()) URL.revokeObjectURL(u)
-      _previewUrls.clear()
-      return null
-    }
-
-    _previewWindow = popup
-
-    // Revoke blob URLs when popup is closed
-    const poll = setInterval(() => {
-      if (!_previewWindow || _previewWindow.closed) {
-        clearInterval(poll)
-        for (const u of _previewUrls.values()) URL.revokeObjectURL(u)
-        _previewUrls.clear()
-        if (_previewWindow === popup) _previewWindow = null
-      }
-    }, 1000)
-
-    return { popup, items }
+    return items
   }
 }
 

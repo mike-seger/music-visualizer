@@ -20,8 +20,10 @@ export default defineConfig({
     chunkSizeWarningLimit: 700,
     rollupOptions: {
       input: {
-        visualizer: './index.html',
-        'viz-controls': './viz-controls.html',
+        visualizer:            './index.html',
+        'panels/index':        './panels/index.html',
+        'panels/viz-controls': './panels/viz-controls.html',
+        'panels/preview':      './panels/preview.html',
       },
       output: {
         manualChunks(id) {

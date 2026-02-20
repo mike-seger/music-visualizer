@@ -267,13 +267,12 @@ export default class App {
 
     // Preview batch capture
     this.previewBatch = new PreviewBatch()
-    this._previewPopup = null
-    this._previewMsgHandler = null
+    this._previewAutoStart = null  // debounce timer for auto-start
     this._previewConfig = {
       settleDelay: 300,
       resolution: 'fixed',
       width: 160,
-      height: 160,
+      height: 90,
       format: 'PNG',
     }
   }
@@ -359,6 +358,16 @@ export default class App {
           this.performanceQualityConfig.clearUserValues()
         }
         break
+
+      case 'preview-ready': {
+        // Send any already-captured images immediately
+        const items = this.previewBatch.openPreview()
+        if (items) this._broadcastToControls({ type: 'preview-data', items, activePreset: App.visualizerType })
+        // Auto-start capture for the current group (unless already running)
+        clearTimeout(this._previewAutoStart)
+        if (!this.previewBatch.isRunning()) this._startPreviewCapture()
+        break
+      }
 
       case 'preview-start': {
         // Update stored config from popup then start capture
@@ -468,12 +477,13 @@ export default class App {
     })
   }
 
-  _openControlsPopup() {
-    const w = 460, h = 850
-    const left = window.screenX + window.outerWidth - w - 20
-    const top = window.screenY + 60
+  _openPanelsPopup() {
+    const w = Math.min(1400, screen.availWidth - 20)
+    const h = Math.min(900, screen.availHeight - 40)
+    const left = Math.round((screen.availWidth - w) / 2)
+    const top  = Math.round((screen.availHeight - h) / 2)
 
-    // If already open and alive, move it near the button and focus it
+    // If already open and alive, reposition/focus it
     if (this._controlsPopup && !this._controlsPopup.closed) {
       try {
         this._controlsPopup.moveTo(left, top)
@@ -483,26 +493,17 @@ export default class App {
       return
     }
 
-    const features = `popup=yes,width=${w},height=${h},left=${left},top=${top},resizable=no,scrollbars=yes,menubar=no,toolbar=no,location=no,status=no`
-
-    // Resolve the controls page URL relative to the current page
+    // Resolve panels/index.html relative to the current page
     const base = new URL('.', window.location.href).href
-    const url = new URL('viz-controls.html', base).href
+    const url  = new URL('panels/index.html', base).href
 
-    // Use empty string as window name to avoid browser reusing a stale target
+    const features = `popup=yes,width=${w},height=${h},left=${left},top=${top},resizable=yes,scrollbars=no,menubar=no,toolbar=no,location=no,status=no`
+
     this._controlsPopup = window.open(url, '', features)
 
     if (!this._controlsPopup) {
       alert('Popup blocked. Please allow popups for this site.')
       return
-    }
-
-    // Prefix popup title with parent window title when running inside an iframe
-    const parentTitle = this._getParentWindowTitle()
-    if (parentTitle) {
-      this._controlsPopup.addEventListener('load', () => {
-        try { this._controlsPopup.document.title = `${parentTitle} – VISUALIZER CONTROLS` } catch { /* */ }
-      })
     }
 
     // Poll for popup close (beforeunload isn't always reliable cross-window)
@@ -520,6 +521,7 @@ export default class App {
       this._controlsPopupPollTimer = null
     }
     this._controlsPopup = null
+    try { this.previewBatch?.closePreview() } catch { /* */ }
   }
 
   /** Try to read the parent/top window title (for iframe/bridge mode). */
@@ -1374,13 +1376,7 @@ export default class App {
 
     // Open controls popup button
     openControlsBtn?.addEventListener('click', () => {
-      this._openControlsPopup()
-      resetVisibility()
-    })
-
-    // Preview button (lives in main window → no popup-blocker issue)
-    document.getElementById('preview-btn')?.addEventListener('click', () => {
-      this._openPreviewPopup()
+      this._openPanelsPopup()
       resetVisibility()
     })
 
@@ -1444,7 +1440,6 @@ export default class App {
     window.addEventListener('beforeunload', () => {
       // Close all pop-out windows so they don't linger after the page unloads
       try { if (this._controlsPopup && !this._controlsPopup.closed) this._controlsPopup.close() } catch { /* */ }
-      try { if (this._previewPopup && !this._previewPopup.closed) this._previewPopup.close() } catch { /* */ }
       // Revoke any lingering preview blob URLs
       try { this.previewBatch?.closePreview() } catch { /* */ }
     })
@@ -3260,7 +3255,7 @@ export default class App {
   }
 
   /** Build capture params from stored config, feed them to PreviewBatch. */
-  _startPreviewCapture() {
+  async _startPreviewCapture() {
     if (this.previewBatch.isRunning()) {
       this.previewBatch.cancel()
       return
@@ -3269,7 +3264,8 @@ export default class App {
     const list = App.visualizerList
     if (!list || list.length === 0) return
 
-    const startIndex = Math.max(0, list.indexOf(App.visualizerType))
+    const originalPreset = App.visualizerType
+    const startIndex = Math.max(0, list.indexOf(originalPreset))
     const group = App.currentGroup
     const cfg = this._previewConfig
 
@@ -3286,7 +3282,7 @@ export default class App {
 
     onStatus(`Capturing group "${group}"…`)
 
-    this.previewBatch.startCapture({
+    await this.previewBatch.startCapture({
       list,
       startIndex,
       group,
@@ -3299,6 +3295,17 @@ export default class App {
       format: cfg.format,
       onStatus,
     })
+
+    // Restore the preset that was active before capture
+    if (originalPreset && App.visualizerType !== originalPreset) {
+      await this.switchVisualizer(originalPreset, { notify: false })
+    }
+
+    // Push the completed batch to the preview panel
+    if (this._controlsPopup && !this._controlsPopup.closed) {
+      const items = this.previewBatch.openPreview()
+      if (items) this._broadcastToControls({ type: 'preview-data', items, activePreset: App.visualizerType })
+    }
   }
 
   /** Trigger ZIP download of all captured previews. */
@@ -3311,42 +3318,6 @@ export default class App {
         console.info('[Previews]', msg)
       }
     })
-  }
-
-  /** Open the live preview popup showing all captured previews. */
-  _openPreviewPopup() {
-    if (this.previewBatch.getCount() === 0) {
-      const msg = 'No previews yet — press X to capture first.'
-      this._broadcastToControls({ type: 'preview-status', text: msg })
-      return
-    }
-    // Close old popup if still open
-    try { if (this._previewPopup && !this._previewPopup.closed) this._previewPopup.close() } catch { /* */ }
-    // Remove stale message handler if any
-    if (this._previewMsgHandler) {
-      window.removeEventListener('message', this._previewMsgHandler)
-      this._previewMsgHandler = null
-    }
-
-    const result = this.previewBatch.openPreview()
-    if (!result) {
-      const msg = 'Preview popup was blocked by the browser.'
-      this._broadcastToControls({ type: 'preview-status', text: msg })
-      return
-    }
-
-    const { popup, items } = result
-    this._previewPopup = popup
-
-    // When preview.html signals it has loaded, send the image data
-    const origin = location.origin
-    this._previewMsgHandler = (e) => {
-      if (e.source !== popup || e.data?.type !== 'preview-ready') return
-      window.removeEventListener('message', this._previewMsgHandler)
-      this._previewMsgHandler = null
-      popup.postMessage({ type: 'preview-data', items }, origin)
-    }
-    window.addEventListener('message', this._previewMsgHandler)
   }
 
   /**
@@ -3626,7 +3597,7 @@ export default class App {
 
       popoutBtn.addEventListener('click', (e) => {
         e.stopPropagation()
-        this._openControlsPopup()
+        this._openPanelsPopup()
       })
     }
 
@@ -4656,6 +4627,13 @@ export default class App {
       activeVisualizer: target,
       perfHidden: this._isButterchurnGroup(groupName),
     })
+
+    // Auto-regenerate previews if the panels popup is open
+    if (this._controlsPopup && !this._controlsPopup.closed) {
+      this.previewBatch.cancel()
+      clearTimeout(this._previewAutoStart)
+      this._previewAutoStart = setTimeout(() => this._startPreviewCapture(), 250)
+    }
 
     // Switch visualizer if needed
     if (switchToFirst && target && target !== App.visualizerType) {
