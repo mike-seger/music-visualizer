@@ -37,6 +37,8 @@ fi
     find "$1" -maxdepth 1 -type f -not -name '.*' -exec basename {} \; | while read file; do
 	# skip the index itself
         [[ "$file" == "index.json" ]] && continue
+        # skip non-JSON files (e.g. .zip downloads, .png previews, etc.)
+        [[ "$file" != *.json ]] && continue
 
         # Get the filename without extension
         name="${file%.*}"

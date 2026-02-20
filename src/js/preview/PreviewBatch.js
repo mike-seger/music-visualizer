@@ -144,10 +144,15 @@ export default class PreviewBatch {
       }
 
       if (blob) {
+        if (hash === null) {
+          // Could not hash the preset JSON (fetch failed) — skip rather than
+          // pollute the store with a nohash entry for a non-preset file.
+          console.warn(`[PreviewBatch] skipping "${name}" — could not fetch / hash preset JSON`)
+          continue
+        }
         const filename = `${groupFolder}/${_sanitize(name)}.${ext}`
         const jsonPath = `${group}/${name}.json`
-        const key = hash ?? `nohash-${_sanitize(name)}`
-        _store.set(key, { filename, blob, presetName: name, group, jsonPath })
+        _store.set(hash, { filename, blob, presetName: name, group, jsonPath })
         captured++
       }
 
