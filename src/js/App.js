@@ -268,11 +268,12 @@ export default class App {
     // Screenshot batch capture
     this.screenshotBatch = new ScreenshotBatch()
     this._screenshotPreviewPopup = null
+    this._screenshotPreviewMsgHandler = null
     this._screenshotConfig = {
       settleDelay: 300,
-      resolution: 'dynamic',
-      width: 640,
-      height: 360,
+      resolution: 'fixed',
+      width: 160,
+      height: 160,
       format: 'PNG',
     }
   }
@@ -3325,12 +3326,31 @@ export default class App {
     }
     // Close old popup if still open
     try { if (this._screenshotPreviewPopup && !this._screenshotPreviewPopup.closed) this._screenshotPreviewPopup.close() } catch { /* */ }
-    const presetList = App.visualizerList ?? []
-    this._screenshotPreviewPopup = this.screenshotBatch.openPreview(presetList)
-    if (!this._screenshotPreviewPopup) {
+    // Remove stale message handler if any
+    if (this._screenshotPreviewMsgHandler) {
+      window.removeEventListener('message', this._screenshotPreviewMsgHandler)
+      this._screenshotPreviewMsgHandler = null
+    }
+
+    const result = this.screenshotBatch.openPreview()
+    if (!result) {
       const msg = 'Preview popup was blocked by the browser.'
       this._broadcastToControls({ type: 'screenshot-status', text: msg })
+      return
     }
+
+    const { popup, items } = result
+    this._screenshotPreviewPopup = popup
+
+    // When preview.html signals it has loaded, send the image data
+    const origin = location.origin
+    this._screenshotPreviewMsgHandler = (e) => {
+      if (e.source !== popup || e.data?.type !== 'preview-ready') return
+      window.removeEventListener('message', this._screenshotPreviewMsgHandler)
+      this._screenshotPreviewMsgHandler = null
+      popup.postMessage({ type: 'preview-data', items }, origin)
+    }
+    window.addEventListener('message', this._screenshotPreviewMsgHandler)
   }
 
   /**

@@ -22,7 +22,6 @@ const _meta = new Map()
 /** Revocable object URLs for the live preview window */
 const _previewUrls = new Map() // store key → object URL
 let _previewWindow = null
-const PREVIEW_CHANNEL = 'screenshot-preview'
 
 export default class ScreenshotBatch {
   constructor() {
@@ -200,46 +199,48 @@ export default class ScreenshotBatch {
   }
 
   /**
-   * Open a live preview popup window showing all captured screenshots.
-   * Images are served as blob: URLs so no ZIP is needed.
-   * The popup includes a BroadcastChannel to switch the visualizer in the main app.
+   * Open preview.html in a popup and return { popup, items } for the caller
+   * to complete the postMessage handshake (preview.html sends 'preview-ready',
+   * the caller responds with 'preview-data').
    *
-   * @param {string[]} [presetList]  Full preset list to populate the preset switcher.
-   * @returns {Window|null}  The popup window reference, or null if blocked.
+   * @returns {{ popup: Window, items: Array }|null}
    */
-  openPreview(presetList = []) {
+  openPreview() {
     if (_store.size === 0) return null
 
     // Close any existing preview window first
     this.closePreview()
 
-    // Build blob URL map
+    // Build blob URLs and serialisable items array
+    const items = []
     for (const [path, blob] of _store) {
-      _previewUrls.set(path, URL.createObjectURL(blob))
+      const blobUrl = URL.createObjectURL(blob)
+      _previewUrls.set(path, blobUrl)
+      const m = _meta.get(path) ?? {}
+      items.push({
+        blobUrl,
+        presetName: m.presetName ?? path,
+        group: m.group ?? '',
+        jsonPath: m.jsonPath ?? path,
+      })
     }
 
-    const html = _buildPreviewHtml(_previewUrls, _meta, presetList)
-
+    const previewUrl = new URL('preview.html', location.href).href
     const w = Math.min(1400, screen.availWidth - 20)
     const h = Math.min(900, screen.availHeight - 40)
     const left = Math.round((screen.availWidth - w) / 2)
     const top  = Math.round((screen.availHeight - h) / 2)
 
     const popup = window.open(
-      '',
+      previewUrl,
       '_blank',
       `popup=yes,width=${w},height=${h},left=${left},top=${top},resizable=yes,scrollbars=yes`
     )
     if (!popup) {
-      // Revoke if popup was blocked
       for (const u of _previewUrls.values()) URL.revokeObjectURL(u)
       _previewUrls.clear()
       return null
     }
-
-    popup.document.open()
-    popup.document.write(html)
-    popup.document.close()
 
     _previewWindow = popup
 
@@ -253,7 +254,7 @@ export default class ScreenshotBatch {
       }
     }, 1000)
 
-    return popup
+    return { popup, items }
   }
 }
 
@@ -548,9 +549,7 @@ body {
 </html>`
 }
 
-// ─── Preview HTML generator ───────────────────────────────────────────────────
-// Similar to _buildIndexHtml but uses blob: URLs and adds a preset switcher.
-
+// eslint-disable-next-line no-unused-vars
 function _buildPreviewHtml(urlMap, meta, presetList) {
   // Build the data needed inline (no external scripts required)
   const paths = [...urlMap.keys()].sort()

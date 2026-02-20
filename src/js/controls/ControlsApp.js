@@ -966,15 +966,15 @@ export default class ControlsApp {
       })
 
     this._screenshotWidthCtrl = folder
-      .add(cfg, 'width', 160, 3840, 1)
+      .add(cfg, 'width', 1, 3840, 1)
       .name('Width')
     this._screenshotHeightCtrl = folder
-      .add(cfg, 'height', 90, 2160, 1)
+      .add(cfg, 'height', 1, 2160, 1)
       .name('Height')
 
-    // Hide W/H until fixed mode is selected
-    this._screenshotWidthCtrl.show(false)
-    this._screenshotHeightCtrl.show(false)
+    // Show/hide W/H depending on current resolution mode
+    this._screenshotWidthCtrl.show(cfg.resolution === 'fixed')
+    this._screenshotHeightCtrl.show(cfg.resolution === 'fixed')
 
     folder.add(cfg, 'format', ['PNG', 'JPG']).name('Format')
 

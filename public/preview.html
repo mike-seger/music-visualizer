@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Screenshot Preview</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  background: #111; color: #ccc;
+  font-family: system-ui, -apple-system, sans-serif;
+  font-size: 12px;
+  padding: 48px 10px 40px;
+}
+
+/* ── Floating toolbar ── */
+#toolbar {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+  background: rgba(17,17,17,.92); backdrop-filter: blur(6px);
+  border-bottom: 1px solid #2a2a2a;
+  display: flex; align-items: center;
+  padding: 8px 12px; gap: 10px;
+}
+#title { color: #888; flex: 1; }
+#copy-btn {
+  background: #222; border: 1px solid #444; color: #ddd;
+  padding: 5px 14px; border-radius: 4px; font-size: 12px; cursor: pointer;
+  white-space: nowrap;
+}
+#copy-btn:hover { background: #2e2e2e; }
+#copy-btn .count { color: #fa4; }
+
+/* ── Group sections ── */
+.group-section { margin-bottom: 20px; }
+.group-header {
+  display: flex; align-items: center; gap: 8px;
+  margin-bottom: 8px;
+}
+.group-label {
+  white-space: nowrap; color: #999;
+  font-size: 11px; text-transform: uppercase; letter-spacing: .07em;
+}
+.group-count { color: #555; font-size: 11px; }
+.group-line { flex: 1; height: 1px; background: #2a2a2a; }
+
+/* ── Grid ── */
+.grid { display: flex; flex-wrap: wrap; gap: 3px; }
+
+/* ── Tile ── */
+.tile {
+  position: relative;
+  width: 160px; height: 160px;
+  flex-shrink: 0;
+  background: #111;
+  border-radius: 2px; overflow: hidden;
+  outline: 2px solid transparent; outline-offset: 0;
+  cursor: pointer;
+}
+.tile img {
+  width: 100%; height: 100%;
+  object-fit: contain;
+  display: block;
+}
+.tile:hover { outline-color: #48c; }
+.tile.selected { outline-color: #fa4; }
+
+/* Checkbox — hidden until hover, 50% opacity on hover, 80% when checked */
+.tile-cb {
+  position: absolute; bottom: 5px; right: 5px;
+  width: 15px; height: 15px;
+  cursor: pointer; accent-color: #fa4;
+  opacity: 0;
+  transition: opacity 0.1s;
+}
+.tile:hover .tile-cb { opacity: 0.5; }
+.tile.selected .tile-cb { opacity: 0.8; }
+
+/* ── Overlay (file:// fallback) ── */
+#overlay {
+  display: none; position: fixed; inset: 0; z-index: 200;
+  background: rgba(0,0,0,.88);
+  justify-content: center; align-items: center;
+  cursor: pointer;
+}
+#overlay.open { display: flex; }
+#overlay-img {
+  max-width: 94vw; max-height: 94vh;
+  object-fit: contain; border-radius: 3px;
+  cursor: default;
+}
+#overlay-label {
+  position: absolute; bottom: 12px; left: 50%;
+  transform: translateX(-50%);
+  background: rgba(0,0,0,.75); color: #eee;
+  padding: 4px 12px; border-radius: 3px;
+  font-size: 12px; white-space: nowrap; pointer-events: none;
+}
+</style>
+</head>
+<body>
+
+<div id="toolbar">
+  <span id="title">Screenshot Preview</span>
+  <button id="copy-btn">Copy selected (<span class="count" id="copy-count">0</span>)</button>
+</div>
+
+<div id="root"><p style="color:#555;padding:20px">Waiting for data…</p></div>
+
+<div id="overlay">
+  <img id="overlay-img" src="" alt="">
+  <div id="overlay-label"></div>
+</div>
+
+<script>
+(function () {
+  var IS_FILE = location.protocol === 'file:'
+  var ch
+  try { ch = new BroadcastChannel('visualizer-controls') } catch (e) { ch = null }
+
+  // ── Notify opener we are ready ──
+  try { window.opener && window.opener.postMessage({ type: 'preview-ready' }, '*') } catch (e) {}
+
+  // ── Receive data ──
+  window.addEventListener('message', function (e) {
+    if (!e.data || e.data.type !== 'preview-data') return
+    render(e.data.items)
+  })
+
+  // ── Render ──
+  function render(items) {
+    var root = document.getElementById('root')
+    var titleEl = document.getElementById('title')
+    root.innerHTML = ''
+    titleEl.textContent = items.length + ' screenshots'
+
+    // Group by group field
+    var groups = []
+    var groupMap = Object.create(null)
+    for (var i = 0; i < items.length; i++) {
+      var item = items[i]
+      var g = item.group || ''
+      if (!groupMap[g]) { groupMap[g] = []; groups.push(g) }
+      groupMap[g].push(item)
+    }
+
+    var selected = new Set()
+    var copyCountEl = document.getElementById('copy-count')
+
+    function updateCount() { copyCountEl.textContent = selected.size }
+
+    for (var gi = 0; gi < groups.length; gi++) {
+      var groupName = groups[gi]
+      var groupItems = groupMap[groupName]
+
+      var section = document.createElement('div')
+      section.className = 'group-section'
+
+      var hdr = document.createElement('div')
+      hdr.className = 'group-header'
+      hdr.innerHTML =
+        '<span class="group-label">' + esc(groupName || '(root)') + '</span>' +
+        '<span class="group-line"></span>' +
+        '<span class="group-count">' + groupItems.length + '</span>'
+      section.appendChild(hdr)
+
+      var grid = document.createElement('div')
+      grid.className = 'grid'
+
+      for (var ii = 0; ii < groupItems.length; ii++) {
+        grid.appendChild(makeTile(groupItems[ii], selected, updateCount))
+      }
+
+      section.appendChild(grid)
+      root.appendChild(section)
+    }
+
+    // ── Copy selected ──
+    var copyBtn = document.getElementById('copy-btn')
+    copyBtn.addEventListener('click', function () {
+      var arr = Array.from(selected).sort()
+      var text = JSON.stringify(arr, null, 2)
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).catch(function () { fallbackCopy(text) })
+      } else {
+        fallbackCopy(text)
+      }
+    })
+  }
+
+  function makeTile(item, selected, updateCount) {
+    var overlay = document.getElementById('overlay')
+    var overlayImg = document.getElementById('overlay-img')
+    var overlayLbl = document.getElementById('overlay-label')
+
+    var tile = document.createElement('div')
+    tile.className = 'tile'
+    tile.title = item.presetName
+
+    var img = document.createElement('img')
+    img.src = item.blobUrl
+    img.alt = item.presetName
+    img.loading = 'lazy'
+    img.draggable = false
+
+    var cb = document.createElement('input')
+    cb.type = 'checkbox'
+    cb.className = 'tile-cb'
+
+    cb.addEventListener('change', function (e) {
+      e.stopPropagation()
+      if (cb.checked) { selected.add(item.jsonPath); tile.classList.add('selected') }
+      else            { selected.delete(item.jsonPath); tile.classList.remove('selected') }
+      updateCount()
+    })
+    cb.addEventListener('click', function (e) { e.stopPropagation() })
+
+    tile.addEventListener('click', function () {
+      if (IS_FILE) {
+        // File-system fallback: lightbox
+        overlayImg.src = item.blobUrl
+        overlayLbl.textContent = item.presetName
+        overlay.classList.add('open')
+      } else {
+        // Live server: switch preset in main app via BroadcastChannel
+        if (ch) ch.postMessage({ type: 'select-visualizer', name: item.presetName })
+      }
+    })
+
+    tile.appendChild(img)
+    tile.appendChild(cb)
+    return tile
+  }
+
+  // ── Overlay (file:// only) ──
+  var overlay = document.getElementById('overlay')
+  overlay.addEventListener('click', function (e) {
+    if (e.target !== document.getElementById('overlay-img')) overlay.classList.remove('open')
+  })
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape') overlay.classList.remove('open')
+  })
+
+  function fallbackCopy(text) {
+    var ta = document.createElement('textarea')
+    ta.value = text
+    ta.style.cssText = 'position:fixed;left:-9999px;top:-9999px'
+    document.body.appendChild(ta); ta.select()
+    try { document.execCommand('copy') } catch (e) {}
+    document.body.removeChild(ta)
+  }
+
+  function esc(s) {
+    return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+  }
+})()
+</script>
+</body>
+</html>
