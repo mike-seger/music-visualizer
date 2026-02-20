@@ -188,14 +188,15 @@ export default class PreviewBatch {
     }
 
     // index.js — defines previewMeta Map, loaded by index.html via <script src>
-    // Format: Map<hash, { filename, jsonPath }>
+    // Map<hash, jsonPath>  (filename derived: replace .json → .<ext>)
+    const ext = [..._store.values()][0]?.filename.match(/\.(png|jpg)$/i)?.[1] ?? 'png'
     const mapEntries = [..._store.entries()]
-      .sort(([, a], [, b]) => a.filename.localeCompare(b.filename))
-      .map(([hash, { filename, jsonPath }]) =>
-        `  [${JSON.stringify(hash)}, { filename: ${JSON.stringify(filename)}, jsonPath: ${JSON.stringify(jsonPath)} }]`
+      .sort(([, a], [, b]) => a.jsonPath.localeCompare(b.jsonPath))
+      .map(([hash, { jsonPath }]) =>
+        `  [${JSON.stringify(hash)}, ${JSON.stringify(jsonPath)}]`
       )
     files['index.js'] = _enc(
-      `const previewMeta = new Map([\n${mapEntries.join(',\n')}\n]);\n`
+      `const previewExt = ${JSON.stringify(ext)};\nconst previewMeta = new Map([\n${mapEntries.join(',\n')}\n]);\n`
     )
 
     // index.html — static viewer
