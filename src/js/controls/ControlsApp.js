@@ -86,6 +86,20 @@ export default class ControlsApp {
       fv3SelectedPreset: 'visualizer.fv3.selectedPreset',
     }
 
+    // Screenshot controls state
+    this.screenshotFolder = null
+    this._screenshotConfig = {
+      resolution: 'dynamic',
+      format: 'PNG',
+      width: 640,
+      height: 360,
+      settleDelay: 300,
+      status: 'Idle',
+    }
+    this._screenshotStatusCtrl = null
+    this._screenshotWidthCtrl = null
+    this._screenshotHeightCtrl = null
+
     // BroadcastChannel for communicating with the main page
     this.channel = new BroadcastChannel(CHANNEL_NAME)
     this.channel.onmessage = (e) => this.handleMessage(e)
@@ -182,6 +196,12 @@ export default class ControlsApp {
       case 'fv3-params':
         this.syncFV3Controls(msg.params)
         break
+      case 'screenshot-status':
+        if (this._screenshotConfig) {
+          this._screenshotConfig.status = msg.text || ''
+          this._screenshotStatusCtrl?.updateDisplay?.()
+        }
+        break
       default:
         break
     }
@@ -200,6 +220,7 @@ export default class ControlsApp {
     this.setupGuiCloseButton()
     this.addVisualizerSwitcher()
     this.addPerformanceQualityControls()
+    this.addScreenshotControls()
     // Apply initial perf folder visibility
     if (this._perfHidden && this.performanceQualityFolder) {
       this.performanceQualityFolder.domElement.style.display = 'none'
@@ -922,5 +943,62 @@ export default class ControlsApp {
 
     folder.open()
     this.shaderControlsFolder = folder
+  }
+
+  // -------------------------------------------------------------------
+  // Screenshots controls
+  // -------------------------------------------------------------------
+
+  addScreenshotControls() {
+    if (this.screenshotFolder) return
+    const cfg = this._screenshotConfig
+
+    const folder = this.gui.addFolder('SCREENSHOTS')
+    folder.close()
+    this.screenshotFolder = folder
+
+    folder
+      .add(cfg, 'resolution', ['dynamic', 'fixed'])
+      .name('Resolution')
+      .onChange((v) => {
+        this._screenshotWidthCtrl?.show(v === 'fixed')
+        this._screenshotHeightCtrl?.show(v === 'fixed')
+      })
+
+    this._screenshotWidthCtrl = folder
+      .add(cfg, 'width', 160, 3840, 1)
+      .name('Width')
+    this._screenshotHeightCtrl = folder
+      .add(cfg, 'height', 90, 2160, 1)
+      .name('Height')
+
+    // Hide W/H until fixed mode is selected
+    this._screenshotWidthCtrl.show(false)
+    this._screenshotHeightCtrl.show(false)
+
+    folder.add(cfg, 'format', ['PNG', 'JPG']).name('Format')
+
+    folder.add(cfg, 'settleDelay', 0, 2000, 50).name('Settle ms')
+
+    this._screenshotStatusCtrl = folder
+      .add(cfg, 'status')
+      .name('Status')
+      .disable()
+
+    // Two action buttons on one merged row
+    const captureCtrl = folder
+      .add({ capture: () => this._send({ type: 'screenshot-start', config: { ...cfg } }) }, 'capture')
+      .name('Capture')
+
+    const zipCtrl = folder
+      .add({ zip: () => this._send({ type: 'screenshot-zip' }) }, 'zip')
+      .name('ZIP')
+
+    // Merge into one row labelled "Screenshots" with compact side-by-side buttons
+    this._mergeLilGuiRows(captureCtrl, zipCtrl, {
+      label: 'Screenshots',
+      gap: '6px',
+      compactButtons: true,
+    })
   }
 }

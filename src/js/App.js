@@ -1,6 +1,7 @@
 import * as THREE from 'three'
 import { ENTITY_VISUALIZER_NAMES, createEntityVisualizerByName } from './visualizers/entityRegistry'
 import { SHADER_VISUALIZER_NAMES, createShaderVisualizerByName } from './visualizers/shaderRegistry'
+import ScreenshotBatch from './screenshot/ScreenshotBatch'
 
 // MilkDrop (Butterchurn) presets are lazy-loaded to keep the initial bundle small.
 // The module and its heavy dependencies (~800 kB) are fetched on first use.
@@ -263,6 +264,16 @@ export default class App {
     // Short sliding window for auto-quality sampling.
     // Important: a lifetime average reacts far too slowly after a sudden perf drop.
     this.qualityWindow = { frames: 0, sumDt: 0, maxDt: 0, startAt: 0 }
+
+    // Screenshot batch capture
+    this.screenshotBatch = new ScreenshotBatch()
+    this._screenshotConfig = {
+      settleDelay: 300,
+      resolution: 'dynamic',
+      width: 640,
+      height: 360,
+      format: 'PNG',
+    }
   }
 
   // -------------------------------------------------------------------
@@ -345,6 +356,19 @@ export default class App {
         if (this.performanceQualityConfig?.clearUserValues) {
           this.performanceQualityConfig.clearUserValues()
         }
+        break
+
+      case 'screenshot-start': {
+        // Update stored config from popup then start capture
+        if (msg.config && typeof msg.config === 'object') {
+          Object.assign(this._screenshotConfig, msg.config)
+        }
+        this._startScreenshotCapture()
+        break
+      }
+
+      case 'screenshot-zip':
+        this._downloadScreenshotZip()
         break
 
       case 'set-fv3-param':
@@ -3140,6 +3164,8 @@ export default class App {
     if (step !== 0 && (!isFormElement || event.code === 'NumpadAdd' || event.code === 'NumpadSubtract')) {
       event.preventDefault()
       event.stopPropagation()   // prevent lil-gui from also handling the key
+      // Cancel any in-progress screenshot batch so the user can navigate freely
+      if (this.screenshotBatch?.isRunning()) this.screenshotBatch.cancel()
       this.cycleVisualizer(step)
       return
     }
@@ -3186,6 +3212,89 @@ export default class App {
       this.savePlaybackPosition(nextTime)
       return
     }
+
+    // X key — start/restart screenshot batch capture
+    if (event.key === 'x' || event.key === 'X') {
+      event.preventDefault()
+      this._startScreenshotCapture()
+      return
+    }
+
+    // Z key — download screenshot ZIP
+    if (event.key === 'z' || event.key === 'Z') {
+      event.preventDefault()
+      this._downloadScreenshotZip()
+      return
+    }
+  }
+
+  // -------------------------------------------------------------------
+  // Screenshot batch helpers
+  // -------------------------------------------------------------------
+
+  /**
+   * Return the currently-visible rendering canvas.
+   * For Butterchurn groups the visualizer owns its own <canvas>;
+   * for Three.js/Shadertoy visualizers the renderer element is used.
+   */
+  getActiveCanvas() {
+    const vis = App.currentVisualizer
+    if (vis && vis._canvas instanceof HTMLCanvasElement) return vis._canvas
+    return this.renderer?.domElement ?? null
+  }
+
+  /** Build capture params from stored config, feed them to ScreenshotBatch. */
+  _startScreenshotCapture() {
+    if (this.screenshotBatch.isRunning()) {
+      this.screenshotBatch.cancel()
+      return
+    }
+
+    const list = App.visualizerList
+    if (!list || list.length === 0) return
+
+    const startIndex = Math.max(0, list.indexOf(App.visualizerType))
+    const group = App.currentGroup
+    const cfg = this._screenshotConfig
+
+    const onStatus = (text) => {
+      // Show in the visualizer toast area
+      if (this.visualizerToastName) {
+        this.visualizerToastName.textContent = text
+        const el = this.visualizerToast
+        if (el) el.style.opacity = '0.9'
+      }
+      // Forward to controls popup
+      this._broadcastToControls({ type: 'screenshot-status', text })
+    }
+
+    onStatus(`Capturing group "${group}"…`)
+
+    this.screenshotBatch.startCapture({
+      list,
+      startIndex,
+      group,
+      switchTo: (name) => this.switchVisualizer(name, { notify: false }),
+      getCanvas: () => this.getActiveCanvas(),
+      settleDelay: cfg.settleDelay,
+      resolution: cfg.resolution,
+      width: cfg.width,
+      height: cfg.height,
+      format: cfg.format,
+      onStatus,
+    })
+  }
+
+  /** Trigger ZIP download of all captured screenshots. */
+  _downloadScreenshotZip() {
+    const group = App.currentGroup
+    this.screenshotBatch.downloadZip(group).then((ok) => {
+      if (!ok) {
+        const msg = 'No screenshots yet — press X to capture first.'
+        this._broadcastToControls({ type: 'screenshot-status', text: msg })
+        console.info('[Screenshots]', msg)
+      }
+    })
   }
 
   /**
