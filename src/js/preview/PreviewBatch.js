@@ -193,7 +193,7 @@ export default class PreviewBatch {
     // Map<hash, jsonPath>  (filename derived: replace .json → .<ext>)
     const ext = [..._store.values()][0]?.filename.match(/\.(png|jpg)$/i)?.[1] ?? 'png'
     const mapEntries = [..._store.entries()]
-      .sort(([, a], [, b]) => a.jsonPath.localeCompare(b.jsonPath))
+      .sort(([, a], [, b]) => a.filename.localeCompare(b.filename))
       .map(([hash, { jsonPath }]) =>
         `  [${JSON.stringify(hash)}, ${JSON.stringify(jsonPath)}]`
       )
