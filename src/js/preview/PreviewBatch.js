@@ -88,10 +88,14 @@ export default class PreviewBatch {
     const urlFor = getPresetUrl ??
       ((g, n) => `butterchurn-presets/${encodeURIComponent(g)}/${encodeURIComponent(n)}.json`)
 
-    onStatus?.(`Starting capture (0 / ${total})…`)
+    // ── Load pre-built previews for this group (if any) ──
+    // Maps presetName → { hash, imageUrl, imgExt }
+    const prebuilt = await _loadPreviewIndex(group)
+    onStatus?.(`Starting capture (0 / ${total}${prebuilt.size ? `, ${prebuilt.size} pre-built` : ''})…`)
 
     let captured = 0
     let skipped = 0
+    let fromDisk = 0
 
     for (let i = 0; i < total; i++) {
       if (this._cancelled) break
@@ -101,18 +105,42 @@ export default class PreviewBatch {
 
       if (!name) continue  // skip empty/falsy entries in the list
 
-      // ── Hash preset JSON for a stable ID; skip if already in store ──
+      // ── Fetch preset JSON and compute stable hash ──
       let hash = null
       try {
         const resp = await fetch(urlFor(group, name))
-        if (resp.ok) {
-          hash = await _sha256short(await resp.text())
-        }
+        if (resp.ok) hash = await _sha256short(await resp.text())
       } catch { /* network failure — fall through */ }
 
+      // Already in store — nothing to do
       if (hash !== null && _store.has(hash)) {
         skipped++
-        onStatus?.(`Capturing ${captured} / ${total} (${skipped} skipped)`)
+        onStatus?.(`Loading ${fromDisk + captured} / ${total} (${skipped} skipped)`)
+        continue
+      }
+
+      // ── Pre-built image available for this exact hash? ──
+      if (hash !== null) {
+        const pb = prebuilt.get(hash)
+        if (pb) {
+          try {
+            const imgResp = await fetch(pb.imageUrl)
+            if (imgResp.ok) {
+              const blob = await imgResp.blob()
+              const filename = `${groupFolder}/${_sanitize(name)}.${pb.imgExt}`
+              const jsonPath = `${group}/${name}.json`
+              _store.set(hash, { filename, blob, presetName: name, group, jsonPath })
+              fromDisk++
+              onStatus?.(`Loading ${fromDisk + captured} / ${total}`)
+              continue
+            }
+          } catch { /* image fetch failed — fall through to canvas capture */ }
+        }
+      }
+
+      // No pre-built image — fall through to live canvas capture
+      if (hash === null) {
+        console.warn(`[PreviewBatch] skipping "${name}" — could not fetch / hash preset JSON`)
         continue
       }
 
@@ -144,12 +172,6 @@ export default class PreviewBatch {
       }
 
       if (blob) {
-        if (hash === null) {
-          // Could not hash the preset JSON (fetch failed) — skip rather than
-          // pollute the store with a nohash entry for a non-preset file.
-          console.warn(`[PreviewBatch] skipping "${name}" — could not fetch / hash preset JSON`)
-          continue
-        }
         const filename = `${groupFolder}/${_sanitize(name)}.${ext}`
         const jsonPath = `${group}/${name}.json`
         _store.set(hash, { filename, blob, presetName: name, group, jsonPath })
@@ -162,9 +184,9 @@ export default class PreviewBatch {
     this._running = false
 
     if (this._cancelled) {
-      onStatus?.(`Cancelled — ${captured} captured${skipped ? `, ${skipped} skipped` : ''}. Press Z to ZIP.`)
+      onStatus?.(`Cancelled — ${fromDisk + captured} loaded${skipped ? `, ${skipped} skipped` : ''}${ fromDisk ? ` (${fromDisk} pre-built)` : ''}. Press Z to ZIP.`)
     } else {
-      onStatus?.(`Done — ${captured} captured${skipped ? `, ${skipped} skipped` : ''}. Press Z to ZIP.`)
+      onStatus?.(`Done — ${fromDisk + captured} loaded${skipped ? `, ${skipped} skipped` : ''}${ fromDisk ? ` (${fromDisk} pre-built, ${captured} new)` : ''}. Press Z to ZIP.`)
     }
   }
 
@@ -260,6 +282,44 @@ function _sanitize(str) {
 
 function _enc(str) {
   return new TextEncoder().encode(str)
+}
+
+/**
+ * Fetch and parse the pre-built previews index for a group.
+ *
+ * The file at `butterchurn-presets/<group>/previews/index.js` is a plain JS
+ * file that defines `previewMeta` (Map<hash, jsonPath>) and `previewExt`.
+ * We execute it with `new Function` to extract those values.
+ *
+* Returns a Map<hash, { imageUrl, imgExt }> so the capture loop can look up
+ * pre-built images by the preset JSON's SHA-256 hash instead of by filename.
+ */
+async function _loadPreviewIndex(group) {
+  const url = `butterchurn-presets/${encodeURIComponent(group)}/previews/index.js`
+  try {
+    const resp = await fetch(url)
+    if (!resp.ok) return new Map()
+    const code = await resp.text()
+    // Execute the script to extract its exported values
+    // eslint-disable-next-line no-new-func
+    const { previewMeta, previewExt: ext } = new Function(`${code}\nreturn { previewMeta, previewExt }`)() 
+    if (!(previewMeta instanceof Map) || !ext) return new Map()
+
+    const base = `butterchurn-presets/${encodeURIComponent(group)}/previews/`
+    const result = new Map()  // hash → { imageUrl, imgExt }
+    for (const [hash, jsonPath] of previewMeta) {
+      if (!hash || hash.startsWith('nohash')) continue
+      // Image URL: replace .json → .ext, percent-encode each path segment
+      const imageUrl = base + jsonPath.replace(/\.json$/i, '.' + ext)
+        .split('/').map(encodeURIComponent).join('/')
+      result.set(hash, { imageUrl, imgExt: ext })
+    }
+    console.log(`[PreviewBatch] pre-built index for "${group}": ${result.size} entries`)
+    return result
+  } catch (err) {
+    console.warn('[PreviewBatch] could not load preview index:', err)
+    return new Map()
+  }
 }
 
 /**
