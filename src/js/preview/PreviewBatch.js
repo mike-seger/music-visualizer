@@ -309,9 +309,17 @@ async function _loadPreviewIndex(group) {
     const result = new Map()  // hash → { imageUrl, imgExt }
     for (const [hash, jsonPath] of previewMeta) {
       if (!hash || hash.startsWith('nohash')) continue
-      // Image URL: replace .json → .ext, percent-encode each path segment
-      const imageUrl = base + jsonPath.replace(/\.json$/i, '.' + ext)
-        .split('/').map(encodeURIComponent).join('/')
+      // Reconstruct the on-disk filename using the same _sanitize() logic the
+      // capture loop uses when saving images.  The raw jsonPath may contain ':'
+      // and other chars that _sanitize replaces with '_', so we must not
+      // URL-encode the original path directly — that would produce %3A instead
+      // of the underscore that's actually in the filename.
+      const slash = jsonPath.lastIndexOf('/')
+      const dir = slash >= 0 ? jsonPath.slice(0, slash) : ''
+      const fileBase = jsonPath.slice(slash + 1).replace(/\.json$/i, '')
+      const sanitizedFile = _sanitize(fileBase) + '.' + ext
+      const relPath = dir ? `${dir}/${sanitizedFile}` : sanitizedFile
+      const imageUrl = base + relPath.split('/').map(encodeURIComponent).join('/')
       result.set(hash, { imageUrl, imgExt: ext })
     }
     console.log(`[PreviewBatch] pre-built index for "${group}": ${result.size} entries`)
