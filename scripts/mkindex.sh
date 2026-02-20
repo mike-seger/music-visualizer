@@ -34,7 +34,7 @@ fi
     # Counter to track if we need a comma between items
     first_item=true
 
-    find "$1" -maxdepth 1 -type f -not -name '.*' -exec basename {} \; | while read file; do
+    find "$1" -maxdepth 1 \( -type f -o -type l \) -not -name '.*' -exec basename {} \; | while read file; do
 	# skip the index itself
         [[ "$file" == "index.json" ]] && continue
         # skip non-JSON files (e.g. .zip downloads, .png previews, etc.)
