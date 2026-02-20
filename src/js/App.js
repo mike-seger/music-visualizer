@@ -1381,6 +1381,12 @@ export default class App {
       resetVisibility()
     })
 
+    // Preview screenshots button  (lives in main window → no popup-blocker issue)
+    document.getElementById('preview-screenshots-btn')?.addEventListener('click', () => {
+      this._openScreenshotPreview()
+      resetVisibility()
+    })
+
     // Copy liked presets button
     const copyLikedBtn = document.getElementById('copy-liked-btn')
     copyLikedBtn?.addEventListener('click', () => {
