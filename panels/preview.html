@@ -29,6 +29,12 @@ body {
 }
 #copy-btn:hover { background: #2e2e2e; }
 #copy-btn .count { color: #fa4; }
+#zip-btn {
+  background: #222; border: 1px solid #444; color: #ddd;
+  padding: 5px 14px; border-radius: 4px; font-size: 12px; cursor: pointer;
+  white-space: nowrap;
+}
+#zip-btn:hover { background: #2e2e2e; }
 
 /* ── Status bar ── */
 #status-bar {
@@ -75,6 +81,8 @@ body.has-status { padding-top: 68px; }
 }
 .tile:hover { outline-color: #48c; }
 .tile.selected { outline-color: #fa4; }
+.tile.active { outline-color: #44ff9a; }
+.tile.active.selected { outline-color: #fa4; }
 
 /* Checkbox — hidden until hover, 50% opacity on hover, 80% when checked */
 .tile-cb {
@@ -113,6 +121,7 @@ body.has-status { padding-top: 68px; }
 
 <div id="toolbar">
   <span id="title">Preset Preview</span>
+  <button id="zip-btn">Download ZIP</button>
   <button id="copy-btn">Copy selected as JSON (<span class="count" id="copy-count">0</span>)</button>
 </div>
 
@@ -135,6 +144,8 @@ body.has-status { padding-top: 68px; }
   if (ch) ch.postMessage({ type: 'preview-ready' })
 
   var statusBar = document.getElementById('status-bar')
+  var tilesByName = Object.create(null) // presetName → tile element
+  var activeName = ''
 
   function setStatus(text) {
     if (!text) {
@@ -147,6 +158,12 @@ body.has-status { padding-top: 68px; }
     }
   }
 
+  function setActive(name) {
+    if (activeName && tilesByName[activeName]) tilesByName[activeName].classList.remove('active')
+    activeName = name || ''
+    if (activeName && tilesByName[activeName]) tilesByName[activeName].classList.add('active')
+  }
+
   // ── Receive messages via BroadcastChannel ──
   if (ch) ch.addEventListener('message', function (e) {
     if (!e.data) return
@@ -156,13 +173,24 @@ body.has-status { padding-top: 68px; }
     }
     if (e.data.type === 'preview-data') {
       setStatus('')
-      render(e.data.items)
+      render(e.data.items, e.data.activePreset || '')
+      return
+    }
+    if (e.data.type === 'visualizer-changed' && e.data.name) {
+      setActive(e.data.name)
     }
   })
 
+  // ── ZIP button ──
+  document.getElementById('zip-btn').addEventListener('click', function () {
+    if (ch) ch.postMessage({ type: 'preview-zip' })
+  })
+
   // ── Render ──
-  function render(items) {
-    // Detect aspect ratio from the first image and size all tiles to fit 160×160
+  function render(items, activePreset) {
+    tilesByName = Object.create(null)
+    activeName = ''
+    // Detect aspect ratio from the first image and size all tiles to fit
     if (items.length > 0) {
       var probe = new Image()
       probe.onload = function () {
@@ -178,7 +206,7 @@ body.has-status { padding-top: 68px; }
     var root = document.getElementById('root')
     var titleEl = document.getElementById('title')
     root.innerHTML = ''
-    titleEl.textContent = items.length + ' previews'
+    titleEl.textContent = items.length + ' Presets'
 
     // Group by group field
     var groups = []
@@ -221,6 +249,9 @@ body.has-status { padding-top: 68px; }
       root.appendChild(section)
     }
 
+    // Mark the active preset after all tiles are in the DOM
+    if (activePreset) setActive(activePreset)
+
     // ── Copy selected ──
     var copyBtn = document.getElementById('copy-btn')
     copyBtn.addEventListener('click', function () {
@@ -242,6 +273,7 @@ body.has-status { padding-top: 68px; }
     var tile = document.createElement('div')
     tile.className = 'tile'
     tile.title = item.presetName
+    tilesByName[item.presetName] = tile
 
     var img = document.createElement('img')
     img.src = item.blobUrl

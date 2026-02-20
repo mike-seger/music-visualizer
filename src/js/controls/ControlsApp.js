@@ -985,21 +985,9 @@ export default class ControlsApp {
       .name('Status')
       .disable()
 
-    // Two action buttons on one merged row
-    const captureCtrl = folder
+    // Re-Generate button
+    folder
       .add({ capture: () => this._send({ type: 'preview-start', config: { ...cfg } }) }, 'capture')
-      .name('Capture')
-
-    const zipCtrl = folder
-      .add({ zip: () => this._send({ type: 'preview-zip' }) }, 'zip')
-      .name('ZIP')
-
-    // Merge into one row labelled "Previews" with compact side-by-side buttons
-    this._mergeLilGuiRows(captureCtrl, zipCtrl, {
-      label: 'Previews',
-      gap: '6px',
-      compactButtons: true,
-    })
-
+      .name('Re-Generate')
   }
 }

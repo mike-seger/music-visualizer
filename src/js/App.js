@@ -362,7 +362,7 @@ export default class App {
       case 'preview-ready': {
         // Send any already-captured images immediately
         const items = this.previewBatch.openPreview()
-        if (items) this._broadcastToControls({ type: 'preview-data', items })
+        if (items) this._broadcastToControls({ type: 'preview-data', items, activePreset: App.visualizerType })
         // Auto-start capture for the current group (unless already running)
         clearTimeout(this._previewAutoStart)
         if (!this.previewBatch.isRunning()) this._startPreviewCapture()
@@ -3264,7 +3264,8 @@ export default class App {
     const list = App.visualizerList
     if (!list || list.length === 0) return
 
-    const startIndex = Math.max(0, list.indexOf(App.visualizerType))
+    const originalPreset = App.visualizerType
+    const startIndex = Math.max(0, list.indexOf(originalPreset))
     const group = App.currentGroup
     const cfg = this._previewConfig
 
@@ -3295,10 +3296,15 @@ export default class App {
       onStatus,
     })
 
+    // Restore the preset that was active before capture
+    if (originalPreset && App.visualizerType !== originalPreset) {
+      await this.switchVisualizer(originalPreset, { notify: false })
+    }
+
     // Push the completed batch to the preview panel
     if (this._controlsPopup && !this._controlsPopup.closed) {
       const items = this.previewBatch.openPreview()
-      if (items) this._broadcastToControls({ type: 'preview-data', items })
+      if (items) this._broadcastToControls({ type: 'preview-data', items, activePreset: App.visualizerType })
     }
   }
 
