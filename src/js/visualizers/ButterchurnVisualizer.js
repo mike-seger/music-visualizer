@@ -35,6 +35,7 @@ export default class ButterchurnVisualizer {
     this.name = name
     this.preset = preset
     this.blendTime = blendTime
+    this.isButterchurn = true  // fast-path detection in switchVisualizer
 
     this._visualizer = null   // butterchurn Visualizer instance
     this._canvas = null       // our output <canvas>

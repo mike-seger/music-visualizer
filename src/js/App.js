@@ -2740,6 +2740,55 @@ export default class App {
     // Reset auto-cycle timer so the full interval starts fresh after each switch
     this._resetCycleTimer()
 
+    // ── Fast-path: BC → BC in-place preset swap ───────────────────────────────
+    // Butterchurn’s blend transition only works when loadPreset() is called on a
+    // *running* Visualizer instance.  If we destroy + recreate (full switch) the
+    // new instance has nothing to blend from, so transitions are always hard cuts.
+    // When both the current and incoming preset are Butterchurn we skip
+    // destroy/create/init and call loadPreset() on the live GL context instead.
+    if (App.currentVisualizer?.isButterchurn) {
+      let presetData = null
+      const isBcGroup = this._isButterchurnGroup(App.currentGroup)
+
+      if (isBcGroup) {
+        const isAllBc = App.currentGroup === ALL_BC_GROUP
+        if (!isAllBc && App._userGroupLoadPromise.has(App.currentGroup)) {
+          await App._userGroupLoadPromise.get(App.currentGroup)
+        }
+        if (isAllBc || App._userGroupIndex.has(App.currentGroup)) {
+          presetData = await this._loadUserGroupPreset(App.currentGroup, type)
+        }
+      } else if (_milkdropModule) {
+        // Bundled milkdrop registry preset
+        presetData = _milkdropModule.getPresetData(type) ?? null
+      }
+
+      if (presetData) {
+        App.currentVisualizer.loadPreset(presetData, this._transitionTime)
+        App.currentVisualizer.name = type
+        App.visualizerType = type
+        this.saveVisualizerType(type)
+        this._currentPresetHash = this.previewBatch?.findHash(App.currentGroup, type) ?? null
+        this._updateLikeButtonState()
+        if (!this._currentPresetHash) this._refreshCurrentPresetHash(App.currentGroup, type)
+        this.updateVisualizerToast(type)
+        if (this.visualizerSwitcherConfig) this.visualizerSwitcherConfig.visualizer = type
+        if (this.visualizerController) {
+          if (typeof this.visualizerController.updateDisplay === 'function') {
+            this.visualizerController.updateDisplay()
+          }
+          const selectEl = this._getVisualizerSelectElement()
+          if (selectEl && selectEl.value !== type) {
+            try { selectEl.value = type } catch { /* ignore */ }
+          }
+        }
+        this._broadcastVisualizerChanged()
+        if (notify && this.bridgeTarget) this.postModuleSet(true, this.bridgeTarget)
+        return
+      }
+      // presetData is null — fall through to full switch (e.g. non-BC type requested)
+    }
+
     // Destroy current visualizer if exists
     if (App.currentVisualizer) {
       if (typeof App.currentVisualizer.destroy === 'function') {

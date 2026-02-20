@@ -84,6 +84,15 @@ export function createMilkdropVisualizerByName(name, blendTime = 0) {
 }
 
 /**
+ * Return the raw pre-parsed preset object for a bundled milkdrop preset.
+ * Returns null if the name is not in the registry.
+ * Used by the BC→BC fast-path in switchVisualizer (no new instance created).
+ */
+export function getPresetData(name) {
+  return _factoryMap.has(name) ? (allPresets[name] ?? null) : null
+}
+
+/**
  * Create a ButterchurnVisualizer from raw preset data (for lazy-loaded user groups).
  */
 export function createMilkdropVisualizerFromPreset(name, presetData, blendTime = 0) {
