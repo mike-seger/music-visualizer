@@ -117,11 +117,11 @@ body {
   var ch
   try { ch = new BroadcastChannel('visualizer-controls') } catch (e) { ch = null }
 
-  // ── Notify opener we are ready ──
-  try { window.opener && window.opener.postMessage({ type: 'preview-ready' }, '*') } catch (e) {}
+  // ── Notify main app we are ready (via BroadcastChannel) ──
+  if (ch) ch.postMessage({ type: 'preview-ready' })
 
-  // ── Receive data ──
-  window.addEventListener('message', function (e) {
+  // ── Receive preview data via BroadcastChannel ──
+  if (ch) ch.addEventListener('message', function (e) {
     if (!e.data || e.data.type !== 'preview-data') return
     render(e.data.items)
   })

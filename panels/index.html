@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Visualizer Panels</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100%; overflow: hidden; background: #1e1e1e; }
+
+#layout {
+  display: flex;
+  height: 100vh;
+  overflow: hidden;
+}
+
+#left-panel {
+  flex: none;
+  min-width: 180px;
+  overflow: hidden;
+}
+
+/* VS Code–style sash */
+#splitter {
+  flex: none;
+  width: 5px;
+  background: transparent;
+  cursor: col-resize;
+  position: relative;
+  transition: background 0.15s;
+  z-index: 10;
+}
+/* Wider invisible hit area so it's easy to grab */
+#splitter::before {
+  content: '';
+  position: absolute;
+  inset: 0 -4px;
+}
+/* Visible highlight appears on hover / drag */
+#splitter::after {
+  content: '';
+  position: absolute;
+  inset: 0 2px;
+  background: transparent;
+  transition: background 0.15s;
+}
+#splitter:hover::after,
+#splitter.dragging::after {
+  background: #007fd4;
+}
+
+#right-panel {
+  flex: 1;
+  min-width: 180px;
+  overflow: hidden;
+}
+
+iframe {
+  width: 100%;
+  height: 100%;
+  border: none;
+  display: block;
+}
+</style>
+</head>
+<body>
+<div id="layout">
+  <div id="left-panel">
+    <iframe src="viz-controls.html" title="Controls"></iframe>
+  </div>
+  <div id="splitter"></div>
+  <div id="right-panel">
+    <iframe src="preview.html" title="Preview"></iframe>
+  </div>
+</div>
+
+<script>
+(function () {
+  var LS_KEY = 'panels-left-width'
+  var leftEl = document.getElementById('left-panel')
+  var splitter = document.getElementById('splitter')
+
+  // ── Restore or compute initial width ──────────────────────────────────────
+  var saved = localStorage.getItem(LS_KEY)
+  if (saved) {
+    leftEl.style.width = saved
+  } else {
+    leftEl.style.width = Math.min(700, Math.round(window.innerWidth * 0.5)) + 'px'
+  }
+
+  // ── Splitter drag ─────────────────────────────────────────────────────────
+  var dragging = false
+  var startX = 0
+  var startW = 0
+
+  splitter.addEventListener('mousedown', function (e) {
+    dragging = true
+    startX = e.clientX
+    startW = leftEl.getBoundingClientRect().width
+    splitter.classList.add('dragging')
+    document.body.style.cursor = 'col-resize'
+    document.body.style.userSelect = 'none'
+    // Overlay iframes so they don't swallow mousemove events
+    document.querySelectorAll('iframe').forEach(function (f) {
+      f.style.pointerEvents = 'none'
+    })
+    e.preventDefault()
+  })
+
+  document.addEventListener('mousemove', function (e) {
+    if (!dragging) return
+    var newW = Math.max(180, Math.min(window.innerWidth - 180, startW + (e.clientX - startX)))
+    leftEl.style.width = newW + 'px'
+  })
+
+  document.addEventListener('mouseup', function () {
+    if (!dragging) return
+    dragging = false
+    splitter.classList.remove('dragging')
+    document.body.style.cursor = ''
+    document.body.style.userSelect = ''
+    document.querySelectorAll('iframe').forEach(function (f) {
+      f.style.pointerEvents = ''
+    })
+    localStorage.setItem(LS_KEY, leftEl.style.width)
+  })
+})()
+</script>
+</body>
+</html>
