@@ -229,6 +229,7 @@ export default class App {
       cycleEnabled: 'visualizer.cycle.enabled',
       cycleTime: 'visualizer.cycle.time',
       toastTransient: 'visualizer.toast.transient',
+      transitionTime: 'visualizer.transition.time',
     }
 
     this.debugInformationEnabled = this.getStoredDebugInformationEnabled()
@@ -238,6 +239,7 @@ export default class App {
     this._cycleTimerHandle = null
     this._cycleEnabled = this._getStoredBool(this.storageKeys.cycleEnabled, false)
     this._cycleTime = this._getStoredNumber(this.storageKeys.cycleTime, 30, 5, 300)
+    this._transitionTime = this._getStoredNumber(this.storageKeys.transitionTime, 5.7, 0, 20)
 
     // Per-visualizer quality overrides (localStorage keys are derived from visualizer type).
     this.performanceQualityFolder = null
@@ -352,6 +354,12 @@ export default class App {
         }
         break
 
+      case 'set-transition-time':
+        if (Number.isFinite(msg.time)) {
+          this.setTransitionTime(msg.time, { persist: true, broadcast: true })
+        }
+        break
+
       case 'save-quality-defaults':
         if (this.performanceQualityConfig?.saveAsDefaults) {
           this.performanceQualityConfig.saveAsDefaults()
@@ -432,6 +440,7 @@ export default class App {
       toastTransientEnabled: !!this.toastTransientEnabled,
       cycleEnabled: !!this._cycleEnabled,
       cycleTime: this._cycleTime,
+      transitionTime: this._transitionTime,
       groupNames: [...App.presetGroupNames],
       groupDisplayMap: { ...App._groupDisplayMap },
       currentGroup: App.currentGroup,
@@ -452,6 +461,7 @@ export default class App {
       toastTransientEnabled: !!this.toastTransientEnabled,
       cycleEnabled: !!this._cycleEnabled,
       cycleTime: this._cycleTime,
+      transitionTime: this._transitionTime,
     })
   }
 
@@ -705,6 +715,16 @@ export default class App {
     }
     if (persist) this._setStoredNumber(this.storageKeys.cycleTime, this._cycleTime)
     if (this._cycleEnabled) this._startCycleTimer() // restart with new interval
+    if (broadcast) this._broadcastGlobalState()
+  }
+
+  setTransitionTime(seconds, { persist = true, broadcast = true } = {}) {
+    this._transitionTime = Math.max(0, Math.min(20, Math.round(seconds * 10) / 10))
+    if (this.visualizerSwitcherConfig) {
+      this.visualizerSwitcherConfig.transitionTime = this._transitionTime
+      this._transitionTimeController?.updateDisplay?.()
+    }
+    if (persist) this._setStoredNumber(this.storageKeys.transitionTime, this._transitionTime)
     if (broadcast) this._broadcastGlobalState()
   }
 
@@ -2763,12 +2783,12 @@ export default class App {
       if (isAllBc || App._userGroupIndex.has(App.currentGroup)) {
         const presetData = await this._loadUserGroupPreset(App.currentGroup, type)
         if (presetData && _milkdropModule) {
-          newVisualizer = _milkdropModule.createMilkdropVisualizerFromPreset(type, presetData)
+          newVisualizer = _milkdropModule.createMilkdropVisualizerFromPreset(type, presetData, this._transitionTime)
         } else if (presetData) {
           // milkdrop module not loaded yet — wait for it
           await _milkdropReady
           if (_milkdropModule) {
-            newVisualizer = _milkdropModule.createMilkdropVisualizerFromPreset(type, presetData)
+            newVisualizer = _milkdropModule.createMilkdropVisualizerFromPreset(type, presetData, this._transitionTime)
           }
         }
       }
@@ -2778,7 +2798,7 @@ export default class App {
     if (!newVisualizer) {
       const shaderVisualizer = await createShaderVisualizerByName(type)
       const milkdropVisualizer = !shaderVisualizer
-        ? (await _milkdropReady, _milkdropModule?.createMilkdropVisualizerByName(type) ?? null)
+        ? (await _milkdropReady, _milkdropModule?.createMilkdropVisualizerByName(type, this._transitionTime) ?? null)
         : null
       newVisualizer = shaderVisualizer || milkdropVisualizer || createEntityVisualizerByName(type)
     }

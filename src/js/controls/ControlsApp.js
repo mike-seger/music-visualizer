@@ -54,8 +54,10 @@ export default class ControlsApp {
     this.toastTransientEnabled = true
     this._cycleEnabled = false
     this._cycleTime = 30
+    this._transitionTime = 5.7
     this._cycleEnabledController = null
     this._cycleTimeController = null
+    this._transitionTimeController = null
     this._debugMainController = null
     this._debugTransientController = null
 
@@ -137,6 +139,7 @@ export default class ControlsApp {
         this.toastTransientEnabled = msg.toastTransientEnabled !== false
         this._cycleEnabled = !!msg.cycleEnabled
         this._cycleTime = Number.isFinite(msg.cycleTime) ? msg.cycleTime : 30
+        this._transitionTime = Number.isFinite(msg.transitionTime) ? msg.transitionTime : 5.7
         this.groupNames = msg.groupNames || []
         this.groupDisplayMap = msg.groupDisplayMap || {}
         this.currentGroup = msg.currentGroup || ''
@@ -278,6 +281,7 @@ export default class ControlsApp {
       visualizer: this.activeVisualizer,
       cycleEnabled: !!this._cycleEnabled,
       cycleTime: this._cycleTime,
+      transitionTime: this._transitionTime,
       debugMain: !!this.debugInformationEnabled,
       debugTransient: !!this.toastTransientEnabled,
     }
@@ -351,6 +355,15 @@ export default class ControlsApp {
       })
 
     this._mergeLilGuiRows(this._debugMainController, this._debugTransientController, { showLabelB: true })
+
+    // Transition time slider
+    this._transitionTimeController = folder
+      .add(this.visualizerSwitcherConfig, 'transitionTime', 0, 20, 0.1)
+      .name('Transition Time')
+      .listen()
+      .onChange((value) => {
+        this._send({ type: 'set-transition-time', time: value })
+      })
 
     // Auto-cycle: checkbox + time slider
     this._cycleEnabledController = folder
@@ -581,6 +594,10 @@ export default class ControlsApp {
     if (Number.isFinite(msg.cycleTime)) {
       this.visualizerSwitcherConfig.cycleTime = msg.cycleTime
       this._cycleTimeController?.updateDisplay?.()
+    }
+    if (Number.isFinite(msg.transitionTime)) {
+      this.visualizerSwitcherConfig.transitionTime = msg.transitionTime
+      this._transitionTimeController?.updateDisplay?.()
     }
   }
 

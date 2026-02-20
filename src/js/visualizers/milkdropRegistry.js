@@ -78,14 +78,14 @@ export function initMilkdropPresets() {
 export { _entries as MILKDROP_VISUALIZERS }
 export { _names as MILKDROP_VISUALIZER_NAMES }
 
-export function createMilkdropVisualizerByName(name) {
+export function createMilkdropVisualizerByName(name, blendTime = 0) {
   const fn = _factoryMap.get(name)
-  return fn ? fn() : null
+  return fn ? new ButterchurnVisualizer({ name, preset: allPresets[name], blendTime }) : null
 }
 
 /**
  * Create a ButterchurnVisualizer from raw preset data (for lazy-loaded user groups).
  */
-export function createMilkdropVisualizerFromPreset(name, presetData) {
-  return new ButterchurnVisualizer({ name, preset: presetData, blendTime: 0 })
+export function createMilkdropVisualizerFromPreset(name, presetData, blendTime = 0) {
+  return new ButterchurnVisualizer({ name, preset: presetData, blendTime })
 }
