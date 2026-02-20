@@ -15,6 +15,15 @@ import { zipSync } from 'fflate'
 /** @type {Map<string, Blob>} "group/filename.ext" → Blob */
 const _store = new Map()
 
+/** @type {Map<string, {jsonPath: string, presetName: string, group: string}>}
+ *  store key → original preset metadata */
+const _meta = new Map()
+
+/** Revocable object URLs for the live preview window */
+const _previewUrls = new Map() // store key → object URL
+let _previewWindow = null
+const PREVIEW_CHANNEL = 'screenshot-preview'
+
 export default class ScreenshotBatch {
   constructor() {
     this._running = false
@@ -24,6 +33,14 @@ export default class ScreenshotBatch {
   isRunning() { return this._running }
   cancel() { if (this._running) this._cancelled = true }
   getCount() { return _store.size }
+
+  /** Close preview popup if open. */
+  closePreview() {
+    try { if (_previewWindow && !_previewWindow.closed) _previewWindow.close() } catch { /* */ }
+    _previewWindow = null
+    for (const url of _previewUrls.values()) URL.revokeObjectURL(url)
+    _previewUrls.clear()
+  }
 
   /**
    * Start a batch capture run.
@@ -107,6 +124,12 @@ export default class ScreenshotBatch {
         // Store as "<group>/<preset>.<ext>", preserving original case
         const filename = `${groupFolder}/${_sanitize(name)}.${ext}`
         _store.set(filename, blob)
+        // Record original metadata so preview and ZIP can emit real JSON paths
+        _meta.set(filename, {
+          presetName: name,
+          group,
+          jsonPath: `${group}/${name}.json`,
+        })
         captured++
       }
 
@@ -147,13 +170,17 @@ export default class ScreenshotBatch {
       files[path] = new Uint8Array(buf)
     }
 
-    // index.json — sorted array of all image paths
+    // index.json — sorted array of original JSON preset paths (for external use)
     const allPaths = [..._store.keys()].sort()
-    files['index.json'] = _enc(JSON.stringify(allPaths, null, 2))
+    const allJsonPaths = allPaths.map((k) => _meta.get(k)?.jsonPath ?? k)
+    files['index.json'] = _enc(JSON.stringify(allJsonPaths, null, 2))
 
     // index.js — data file loaded by index.html via <script src>
-    // Using a JS file instead of fetch() so it works from file:// without a server
-    files['index.js'] = _enc(`const PATHS = ${JSON.stringify(allPaths)};`)
+    // Two arrays: image file paths and corresponding original JSON paths
+    files['index.js'] = _enc(
+      `const PATHS = ${JSON.stringify(allPaths)};\n` +
+      `const JSON_PATHS = ${JSON.stringify(allJsonPaths)};`
+    )
 
     // index.html — static viewer
     files['index.html'] = _enc(_buildIndexHtml())
@@ -170,6 +197,63 @@ export default class ScreenshotBatch {
 
     setTimeout(() => URL.revokeObjectURL(url), 5000)
     return true
+  }
+
+  /**
+   * Open a live preview popup window showing all captured screenshots.
+   * Images are served as blob: URLs so no ZIP is needed.
+   * The popup includes a BroadcastChannel to switch the visualizer in the main app.
+   *
+   * @param {string[]} [presetList]  Full preset list to populate the preset switcher.
+   * @returns {Window|null}  The popup window reference, or null if blocked.
+   */
+  openPreview(presetList = []) {
+    if (_store.size === 0) return null
+
+    // Close any existing preview window first
+    this.closePreview()
+
+    // Build blob URL map
+    for (const [path, blob] of _store) {
+      _previewUrls.set(path, URL.createObjectURL(blob))
+    }
+
+    const html = _buildPreviewHtml(_previewUrls, _meta, presetList)
+
+    const w = Math.min(1400, screen.availWidth - 20)
+    const h = Math.min(900, screen.availHeight - 40)
+    const left = Math.round((screen.availWidth - w) / 2)
+    const top  = Math.round((screen.availHeight - h) / 2)
+
+    const popup = window.open(
+      '',
+      '_blank',
+      `popup=yes,width=${w},height=${h},left=${left},top=${top},resizable=yes,scrollbars=yes`
+    )
+    if (!popup) {
+      // Revoke if popup was blocked
+      for (const u of _previewUrls.values()) URL.revokeObjectURL(u)
+      _previewUrls.clear()
+      return null
+    }
+
+    popup.document.open()
+    popup.document.write(html)
+    popup.document.close()
+
+    _previewWindow = popup
+
+    // Revoke blob URLs when the popup is closed
+    const poll = setInterval(() => {
+      if (!_previewWindow || _previewWindow.closed) {
+        clearInterval(poll)
+        for (const u of _previewUrls.values()) URL.revokeObjectURL(u)
+        _previewUrls.clear()
+        if (_previewWindow === popup) _previewWindow = null
+      }
+    }, 1000)
+
+    return popup
   }
 }
 
@@ -346,19 +430,24 @@ body {
   const copyCountEl = document.getElementById('copy-count')
   const titleEl = document.getElementById('title')
 
-  // ── PATHS is defined in index.js, loaded via <script src> in <head> ──
+  // ── PATHS and JSON_PATHS are defined in index.js, loaded via <script src> in <head> ──
   const paths = PATHS
+  // JSON_PATHS[i] is the original JSON preset path for paths[i]
+  // e.g. "cream-of-the-crop/My Cool Preset.json"
+  const jsonPaths = typeof JSON_PATHS !== 'undefined' ? JSON_PATHS : paths
 
   titleEl.textContent = paths.length + ' screenshots'
 
   // ── Group by folder ──
   const groups = new Map()
-  for (const p of paths) {
+  for (let i = 0; i < paths.length; i++) {
+    const p = paths[i]
+    const jp = jsonPaths[i]
     const slash = p.indexOf('/')
     const group = slash > -1 ? p.slice(0, slash) : ''
     const name  = slash > -1 ? p.slice(slash + 1) : p
     if (!groups.has(group)) groups.set(group, [])
-    groups.get(group).push({ path: p, name })
+    groups.get(group).push({ path: p, jsonPath: jp, name })
   }
 
   // ── Selection state ──
@@ -385,7 +474,7 @@ body {
     const grid = document.createElement('div')
     grid.className = 'grid'
 
-    for (const { path, name } of items) {
+    for (const { path, jsonPath, name } of items) {
       const tile = document.createElement('div')
       tile.className = 'tile'
       tile.title = name.replace(/\\.(png|jpg)$/i, '')
@@ -401,8 +490,8 @@ body {
 
       cb.addEventListener('change', (e) => {
         e.stopPropagation()
-        if (cb.checked) { selected.add(path); tile.classList.add('selected') }
-        else            { selected.delete(path); tile.classList.remove('selected') }
+        if (cb.checked) { selected.add(jsonPath); tile.classList.add('selected') }
+        else            { selected.delete(jsonPath); tile.classList.remove('selected') }
         updateCount()
       })
       cb.addEventListener('click', (e) => e.stopPropagation())
@@ -459,3 +548,314 @@ body {
 </html>`
 }
 
+// ─── Preview HTML generator ───────────────────────────────────────────────────
+// Similar to _buildIndexHtml but uses blob: URLs and adds a preset switcher.
+
+function _buildPreviewHtml(urlMap, meta, presetList) {
+  // Build the data needed inline (no external scripts required)
+  const paths = [...urlMap.keys()].sort()
+
+  // Build JSON-safe data arrays for inline embedding
+  const pathsForEmbed = JSON.stringify(paths)
+  const blobUrlsForEmbed = JSON.stringify(paths.map((p) => urlMap.get(p) ?? ''))
+  const jsonPathsForEmbed = JSON.stringify(paths.map((p) => meta.get(p)?.jsonPath ?? p))
+  const presetListForEmbed = JSON.stringify(presetList)
+
+  return `<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Screenshot Preview</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  background: #111; color: #ccc;
+  font-family: system-ui, -apple-system, sans-serif;
+  font-size: 12px;
+  padding: 52px 10px 40px;
+}
+/* ── Floating toolbar ── */
+#toolbar {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+  background: rgba(17,17,17,.92); backdrop-filter: blur(6px);
+  border-bottom: 1px solid #2a2a2a;
+  display: flex; align-items: center; flex-wrap: wrap;
+  padding: 8px 12px; gap: 8px;
+}
+#title { color: #888; flex-shrink: 0; }
+
+/* Preset switcher */
+#switcher-wrap {
+  display: flex; align-items: center; gap: 6px; flex: 1; min-width: 0;
+}
+#switcher-label { color: #666; flex-shrink: 0; font-size: 11px; }
+#preset-select {
+  flex: 1; min-width: 0; max-width: 340px;
+  background: #1e1e1e; border: 1px solid #444; color: #ddd;
+  padding: 4px 6px; border-radius: 4px; font-size: 11px;
+}
+#switch-btn {
+  background: #2a3a2a; border: 1px solid #4a6a4a; color: #ada;
+  padding: 4px 10px; border-radius: 4px; font-size: 11px; cursor: pointer;
+  flex-shrink: 0; white-space: nowrap;
+}
+#switch-btn:hover { background: #3a4a3a; }
+#switch-status { color: #666; font-size: 11px; flex-shrink: 0; }
+
+/* Copy button */
+#copy-btn {
+  background: #222; border: 1px solid #444; color: #ddd;
+  padding: 5px 14px; border-radius: 4px; font-size: 12px; cursor: pointer;
+  white-space: nowrap; flex-shrink: 0; margin-left: auto;
+}
+#copy-btn:hover { background: #2e2e2e; }
+#copy-btn .count { color: #fa4; }
+
+/* ── Group sections ── */
+.group-section { margin-bottom: 20px; }
+.group-header {
+  display: flex; align-items: center; gap: 8px;
+  margin-bottom: 8px;
+}
+.group-label {
+  white-space: nowrap; color: #999;
+  font-size: 11px; text-transform: uppercase; letter-spacing: .07em;
+}
+.group-count { color: #555; font-size: 11px; }
+.group-line { flex: 1; height: 1px; background: #2a2a2a; }
+
+/* ── Grid ── */
+.grid { display: flex; flex-wrap: wrap; gap: 3px; }
+
+/* ── Tile ── */
+.tile {
+  position: relative; width: 80px; height: 45px;
+  cursor: pointer; flex-shrink: 0; border-radius: 2px; overflow: hidden;
+  outline: 2px solid transparent; outline-offset: 0;
+}
+.tile img {
+  width: 80px; height: 45px; object-fit: cover;
+  display: block; background: #1c1c1c;
+}
+.tile:hover { outline-color: #48c; }
+.tile.selected { outline-color: #fa4; }
+.tile-cb {
+  position: absolute; bottom: 3px; right: 3px;
+  width: 14px; height: 14px;
+  cursor: pointer; accent-color: #fa4;
+  opacity: .7;
+}
+.tile:hover .tile-cb,
+.tile.selected .tile-cb { opacity: 1; }
+
+/* Switch-to badge on hover */
+.tile-switch {
+  display: none;
+  position: absolute; top: 3px; left: 3px;
+  background: rgba(0,160,80,.8); color: #fff;
+  font-size: 9px; padding: 2px 4px; border-radius: 2px;
+  cursor: pointer; pointer-events: auto;
+  line-height: 1.2;
+}
+.tile:hover .tile-switch { display: block; }
+
+/* ── Overlay ── */
+#overlay {
+  display: none; position: fixed; inset: 0; z-index: 200;
+  background: rgba(0,0,0,.88);
+  justify-content: center; align-items: center;
+  cursor: pointer;
+}
+#overlay.open { display: flex; }
+#overlay-img {
+  max-width: 94vw; max-height: 94vh;
+  object-fit: contain; border-radius: 3px;
+  cursor: default;
+}
+#overlay-label {
+  position: absolute; bottom: 12px; left: 50%;
+  transform: translateX(-50%);
+  background: rgba(0,0,0,.75); color: #eee;
+  padding: 4px 12px; border-radius: 3px;
+  font-size: 12px; white-space: nowrap; pointer-events: none;
+}
+</style>
+</head>
+<body>
+<div id="toolbar">
+  <span id="title">Preview</span>
+  <div id="switcher-wrap">
+    <span id="switcher-label">Switch to:</span>
+    <select id="preset-select"></select>
+    <button id="switch-btn">Switch</button>
+    <span id="switch-status"></span>
+  </div>
+  <button id="copy-btn">Copy selected (<span class="count" id="copy-count">0</span>)</button>
+</div>
+<div id="root"></div>
+<div id="overlay">
+  <img id="overlay-img" src="" alt="">
+  <div id="overlay-label"></div>
+</div>
+<script>
+(function () {
+  const PATHS      = ${pathsForEmbed}
+  const BLOB_URLS  = ${blobUrlsForEmbed}
+  const JSON_PATHS = ${jsonPathsForEmbed}
+  const PRESET_LIST = ${presetListForEmbed}
+
+  const CHANNEL_NAME = 'visualizer-controls'
+  let ch
+  try { ch = new BroadcastChannel(CHANNEL_NAME) } catch { ch = null }
+
+  function switchVisualizerTo(name) {
+    if (!ch) { statusEl.textContent = 'BroadcastChannel unavailable'; return }
+    ch.postMessage({ type: 'select-visualizer', name })
+    statusEl.textContent = '↩ ' + name.slice(0, 40)
+    setTimeout(() => { statusEl.textContent = '' }, 3000)
+  }
+
+  const root       = document.getElementById('root')
+  const overlay    = document.getElementById('overlay')
+  const overlayImg = document.getElementById('overlay-img')
+  const overlayLbl = document.getElementById('overlay-label')
+  const copyBtn    = document.getElementById('copy-btn')
+  const copyCountEl= document.getElementById('copy-count')
+  const titleEl    = document.getElementById('title')
+  const selectEl   = document.getElementById('preset-select')
+  const switchBtn  = document.getElementById('switch-btn')
+  const statusEl   = document.getElementById('switch-status')
+
+  // ── Populate preset switcher ──
+  PRESET_LIST.forEach(function(name) {
+    var opt = document.createElement('option')
+    opt.value = name
+    opt.textContent = name
+    selectEl.appendChild(opt)
+  })
+  switchBtn.addEventListener('click', function() {
+    if (selectEl.value) switchVisualizerTo(selectEl.value)
+  })
+
+  titleEl.textContent = PATHS.length + ' screenshots'
+
+  // ── Group by folder ──
+  const groups = new Map()
+  for (let i = 0; i < PATHS.length; i++) {
+    const p  = PATHS[i]
+    const bu = BLOB_URLS[i]
+    const jp = JSON_PATHS[i]
+    const slash = p.indexOf('/')
+    const group = slash > -1 ? p.slice(0, slash) : ''
+    const name  = slash > -1 ? p.slice(slash + 1) : p
+    // Extract preset name (no extension) from jsonPath for display
+    const slashJ = jp.lastIndexOf('/')
+    const presetName = jp.slice(slashJ + 1).replace(/\\.json$/i, '')
+    if (!groups.has(group)) groups.set(group, [])
+    groups.get(group).push({ path: p, blobUrl: bu, jsonPath: jp, name, presetName })
+  }
+
+  // ── Selection state (tracks jsonPaths) ──
+  const selected = new Set()
+  function updateCount() { copyCountEl.textContent = selected.size }
+
+  // ── Render groups ──
+  for (const [group, items] of groups) {
+    const section = document.createElement('div')
+    section.className = 'group-section'
+
+    const hdr = document.createElement('div')
+    hdr.className = 'group-header'
+    hdr.innerHTML =
+      '<span class="group-label">' + esc(group || '(root)') + '</span>' +
+      '<span class="group-line"></span>' +
+      '<span class="group-count">' + items.length + '</span>'
+    section.appendChild(hdr)
+
+    const grid = document.createElement('div')
+    grid.className = 'grid'
+
+    for (const { blobUrl, jsonPath, name, presetName } of items) {
+      const tile = document.createElement('div')
+      tile.className = 'tile'
+      tile.title = presetName
+
+      const img = document.createElement('img')
+      img.src = blobUrl
+      img.alt = presetName
+      img.loading = 'lazy'
+
+      const cb = document.createElement('input')
+      cb.type = 'checkbox'
+      cb.className = 'tile-cb'
+
+      // "Switch" badge — sends BroadcastChannel to main app
+      const swBadge = document.createElement('span')
+      swBadge.className = 'tile-switch'
+      swBadge.textContent = '▶ switch'
+      swBadge.addEventListener('click', function(e) {
+        e.stopPropagation()
+        switchVisualizerTo(presetName)
+      })
+
+      cb.addEventListener('change', function(e) {
+        e.stopPropagation()
+        if (cb.checked) { selected.add(jsonPath); tile.classList.add('selected') }
+        else            { selected.delete(jsonPath); tile.classList.remove('selected') }
+        updateCount()
+      })
+      cb.addEventListener('click', function(e) { e.stopPropagation() })
+
+      tile.addEventListener('click', function() {
+        overlayImg.src = blobUrl
+        overlayLbl.textContent = presetName
+        overlay.classList.add('open')
+      })
+
+      tile.appendChild(img)
+      tile.appendChild(swBadge)
+      tile.appendChild(cb)
+      grid.appendChild(tile)
+    }
+
+    section.appendChild(grid)
+    root.appendChild(section)
+  }
+
+  // ── Overlay ──
+  overlay.addEventListener('click', function(e) {
+    if (e.target !== overlayImg) overlay.classList.remove('open')
+  })
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') overlay.classList.remove('open')
+  })
+
+  // ── Copy selected (copies original JSON paths) ──
+  copyBtn.addEventListener('click', function() {
+    const arr = [...selected].sort()
+    const json = JSON.stringify(arr, null, 2)
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(json).catch(function() { _fallbackCopy(json) })
+    } else {
+      _fallbackCopy(json)
+    }
+  })
+
+  function _fallbackCopy(text) {
+    const ta = document.createElement('textarea')
+    ta.value = text
+    ta.style.cssText = 'position:fixed;left:-9999px;top:-9999px'
+    document.body.appendChild(ta); ta.select()
+    try { document.execCommand('copy') } catch {}
+    document.body.removeChild(ta)
+  }
+
+  function esc(s) {
+    return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+  }
+})()
+</script>
+</body>
+</html>`
+}

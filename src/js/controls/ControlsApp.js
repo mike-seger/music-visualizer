@@ -1000,5 +1000,15 @@ export default class ControlsApp {
       gap: '6px',
       compactButtons: true,
     })
+
+    // Inject a 3rd "Preview" button (lil-gui's _mergeLilGuiRows only handles 2)
+    const widgetA = captureCtrl.domElement?.querySelector('.lil-widget')
+    if (widgetA) {
+      const previewBtn = document.createElement('button')
+      previewBtn.textContent = 'Preview'
+      previewBtn.style.cssText = 'flex-shrink:0'
+      previewBtn.addEventListener('click', () => this._send({ type: 'screenshot-preview' }))
+      widgetA.appendChild(previewBtn)
+    }
   }
 }

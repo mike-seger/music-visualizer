@@ -267,6 +267,7 @@ export default class App {
 
     // Screenshot batch capture
     this.screenshotBatch = new ScreenshotBatch()
+    this._screenshotPreviewPopup = null
     this._screenshotConfig = {
       settleDelay: 300,
       resolution: 'dynamic',
@@ -369,6 +370,10 @@ export default class App {
 
       case 'screenshot-zip':
         this._downloadScreenshotZip()
+        break
+
+      case 'screenshot-preview':
+        this._openScreenshotPreview()
         break
 
       case 'set-fv3-param':
@@ -1432,6 +1437,14 @@ export default class App {
         }
       })
     }
+
+    window.addEventListener('beforeunload', () => {
+      // Close all pop-out windows so they don't linger after the page unloads
+      try { if (this._controlsPopup && !this._controlsPopup.closed) this._controlsPopup.close() } catch { /* */ }
+      try { if (this._screenshotPreviewPopup && !this._screenshotPreviewPopup.closed) this._screenshotPreviewPopup.close() } catch { /* */ }
+      // Revoke any lingering preview blob URLs
+      try { this.screenshotBatch?.closePreview() } catch { /* */ }
+    })
 
     window.addEventListener('beforeunload', () => {
       if (!App.audioManager || !App.audioManager.audio || App.audioManager.isUsingMicrophone) return
@@ -3295,6 +3308,23 @@ export default class App {
         console.info('[Screenshots]', msg)
       }
     })
+  }
+
+  /** Open the live preview popup showing all captured screenshots. */
+  _openScreenshotPreview() {
+    if (this.screenshotBatch.getCount() === 0) {
+      const msg = 'No screenshots yet — press X to capture first.'
+      this._broadcastToControls({ type: 'screenshot-status', text: msg })
+      return
+    }
+    // Close old popup if still open
+    try { if (this._screenshotPreviewPopup && !this._screenshotPreviewPopup.closed) this._screenshotPreviewPopup.close() } catch { /* */ }
+    const presetList = App.visualizerList ?? []
+    this._screenshotPreviewPopup = this.screenshotBatch.openPreview(presetList)
+    if (!this._screenshotPreviewPopup) {
+      const msg = 'Preview popup was blocked by the browser.'
+      this._broadcastToControls({ type: 'screenshot-status', text: msg })
+    }
   }
 
   /**
