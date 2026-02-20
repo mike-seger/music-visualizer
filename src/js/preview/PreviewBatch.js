@@ -406,7 +406,8 @@ body {
 </div>
 <script>
 (function () {
-  // previewMeta is injected by index.js (Map<hash, { filename, jsonPath }>)
+  // previewMeta is injected by index.js (Map<hash, jsonPath>)
+  // filename is derived: jsonPath.replace(/\.json$/i, '.' + previewExt)
   const root = document.getElementById('root')
   const overlay = document.getElementById('overlay')
   const overlayImg = document.getElementById('overlay-img')
@@ -415,10 +416,11 @@ body {
   const copyCountEl = document.getElementById('copy-count')
   const titleEl = document.getElementById('title')
 
-  const entries = [...previewMeta.entries()].map(([hash, { filename, jsonPath }]) => {
-    const slash = filename.indexOf('/')
-    const group = slash > -1 ? filename.slice(0, slash) : ''
-    const name  = filename.slice(slash + 1).replace(/\\.(png|jpg)$/i, '')
+  const entries = [...previewMeta.entries()].map(([hash, jsonPath]) => {
+    const filename = jsonPath.replace(/\.json$/i, '.' + previewExt)
+    const slash = jsonPath.indexOf('/')
+    const group = slash > -1 ? jsonPath.slice(0, slash) : ''
+    const name  = jsonPath.slice(slash + 1).replace(/\.json$/i, '')
     return { hash, filename, jsonPath, group, name }
   })
   titleEl.textContent = entries.length + ' previews'
