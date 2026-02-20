@@ -102,6 +102,8 @@ export default class PreviewBatch {
       const idx = (startIndex + i) % total
       const name = list[idx]
 
+      if (!name) continue  // skip empty/falsy entries in the list
+
       // ── Hash preset JSON for a stable ID; skip if already in store ──
       let hash = null
       try {
