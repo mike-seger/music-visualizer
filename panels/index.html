@@ -40,7 +40,7 @@ html, body { height: 100%; overflow: hidden; background: #1e1e1e; }
 #splitter::after {
   content: '';
   position: absolute;
-  inset: 0 2px;
+  inset: 0 0.5px;   /* 0.5px each side → ~4px visible stripe */
   background: transparent;
   transition: background 0.15s;
 }

@@ -62,7 +62,7 @@ body.has-status { padding-top: 68px; }
 .group-line { flex: 1; height: 1px; background: #2a2a2a; }
 
 /* ── Grid ── */
-.grid { display: flex; flex-wrap: wrap; gap: 3px; }
+.grid { display: flex; flex-wrap: wrap; gap: 5px; }
 
 /* ── Tile ── */
 .tile {
@@ -84,16 +84,49 @@ body.has-status { padding-top: 68px; }
 .tile.active { outline-color: #44ff9a; }
 .tile.active.selected { outline-color: #fa4; }
 
-/* Checkbox — hidden until hover, 50% opacity on hover, 80% when checked */
+/* Checkbox — custom, appears on hover */
 .tile-cb {
   position: absolute; bottom: 5px; right: 5px;
   width: 15px; height: 15px;
-  cursor: pointer; accent-color: #fa4;
+  cursor: pointer;
   opacity: 0;
   transition: opacity 0.1s;
+  -webkit-appearance: none;
+  appearance: none;
+  background: transparent;
+  border: 1px solid rgba(255,255,255,0.9);
+  border-radius: 2px;
+  flex-shrink: 0;
 }
-.tile:hover .tile-cb { opacity: 0.5; }
-.tile.selected .tile-cb { opacity: 0.8; }
+.tile-cb:checked {
+  background: white;
+  background-image: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'><polyline points='2,6 5,9 10,3' stroke='%23333' stroke-width='2' fill='none' stroke-linecap='round' stroke-linejoin='round'/></svg>");
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: 10px 10px;
+}
+.tile:hover .tile-cb { opacity: 1; }
+.tile.selected .tile-cb { opacity: 1; }
+
+/* Heart — like state, appears on hover */
+.tile-heart {
+  position: absolute; bottom: 5px; right: 24px;
+  width: 15px; height: 15px;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.1s;
+  display: flex; align-items: center; justify-content: center;
+  border: 1px solid rgba(255,255,255,0.9);
+  border-radius: 2px;
+  background: transparent;
+  color: rgba(255,255,255,0.85);
+  font-size: 10px;
+  line-height: 1;
+  user-select: none;
+  -webkit-user-select: none;
+}
+.tile:hover .tile-heart { opacity: 1; }
+.tile.liked .tile-heart { opacity: 1; background: white; color: #444; }
 
 /* ── Overlay (file:// fallback) ── */
 #overlay {
@@ -153,8 +186,17 @@ body.has-status { padding-top: 68px; }
     catch { return new Set() }
   })()  // persists across re-renders and page reloads; reset when group changes
 
+  var liked = (function () {
+    try { return new Set(JSON.parse(localStorage.getItem('visualizer-liked') ?? '[]')) }
+    catch { return new Set() }
+  })()  // hash-based; never cleared on group change — cross-group favorites
+
   function saveSelected() {
     try { localStorage.setItem('visualizer-selected', JSON.stringify([...selected])) } catch { /* ignore */ }
+  }
+
+  function saveLiked() {
+    try { localStorage.setItem('visualizer-liked', JSON.stringify([...liked])) } catch { /* ignore */ }
   }
 
   function setStatus(text) {
@@ -171,7 +213,10 @@ body.has-status { padding-top: 68px; }
   function setActive(name) {
     if (activeName && tilesByName[activeName]) tilesByName[activeName].classList.remove('active')
     activeName = name || ''
-    if (activeName && tilesByName[activeName]) tilesByName[activeName].classList.add('active')
+    if (activeName && tilesByName[activeName]) {
+      tilesByName[activeName].classList.add('active')
+      tilesByName[activeName].scrollIntoView({ block: 'center', inline: 'nearest', behavior: 'smooth' })
+    }
   }
 
   // ── Copy selected ── (wired once; `selected` is module-level)
@@ -290,6 +335,22 @@ body.has-status { padding-top: 68px; }
     img.loading = 'lazy'
     img.draggable = false
 
+    var heart = document.createElement('span')
+    heart.className = 'tile-heart'
+    heart.textContent = '♥'
+    heart.title = 'Like'
+    heart.addEventListener('click', function (e) {
+      e.stopPropagation()
+      if (liked.has(item.hash)) {
+        liked.delete(item.hash)
+        tile.classList.remove('liked')
+      } else {
+        liked.add(item.hash)
+        tile.classList.add('liked')
+      }
+      saveLiked()
+    })
+
     var cb = document.createElement('input')
     cb.type = 'checkbox'
     cb.className = 'tile-cb'
@@ -317,12 +378,18 @@ body.has-status { padding-top: 68px; }
 
     tile.appendChild(img)
 
-    // Restore persisted checked state
+    // Restore persisted liked state (hash-based, cross-group)
+    if (liked.has(item.hash)) {
+      tile.classList.add('liked')
+    }
+
+    // Restore persisted selected state (hash-based, group-scoped)
     if (selected.has(item.hash)) {
       cb.checked = true
       tile.classList.add('selected')
     }
 
+    tile.appendChild(heart)
     tile.appendChild(cb)
     return tile
   }
