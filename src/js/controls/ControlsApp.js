@@ -89,10 +89,10 @@ export default class ControlsApp {
     // Preview controls state
     this.previewFolder = null
     this._previewConfig = {
-      resolution: 'dynamic',
+      resolution: 'fixed',
       format: 'PNG',
-      width: 640,
-      height: 360,
+      width: 160,
+      height: 90,
       settleDelay: 300,
       status: 'Idle',
     }

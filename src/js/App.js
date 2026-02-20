@@ -272,7 +272,7 @@ export default class App {
       settleDelay: 300,
       resolution: 'fixed',
       width: 160,
-      height: 160,
+      height: 90,
       format: 'PNG',
     }
   }
