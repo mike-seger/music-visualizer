@@ -197,8 +197,10 @@ export default class PreviewBatch {
    * @param {string} groupName  Used only in the downloaded ZIP filename
    */
   async downloadZip(groupName) {
-    if (_store.size === 0) {
-      console.warn('[PreviewBatch] Nothing to ZIP — capture previews first (X key).')
+    // Only ZIP entries for the currently active group
+    const groupEntries = [..._store.entries()].filter(([, e]) => e.group === groupName)
+    if (groupEntries.length === 0) {
+      console.warn('[PreviewBatch] Nothing to ZIP for group', groupName, '— capture previews first (X key).')
       return false
     }
 
@@ -209,14 +211,14 @@ export default class PreviewBatch {
     const files = {}
 
     // Image files (keyed by relative path within ZIP)
-    for (const { filename, blob } of _store.values()) {
+    for (const [, { filename, blob }] of groupEntries) {
       files[filename] = new Uint8Array(await blob.arrayBuffer())
     }
 
     // index.js — defines previewMeta Map, loaded by index.html via <script src>
     // Map<hash, jsonPath>  (filename derived: replace .json → .<ext>)
-    const ext = [..._store.values()][0]?.filename.match(/\.(png|jpg)$/i)?.[1] ?? 'png'
-    const mapEntries = [..._store.entries()]
+    const ext = groupEntries[0][1].filename.match(/\.(png|jpg)$/i)?.[1] ?? 'png'
+    const mapEntries = groupEntries
       .sort(([, a], [, b]) => a.filename.localeCompare(b.filename))
       .map(([hash, { jsonPath }]) =>
         `  [${JSON.stringify(hash)}, ${JSON.stringify(jsonPath)}]`
@@ -243,19 +245,19 @@ export default class PreviewBatch {
   /**
    * Build the items array the preview panel needs.
    * Creates (or refreshes) blob URLs for every stored image.
-   * Returns null if the store is empty.
+   * Returns null if there are no entries for the given group.
    *
+   * @param {string} group  Only items whose group matches are returned
    * @returns {Array|null}
    */
-  openPreview() {
-    if (_store.size === 0) return null
-
-    // Revoke stale URLs and create fresh ones
+  openPreview(group) {
+    // Revoke stale URLs first (always, so we don't leak)
     for (const url of _previewUrls.values()) URL.revokeObjectURL(url)
     _previewUrls.clear()
 
     const items = []
     for (const [hash, entry] of _store) {
+      if (entry.group !== group) continue
       const blobUrl = URL.createObjectURL(entry.blob)
       _previewUrls.set(hash, blobUrl)
       items.push({
@@ -266,7 +268,7 @@ export default class PreviewBatch {
         jsonPath: entry.jsonPath,
       })
     }
-    return items
+    return items.length > 0 ? items : null
   }
 }
 

@@ -360,8 +360,8 @@ export default class App {
         break
 
       case 'preview-ready': {
-        // Send any already-captured images immediately
-        const items = this.previewBatch.openPreview()
+        // Send any already-captured images immediately (current group only)
+        const items = this.previewBatch.openPreview(App.currentGroup)
         if (items) this._broadcastToControls({ type: 'preview-data', items, activePreset: App.visualizerType })
         // Auto-start capture for the current group (unless already running)
         clearTimeout(this._previewAutoStart)
@@ -3301,9 +3301,9 @@ export default class App {
       await this.switchVisualizer(originalPreset, { notify: false })
     }
 
-    // Push the completed batch to the preview panel
+    // Push the completed batch to the preview panel (current group only)
     if (this._controlsPopup && !this._controlsPopup.closed) {
-      const items = this.previewBatch.openPreview()
+      const items = this.previewBatch.openPreview(group)
       if (items) this._broadcastToControls({ type: 'preview-data', items, activePreset: App.visualizerType })
     }
   }
