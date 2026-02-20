@@ -368,6 +368,9 @@ export default class App {
         // Send any already-captured images immediately (current group only)
         const items = this.previewBatch.openPreview(App.currentGroup)
         if (items) this._broadcastToControls({ type: 'preview-data', items, activePreset: App.visualizerType })
+        // Sync current name filter so the preview panel starts filtered
+        const currentFilter = this.visualizerSwitcherConfig?.presetFilter || ''
+        if (currentFilter) this._broadcastToControls({ type: 'preview-filter', filter: currentFilter })
         // Auto-start capture for the current group (unless already running)
         clearTimeout(this._previewAutoStart)
         if (!this.previewBatch.isRunning()) this._startPreviewCapture()
@@ -4887,6 +4890,10 @@ export default class App {
       this._authorFilterController.updateDisplay()
     }
     requestAnimationFrame(() => this._updateGuiWidthToFitVisualizerSelect())
+    // Keep preview panel in sync with the name filter
+    if (this._controlsPopup && !this._controlsPopup.closed) {
+      this._broadcastToControls({ type: 'preview-filter', filter: raw })
+    }
   }
 
   /**

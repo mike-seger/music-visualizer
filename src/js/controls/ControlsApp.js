@@ -556,6 +556,8 @@ export default class ControlsApp {
       this.visualizerSwitcherConfig.authorFilter = authorFilter
       this._authorFilterController.updateDisplay()
     }
+    // Keep preview panel in sync with the name filter
+    this._send({ type: 'preview-filter', filter: raw })
   }
 
   // -------------------------------------------------------------------

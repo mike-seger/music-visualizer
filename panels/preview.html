@@ -146,6 +146,8 @@ body.has-status { padding-top: 68px; }
   var statusBar = document.getElementById('status-bar')
   var tilesByName = Object.create(null) // presetName → tile element
   var activeName = ''
+  var allItems = []  // full unfiltered list for the current group
+  var currentFilter = ''  // tracks the viz-controls name filter
   var selected = (function () {
     try { return new Set(JSON.parse(localStorage.getItem('visualizer-selected') ?? '[]')) }
     catch { return new Set() }
@@ -198,7 +200,13 @@ body.has-status { padding-top: 68px; }
       selected.clear()
       saveSelected()
       updateCount()
-      render(e.data.items, e.data.activePreset || '')
+      allItems = e.data.items || []
+      applyFilter(e.data.activePreset || '')
+      return
+    }
+    if (e.data.type === 'preview-filter') {
+      currentFilter = e.data.filter || ''
+      applyFilter()
       return
     }
     if (e.data.type === 'visualizer-changed' && e.data.name) {
@@ -211,8 +219,24 @@ body.has-status { padding-top: 68px; }
     if (ch) ch.postMessage({ type: 'preview-zip' })
   })
 
-  // ── Render ──
-  function render(items, activePreset) {
+  // ── Filter + render ──
+  function applyFilter(activePreset) {
+    var raw = currentFilter
+    var items
+    if (!raw.trim()) {
+      items = allItems
+    } else {
+      try {
+        var re = new RegExp(raw, 'i')
+        items = allItems.filter(function (it) { return re.test(it.presetName) })
+      } catch (e) {
+        items = allItems  // invalid regex — show all
+      }
+    }
+    render(items, activePreset != null ? activePreset : activeName, allItems.length)
+  }
+
+  function render(items, activePreset, totalCount) {
     tilesByName = Object.create(null)
     activeName = ''
     // Detect aspect ratio from the first image and size all tiles to fit
@@ -231,7 +255,12 @@ body.has-status { padding-top: 68px; }
     var root = document.getElementById('root')
     var titleEl = document.getElementById('title')
     root.innerHTML = ''
-    titleEl.textContent = items.length + ' Presets'
+    var total = (totalCount != null) ? totalCount : items.length
+    if (total !== items.length) {
+      titleEl.textContent = 'Matching ' + items.length + ' of ' + total + ' presets'
+    } else {
+      titleEl.textContent = items.length + ' Presets'
+    }
 
     // All items are for the same group — render flat grid, no group header needed
     var grid = document.createElement('div')
