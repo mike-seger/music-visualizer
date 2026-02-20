@@ -284,7 +284,7 @@ export default class PreviewBatch {
    * @param {string} group  Only items whose group matches are returned
    * @returns {Array|null}
    */
-  openPreview(group) {
+  openPreview(group, orderedNames) {
     // Revoke stale URLs first (always, so we don't leak)
     for (const url of _previewUrls.values()) URL.revokeObjectURL(url)
     _previewUrls.clear()
@@ -302,7 +302,18 @@ export default class PreviewBatch {
         jsonPath: entry.jsonPath,
       })
     }
-    return items.length > 0 ? items : null
+    if (items.length === 0) return null
+
+    // Sort to match the preset list order (same order as the controls List dropdown)
+    if (orderedNames && orderedNames.length > 0) {
+      const idx = new Map(orderedNames.map((n, i) => [n, i]))
+      items.sort((a, b) => {
+        const ai = idx.has(a.presetName) ? idx.get(a.presetName) : Infinity
+        const bi = idx.has(b.presetName) ? idx.get(b.presetName) : Infinity
+        return ai - bi
+      })
+    }
+    return items
   }
 }
 

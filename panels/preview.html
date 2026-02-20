@@ -62,7 +62,7 @@ body.has-status { padding-top: 68px; }
 .group-line { flex: 1; height: 1px; background: #2a2a2a; }
 
 /* ── Grid ── */
-.grid { display: flex; flex-wrap: wrap; gap: 5px; }
+.grid { display: flex; flex-wrap: wrap; gap: 6px; }
 
 /* ── Tile ── */
 .tile {
@@ -99,11 +99,12 @@ body.has-status { padding-top: 68px; }
   flex-shrink: 0;
 }
 .tile-cb:checked {
-  background: white;
-  background-image: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'><polyline points='2,6 5,9 10,3' stroke='%23333' stroke-width='2' fill='none' stroke-linecap='round' stroke-linejoin='round'/></svg>");
+  background: transparent;
+  background-image: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'><polyline points='2,6 5,9 10,3' stroke='%2344ff9a' stroke-width='2.5' fill='none' stroke-linecap='round' stroke-linejoin='round'/></svg>");
   background-repeat: no-repeat;
   background-position: center;
   background-size: 10px 10px;
+  border-color: #44ff9a;
 }
 .tile:hover .tile-cb { opacity: 1; }
 .tile.selected .tile-cb { opacity: 1; }
@@ -116,17 +117,15 @@ body.has-status { padding-top: 68px; }
   opacity: 0;
   transition: opacity 0.1s;
   display: flex; align-items: center; justify-content: center;
-  border: 1px solid rgba(255,255,255,0.9);
-  border-radius: 2px;
   background: transparent;
   color: rgba(255,255,255,0.85);
-  font-size: 10px;
+  font-size: 14px;
   line-height: 1;
   user-select: none;
   -webkit-user-select: none;
 }
 .tile:hover .tile-heart { opacity: 1; }
-.tile.liked .tile-heart { opacity: 1; background: white; color: #444; }
+.tile.liked .tile-heart { opacity: 1; color: #e02020; }
 
 /* ── Overlay (file:// fallback) ── */
 #overlay {
@@ -337,16 +336,18 @@ body.has-status { padding-top: 68px; }
 
     var heart = document.createElement('span')
     heart.className = 'tile-heart'
-    heart.textContent = '♥'
+    heart.textContent = '\u2661'  // ♡ outline
     heart.title = 'Like'
     heart.addEventListener('click', function (e) {
       e.stopPropagation()
       if (liked.has(item.hash)) {
         liked.delete(item.hash)
         tile.classList.remove('liked')
+        heart.textContent = '\u2661'  // ♡
       } else {
         liked.add(item.hash)
         tile.classList.add('liked')
+        heart.textContent = '\u2665'  // ♥ filled
       }
       saveLiked()
     })
@@ -381,6 +382,7 @@ body.has-status { padding-top: 68px; }
     // Restore persisted liked state (hash-based, cross-group)
     if (liked.has(item.hash)) {
       tile.classList.add('liked')
+      heart.textContent = '\u2665'  // ♥ filled
     }
 
     // Restore persisted selected state (hash-based, group-scoped)

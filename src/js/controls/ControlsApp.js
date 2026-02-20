@@ -333,24 +333,7 @@ export default class ControlsApp {
       })
     this._selectArrowNav(this.visualizerController)
 
-    // Auto-cycle: checkbox + time slider
-    this._cycleEnabledController = folder
-      .add(this.visualizerSwitcherConfig, 'cycleEnabled')
-      .name('Cycle Visualizers')
-      .listen()
-      .onChange((value) => {
-        this._send({ type: 'set-cycle-enabled', enabled: !!value })
-      })
-
-    this._cycleTimeController = folder
-      .add(this.visualizerSwitcherConfig, 'cycleTime', 5, 300, 5)
-      .name('Cycle Time')
-      .listen()
-      .onChange((value) => {
-        this._send({ type: 'set-cycle-time', time: value })
-      })
-
-    // Debug: two checkboxes on one row
+    // Debug: two checkboxes on one row (placed directly after the list)
     this._debugMainController = folder
       .add(this.visualizerSwitcherConfig, 'debugMain')
       .name('Debug Information')
@@ -368,6 +351,23 @@ export default class ControlsApp {
       })
 
     this._mergeLilGuiRows(this._debugMainController, this._debugTransientController, { showLabelB: true })
+
+    // Auto-cycle: checkbox + time slider
+    this._cycleEnabledController = folder
+      .add(this.visualizerSwitcherConfig, 'cycleEnabled')
+      .name('Cycle Visualizers')
+      .listen()
+      .onChange((value) => {
+        this._send({ type: 'set-cycle-enabled', enabled: !!value })
+      })
+
+    this._cycleTimeController = folder
+      .add(this.visualizerSwitcherConfig, 'cycleTime', 5, 300, 5)
+      .name('Cycle Time')
+      .listen()
+      .onChange((value) => {
+        this._send({ type: 'set-cycle-time', time: value })
+      })
   }
 
   /**

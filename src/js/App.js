@@ -366,7 +366,7 @@ export default class App {
 
       case 'preview-ready': {
         // Send any already-captured images immediately (current group only)
-        const items = this.previewBatch.openPreview(App.currentGroup)
+        const items = this.previewBatch.openPreview(App.currentGroup, App.visualizerList)
         if (items) this._broadcastToControls({ type: 'preview-data', items, activePreset: App.visualizerType })
         // Sync current name filter so the preview panel starts filtered
         const currentFilter = this.visualizerSwitcherConfig?.presetFilter || ''
@@ -3345,7 +3345,7 @@ export default class App {
 
     // Push the completed batch to the preview panel (current group only)
     if (this._controlsPopup && !this._controlsPopup.closed) {
-      const items = this.previewBatch.openPreview(group)
+      const items = this.previewBatch.openPreview(group, App.visualizerList)
       if (items) this._broadcastToControls({ type: 'preview-data', items, activePreset: App.visualizerType })
     }
   }
