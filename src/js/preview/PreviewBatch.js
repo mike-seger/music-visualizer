@@ -1,6 +1,12 @@
 import { zipSync } from 'fflate'
 import butterchurn from 'butterchurn'
 
+/** Reads the overridden butterchurn base path from localStorage (same key as App). */
+const _getBcPresetsBase = () => {
+  try { return localStorage.getItem('visualizer.bcPresetsBase')?.trim() || 'butterchurn-presets' }
+  catch { return 'butterchurn-presets' }
+}
+
 /**
  * PreviewBatch – captures image previews of every preset in the current group
  * and bundles them into a ZIP download.
@@ -105,7 +111,7 @@ export default class PreviewBatch {
     const groupFolder = _sanitize(group)
 
     const urlFor = getPresetUrl ??
-      ((g, n) => `butterchurn-presets/${encodeURIComponent(g)}/presets/${encodeURIComponent(n)}.json`)
+      ((g, n) => `${_getBcPresetsBase()}/${encodeURIComponent(g)}/presets/${encodeURIComponent(n)}.json`)
 
     // ── Load pre-built previews for this group (if any) ──
     // Returns { byHash: Map<hash,{imageUrl,imgExt}>, byName: Map<presetName,hash> }
@@ -178,7 +184,7 @@ export default class PreviewBatch {
           let resp = await fetch(urlFor(group, name))
           if (!resp.ok && !getPresetUrl) {
             // Fallback: try old top-level location
-            resp = await fetch(`butterchurn-presets/${encodeURIComponent(group)}/${encodeURIComponent(name)}.json`)
+            resp = await fetch(`${_getBcPresetsBase()}/${encodeURIComponent(group)}/${encodeURIComponent(name)}.json`)
           }
           if (resp.ok) hash = await _sha256short(await resp.text())
         } catch { /* network failure */ }
@@ -277,8 +283,8 @@ export default class PreviewBatch {
     await Promise.all(groupEntries.map(async ([, entry]) => {
       const g = encodeURIComponent(entry.group)
       const n = encodeURIComponent(entry.jsonPath)
-      let resp = await fetch(`butterchurn-presets/${g}/presets/${n}.json`).catch(() => null)
-      if (!resp?.ok) resp = await fetch(`butterchurn-presets/${g}/${n}.json`).catch(() => null)
+      let resp = await fetch(`${_getBcPresetsBase()}/${g}/presets/${n}.json`).catch(() => null)
+      if (!resp?.ok) resp = await fetch(`${_getBcPresetsBase()}/${g}/${n}.json`).catch(() => null)
       if (resp?.ok) files[`presets/${entry.jsonPath}.json`] = new Uint8Array(await resp.arrayBuffer())
     }))
 
@@ -419,7 +425,7 @@ export default class PreviewBatch {
     const th = height
 
     const urlFor = getPresetUrl ??
-      ((g, n) => `butterchurn-presets/${encodeURIComponent(g)}/presets/${encodeURIComponent(n)}.json`)
+      ((g, n) => `${_getBcPresetsBase()}/${encodeURIComponent(g)}/presets/${encodeURIComponent(n)}.json`)
 
     // ── Phase 1: load pre-built images ────────────────────────────────────────
     const prebuilt = await _loadPreviewIndex(group)
@@ -679,7 +685,7 @@ function _enc(str) {
  * pre-built images by the preset JSON's SHA-256 hash instead of by filename.
  */
 async function _loadPreviewIndex(group) {
-  const url = `butterchurn-presets/${encodeURIComponent(group)}/index.js?t=${Date.now()}`
+  const url = `${_getBcPresetsBase()}/${encodeURIComponent(group)}/index.js?t=${Date.now()}`
   try {
     const resp = await fetch(url, { cache: 'no-store' })
     if (!resp.ok) return { byHash: new Map(), byName: new Map() }
@@ -689,7 +695,7 @@ async function _loadPreviewIndex(group) {
     const { previewMeta, previewExt: ext } = new Function(`${code}\nreturn { previewMeta, previewExt }`)() 
     if (!(previewMeta instanceof Map) || !ext) return { byHash: new Map(), byName: new Map() }
 
-    const base = `butterchurn-presets/${encodeURIComponent(group)}/previews/`
+    const base = `${_getBcPresetsBase()}/${encodeURIComponent(group)}/previews/`
     const byHash = new Map()  // hash → { imageUrl, imgExt }
     const byName = new Map()  // presetName → hash  (inverse index for O(1) name lookup)
     for (const [hash, jsonPath] of previewMeta) {
