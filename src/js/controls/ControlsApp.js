@@ -1060,9 +1060,9 @@ export default class ControlsApp {
 
     folder.add(cfg, 'format', ['PNG', 'JPG']).name('Format').onChange(save)
 
-    folder.add(cfg, 'settleDelay', 0, 2000, 50).name('Settle ms').onChange(save)
+    folder.add(cfg, 'settleDelay', 0, 20000, 50).name('Settle ms').onChange(save)
 
-    folder.add(cfg, 'regenSettleMax', 0, 10000, 50).name('Regen settle max. ms').onChange(save)
+    folder.add(cfg, 'regenSettleMax', 0, 20000, 50).name('Regen settle max. ms').onChange(save)
 
     this._previewStatusCtrl = folder
       .add(cfg, 'status')

@@ -36,6 +36,8 @@ body {
 }
 .toolbar-btn:hover { background: #2e2e2e; }
 #copy-count { color: #fa4; }
+.toolbar-follow { display:flex; align-items:center; gap:5px; color:#aaa; font-size:12px; cursor:pointer; white-space:nowrap; user-select:none; }
+.toolbar-follow input { cursor:pointer; accent-color:#44ff9a; width:13px; height:13px; flex-shrink:0; }
 
 /* ── Status bar ── */
 #status-bar {
@@ -199,6 +201,7 @@ body.has-status { padding-top: 68px; }
   <button class="toolbar-btn" id="toggle-btn">Toggle</button>
   <button class="toolbar-btn" id="zip-btn">Download ZIP</button>
   <button class="toolbar-btn" id="copy-btn">Copy IDs (<span id="copy-count">all</span>)</button>
+  <label class="toolbar-follow" id="follow-label"><input type="checkbox" id="follow-cb"> Follow</label>
 </div>
 
 <div id="status-bar"></div>
@@ -232,6 +235,17 @@ body.has-status { padding-top: 68px; }
     try { return new Set(JSON.parse(localStorage.getItem('visualizer-selected') ?? '[]')) }
     catch { return new Set() }
   })()  // persists across re-renders and page reloads; reset when group changes
+
+  // ── Follow visualizer: auto-select the active tile on visualizer-changed ──
+  var followCb = document.getElementById('follow-cb')
+  var followVisualizer = (function () {
+    try { return localStorage.getItem('visualizer-follow') === '1' } catch { return false }
+  })()
+  followCb.checked = followVisualizer
+  followCb.addEventListener('change', function () {
+    followVisualizer = followCb.checked
+    try { localStorage.setItem('visualizer-follow', followVisualizer ? '1' : '0') } catch { /* */ }
+  })
 
   var liked = (function () {
     try { return new Set(JSON.parse(localStorage.getItem('visualizer-liked') ?? '[]')) }
@@ -408,6 +422,21 @@ body.has-status { padding-top: 68px; }
         if (filteredItems[ci].presetName === e.data.name) { changeIdx = ci; break }
       }
       setFocusedTile(changeIdx, /*noScroll=*/true) // setActive already scrolled
+      // Auto-select the active tile when Follow is enabled
+      if (followVisualizer && changeIdx >= 0) {
+        var followItem = filteredItems[changeIdx]
+        if (followItem && !selected.has(followItem.hash)) {
+          selected.add(followItem.hash)
+          var followTile = tilesByName[followItem.presetName]
+          if (followTile) {
+            followTile.classList.add('selected')
+            var followCbEl = followTile.querySelector('.tile-cb')
+            if (followCbEl) followCbEl.checked = true
+          }
+          saveSelected()
+          updateCount()
+        }
+      }
     }
   })
 
