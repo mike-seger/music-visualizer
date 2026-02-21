@@ -90,14 +90,8 @@ export default class ControlsApp {
 
     // Preview controls state
     this.previewFolder = null
-    this._previewConfig = {
-      resolution: 'fixed',
-      format: 'PNG',
-      width: 160,
-      height: 90,
-      settleDelay: 300,
-      status: 'Idle',
-    }
+    this._previewConfig = ControlsApp._loadPreviewConfig()
+    this._previewConfig.status = 'Idle'
     this._previewStatusCtrl = null
     this._previewWidthCtrl = null
     this._previewHeightCtrl = null
@@ -971,6 +965,7 @@ export default class ControlsApp {
   addPreviewControls() {
     if (this.previewFolder) return
     const cfg = this._previewConfig
+    const save = () => ControlsApp._savePreviewConfig(cfg)
 
     const folder = this.gui.addFolder('PREVIEWS')
     folder.close()
@@ -982,22 +977,25 @@ export default class ControlsApp {
       .onChange((v) => {
         this._previewWidthCtrl?.show(v === 'fixed')
         this._previewHeightCtrl?.show(v === 'fixed')
+        save()
       })
 
     this._previewWidthCtrl = folder
       .add(cfg, 'width', 1, 3840, 1)
       .name('Width')
+      .onChange(save)
     this._previewHeightCtrl = folder
       .add(cfg, 'height', 1, 2160, 1)
       .name('Height')
+      .onChange(save)
 
     // Show/hide W/H depending on current resolution mode
     this._previewWidthCtrl.show(cfg.resolution === 'fixed')
     this._previewHeightCtrl.show(cfg.resolution === 'fixed')
 
-    folder.add(cfg, 'format', ['PNG', 'JPG']).name('Format')
+    folder.add(cfg, 'format', ['PNG', 'JPG']).name('Format').onChange(save)
 
-    folder.add(cfg, 'settleDelay', 0, 2000, 50).name('Settle ms')
+    folder.add(cfg, 'settleDelay', 0, 2000, 50).name('Settle ms').onChange(save)
 
     this._previewStatusCtrl = folder
       .add(cfg, 'status')
@@ -1008,5 +1006,27 @@ export default class ControlsApp {
     folder
       .add({ capture: () => this._send({ type: 'preview-start', config: { ...cfg } }) }, 'capture')
       .name('Re-Generate')
+  }
+
+  // -------------------------------------------------------------------
+  // Preview config persistence
+  // -------------------------------------------------------------------
+
+  static _previewConfigKey = 'visualizer.preview.config'
+
+  static _loadPreviewConfig() {
+    const defaults = { resolution: 'fixed', format: 'PNG', width: 160, height: 90, settleDelay: 300 }
+    try {
+      const saved = JSON.parse(localStorage.getItem(ControlsApp._previewConfigKey) ?? 'null')
+      if (saved && typeof saved === 'object') return { ...defaults, ...saved }
+    } catch { /* ignore */ }
+    return { ...defaults }
+  }
+
+  static _savePreviewConfig(cfg) {
+    try {
+      const { resolution, format, width, height, settleDelay } = cfg
+      localStorage.setItem(ControlsApp._previewConfigKey, JSON.stringify({ resolution, format, width, height, settleDelay }))
+    } catch { /* ignore */ }
   }
 }

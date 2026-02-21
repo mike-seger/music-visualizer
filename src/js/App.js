@@ -275,13 +275,7 @@ export default class App {
     this.previewBatch = new PreviewBatch()
     this._currentPresetHash = null  // 12-char SHA-256 hash of the active preset's JSON
     this._previewAutoStart = null  // debounce timer for auto-start
-    this._previewConfig = {
-      settleDelay: 300,
-      resolution: 'fixed',
-      width: 160,
-      height: 90,
-      format: 'PNG',
-    }
+    this._previewConfig = App._loadPreviewConfig()
   }
 
   // -------------------------------------------------------------------
@@ -389,6 +383,7 @@ export default class App {
         // Update stored config from popup then start capture
         if (msg.config && typeof msg.config === 'object') {
           Object.assign(this._previewConfig, msg.config)
+          App._savePreviewConfig(this._previewConfig)
         }
         this._startPreviewCapture()
         break
@@ -3373,6 +3368,28 @@ export default class App {
     const vis = App.currentVisualizer
     if (vis && vis._canvas instanceof HTMLCanvasElement) return vis._canvas
     return this.renderer?.domElement ?? null
+  }
+
+  // -------------------------------------------------------------------
+  // Preview config persistence
+  // -------------------------------------------------------------------
+
+  static _previewConfigKey = 'visualizer.preview.config'
+
+  static _loadPreviewConfig() {
+    const defaults = { settleDelay: 300, resolution: 'fixed', width: 160, height: 90, format: 'PNG' }
+    try {
+      const saved = JSON.parse(localStorage.getItem(App._previewConfigKey) ?? 'null')
+      if (saved && typeof saved === 'object') return { ...defaults, ...saved }
+    } catch { /* ignore */ }
+    return { ...defaults }
+  }
+
+  static _savePreviewConfig(cfg) {
+    try {
+      const { resolution, format, width, height, settleDelay } = cfg
+      localStorage.setItem(App._previewConfigKey, JSON.stringify({ resolution, format, width, height, settleDelay }))
+    } catch { /* ignore */ }
   }
 
   /** Build capture params from stored config, feed them to PreviewBatch. */

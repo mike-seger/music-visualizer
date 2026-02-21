@@ -68,7 +68,7 @@ body.has-status { padding-top: 68px; }
 /* ── Tile ── */
 .tile {
   position: relative;
-  width: var(--tile-w, 160px); height: var(--tile-h, 160px);
+  width: var(--tile-w, 240px); height: var(--tile-h, 240px);
   flex-shrink: 0;
   background: #111;
   border-radius: 2px; overflow: hidden;
@@ -230,7 +230,7 @@ body.has-status { padding-top: 68px; }
   function getTilesPerRow() {
     var grid = document.querySelector('.grid')
     if (!grid || filteredItems.length === 0) return 1
-    var tileW = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--tile-w')) || 160
+    var tileW = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--tile-w')) || 240
     var gap = 6
     return Math.max(1, Math.floor((grid.clientWidth + gap) / (tileW + gap)))
   }
@@ -359,7 +359,7 @@ body.has-status { padding-top: 68px; }
     if (items.length > 0) {
       var probe = new Image()
       probe.onload = function () {
-        var scale = Math.min(160 / probe.naturalWidth, 160 / probe.naturalHeight)
+        var scale = Math.min(240 / probe.naturalWidth, 240 / probe.naturalHeight)
         var tw = Math.round(probe.naturalWidth  * scale)
         var th = Math.round(probe.naturalHeight * scale)
         document.documentElement.style.setProperty('--tile-w', tw + 'px')
