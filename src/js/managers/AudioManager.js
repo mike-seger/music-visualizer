@@ -4,6 +4,7 @@ export default class AudioManager {
   static _STORAGE_KEY = 'visualizer.audioSource'
 
   static SOURCES = [
+    { label: 'Preview Loop',                                                     url: 'audio/preview-loop.flac' },
     { label: 'Dhamsuta - Lucent Venture',                                        url: 'audio/Dhamsuta - Lucent Venture.mp3' },
     { label: '2025-12-31: "End Of Year Bonus Mix 2025" by DJ Johan Lecander',  url: '../player/video/user__eoy_bonus_mix_2025/vid_TKWp_ND-B1U.mp4' },
     { label: '2025-11-28: "Golden Weekdays" by DJ Johan Lecander',              url: '../player/video/pl_2025-2_golden_weekdays/vid_87TRyySHou8.mp4' },
@@ -32,8 +33,10 @@ export default class AudioManager {
     this.microphoneSource = null
 
     const _savedUrl = localStorage.getItem(AudioManager._STORAGE_KEY)
-    const _active = AudioManager.SOURCES.find(s => s.url === _savedUrl) ?? AudioManager.SOURCES[0]
-    this.song = { url: _active.url }
+    const _knownSource = _savedUrl ? AudioManager.SOURCES.find(s => s.url === _savedUrl) : null
+    // If saved URL is a known source use it; if it's a custom URL use it directly;
+    // otherwise fall back to the first source.
+    this.song = { url: _knownSource ? _knownSource.url : (_savedUrl ?? AudioManager.SOURCES[0].url) }
   }
 
   /**

@@ -968,23 +968,47 @@ export default class ControlsApp {
   addAudioControls() {
     if (this.audioFolder) return
     const sources = this._audioSources || []
-    if (sources.length < 2) return  // no dropdown needed for a single source
 
+    const CUSTOM_LABEL = 'Custom'
     const labelMap = Object.fromEntries(sources.map(s => [s.label, s.url]))
-    const active = sources.find(s => s.url === this._currentAudioUrl) ?? sources[0]
-    const cfg = { source: active?.label ?? '' }
+    const activeSource = sources.find(s => s.url === this._currentAudioUrl)
+    const activeIsCustom = !activeSource
+
+    const cfg = {
+      source:    activeIsCustom ? CUSTOM_LABEL : (activeSource?.label ?? sources[0]?.label ?? ''),
+      customUrl: activeIsCustom ? (this._currentAudioUrl ?? '') : '',
+    }
 
     const folder = this.gui.addFolder('AUDIO')
     folder.close()
     this.audioFolder = folder
 
+    const allLabels = [...sources.map(s => s.label), CUSTOM_LABEL]
+
+    // Source dropdown — created first so it appears on top
+    let customUrlCtrl
     folder
-      .add(cfg, 'source', sources.map(s => s.label))
+      .add(cfg, 'source', allLabels)
       .name('Audio Source')
       .onChange((label) => {
-        const url = labelMap[label]
-        if (url) this._send({ type: 'set-audio-source', url })
+        if (label === CUSTOM_LABEL) {
+          customUrlCtrl?.show(true)
+          if (cfg.customUrl) this._send({ type: 'set-audio-source', url: cfg.customUrl })
+        } else {
+          customUrlCtrl?.show(false)
+          const url = labelMap[label]
+          if (url) this._send({ type: 'set-audio-source', url })
+        }
       })
+
+    // Custom URL field — hidden unless Custom is selected
+    customUrlCtrl = folder
+      .add(cfg, 'customUrl')
+      .name('Custom URL')
+      .onFinishChange((url) => {
+        if (cfg.source === CUSTOM_LABEL && url) this._send({ type: 'set-audio-source', url })
+      })
+    customUrlCtrl.show(activeIsCustom)
   }
 
   // -------------------------------------------------------------------
