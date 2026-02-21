@@ -3583,7 +3583,7 @@ export default class App {
     await this.previewBatch.startOffscreenCapture({
       list,
       group,
-      audioUrl: `${import.meta.env.BASE_URL}audio/preview-loop.mp3`,
+      audioUrl: `${import.meta.env.BASE_URL}audio/preview-loop.flac`,
       settleDelay: cfg.settleDelay,
       resolution: cfg.resolution,
       width: cfg.width,

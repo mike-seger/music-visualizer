@@ -495,12 +495,12 @@ export default class PreviewBatch {
           audioEl.buffer = audioBuf
           audioEl.loop = true
           audioEl.connect(analyser)
-          analyser.connect(audioCtx.destination)
+          // intentionally NOT connecting analyser to destination — audio
+          // feeds butterchurn only, nothing goes to the speakers
           await audioCtx.resume()
           audioEl.start(0)
         } catch (audioErr) {
           console.warn('[PreviewBatch] audio load failed, capturing silent:', audioErr?.message ?? audioErr)
-          analyser.connect(audioCtx.destination)
           await audioCtx.resume()
         }
       }
