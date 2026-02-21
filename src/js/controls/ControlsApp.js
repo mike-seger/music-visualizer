@@ -138,6 +138,8 @@ export default class ControlsApp {
         this.groupDisplayMap = msg.groupDisplayMap || {}
         this.currentGroup = msg.currentGroup || ''
         this._perfHidden = !!msg.perfHidden
+        this._audioSources = msg.audioSources || []
+        this._currentAudioUrl = msg.currentAudioUrl || ''
         this.initGui()
         break
       case 'visualizer-changed':
@@ -216,6 +218,7 @@ export default class ControlsApp {
 
     this.setupGuiCloseButton()
     this.addVisualizerSwitcher()
+    this.addAudioControls()
     this.addPerformanceQualityControls()
     this.addPreviewControls()
     // Apply initial perf folder visibility
@@ -956,6 +959,32 @@ export default class ControlsApp {
 
     folder.open()
     this.shaderControlsFolder = folder
+  }
+
+  // -------------------------------------------------------------------
+  // Audio source controls
+  // -------------------------------------------------------------------
+
+  addAudioControls() {
+    if (this.audioFolder) return
+    const sources = this._audioSources || []
+    if (sources.length < 2) return  // no dropdown needed for a single source
+
+    const labelMap = Object.fromEntries(sources.map(s => [s.label, s.url]))
+    const active = sources.find(s => s.url === this._currentAudioUrl) ?? sources[0]
+    const cfg = { source: active?.label ?? '' }
+
+    const folder = this.gui.addFolder('AUDIO')
+    folder.close()
+    this.audioFolder = folder
+
+    folder
+      .add(cfg, 'source', sources.map(s => s.label))
+      .name('Audio Source')
+      .onChange((label) => {
+        const url = labelMap[label]
+        if (url) this._send({ type: 'set-audio-source', url })
+      })
   }
 
   // -------------------------------------------------------------------

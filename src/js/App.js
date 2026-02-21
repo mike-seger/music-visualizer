@@ -400,6 +400,10 @@ export default class App {
         break
       }
 
+      case 'set-audio-source':
+        if (msg.url) App.audioManager.setSource(msg.url)
+        break
+
       case 'preview-zip':
         this._downloadPreviewZip(msg.hashes)
         break
@@ -451,6 +455,8 @@ export default class App {
       groupDisplayMap: { ...App._groupDisplayMap },
       currentGroup: App.currentGroup,
       perfHidden: this._isButterchurnGroup(),
+      audioSources: AudioManager.SOURCES,
+      currentAudioUrl: App.audioManager?.song?.url ?? AudioManager.SOURCES[0].url,
     })
     // Also send current visualizer details
     this._broadcastVisualizerChanged()

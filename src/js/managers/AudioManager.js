@@ -1,6 +1,14 @@
 import * as THREE from 'three'
 
 export default class AudioManager {
+  static _STORAGE_KEY = 'visualizer.audioSource'
+
+  static SOURCES = [
+    { label: 'Dhamsuta - Lucent Venture',                                        url: 'audio/Dhamsuta - Lucent Venture.mp3' },
+    { label: '2025-12-31: "End Of Year Bonus Mix 2025" by DJ Johan Lecander',  url: '../player/video/user__eoy_bonus_mix_2025/vid_TKWp_ND-B1U.mp4' },
+    { label: '2025-11-28: "Golden Weekdays" by DJ Johan Lecander',              url: '../player/video/pl_2025-2_golden_weekdays/vid_87TRyySHou8.mp4' },
+  ]
+
   constructor() {
     this.frequencyArray = []
     this.frequencyData = {
@@ -23,11 +31,24 @@ export default class AudioManager {
     this.microphoneStream = null
     this.microphoneSource = null
 
-    this.song = {
- //     url: 'http://localhost:8080/backup/vid_TKWp_ND-B1U.mp4',
- //     url: 'http://localhost:8080/player/video/user__eoy_bonus_mix_2025/vid_TKWp_ND-B1U.mp4',
-      url: 'http://michaels-macmini-2023:8080/player/video/pl_2025-2_golden_weekdays/vid_87TRyySHou8.mp4',
-    }
+    const _savedUrl = localStorage.getItem(AudioManager._STORAGE_KEY)
+    const _active = AudioManager.SOURCES.find(s => s.url === _savedUrl) ?? AudioManager.SOURCES[0]
+    this.song = { url: _active.url }
+  }
+
+  /**
+   * Switch to a different audio source at runtime.
+   * The choice is persisted to localStorage so it survives page reload.
+   */
+  setSource(url) {
+    if (!url || url === this.song.url) return
+    this.song.url = url
+    try { localStorage.setItem(AudioManager._STORAGE_KEY, url) } catch { /* */ }
+    if (!this.audio) return
+    const wasPlaying = this.isPlaying
+    this.audio.src = url
+    this.audio.load()
+    if (wasPlaying) this.audio.play().catch(() => { /* autoplay policy */ })
   }
 
   async loadAudioBuffer(onProgress = null) {
