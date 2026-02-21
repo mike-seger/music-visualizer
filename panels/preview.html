@@ -113,6 +113,35 @@ body.has-status { padding-top: 68px; }
 .tile:hover .tile-cb:checked { border-color: #44ff9a; }
 .tile.selected .tile-cb { opacity: 1; }
 
+/* Preset name overlay — always visible */
+.tile-name {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px;
+  background: rgba(0,0,0,.35);
+  color: #eee;
+  font-size: 11px;
+  line-height: 1.4;
+  text-align: center;
+  word-break: break-word;
+  overflow: hidden;
+  pointer-events: none;
+}
+.tile.missing .tile-name { background: rgba(0,0,0,.6); }
+
+/* Blue capture button */
+.btn-capture {
+  background: #1a6fd4; border: 1px solid #4494f0; color: #fff;
+  padding: 5px 12px; border-radius: 4px; font-size: 12px; cursor: pointer;
+  white-space: nowrap;
+  display: none;
+}
+.btn-capture:hover { background: #2179e8; }
+.btn-capture.visible { display: inline-block; }
+
 /* Heart — like state, appears on hover */
 .tile-heart {
   position: absolute; bottom: 5px; right: 24px;
@@ -157,6 +186,7 @@ body.has-status { padding-top: 68px; }
 
 <div id="toolbar">
   <span id="title">Preset Preview</span>
+  <button class="btn-capture" id="capture-btn">Capture previews</button>
   <button class="toolbar-btn" id="select-all-btn">Select All</button>
   <button class="toolbar-btn" id="toggle-btn">Toggle</button>
   <button class="toolbar-btn" id="zip-btn">Download ZIP</button>
@@ -182,6 +212,7 @@ body.has-status { padding-top: 68px; }
   if (ch) ch.postMessage({ type: 'preview-ready' })
 
   var statusBar = document.getElementById('status-bar')
+  var captureBtn = document.getElementById('capture-btn')
   var tilesByName = Object.create(null) // presetName → tile element
   var activeName = ''
   var focusIdx = -1          // keyboard-navigation cursor index in filteredItems
@@ -205,6 +236,11 @@ body.has-status { padding-top: 68px; }
 
   function saveLiked() {
     try { localStorage.setItem('visualizer-liked', JSON.stringify([...liked])) } catch { /* ignore */ }
+  }
+
+  function truncateFront(str, max) {
+    if (!str || str.length <= max) return str
+    return '\u2026' + str.slice(str.length - (max - 1))
   }
 
   function setStatus(text) {
@@ -250,6 +286,11 @@ body.has-status { padding-top: 68px; }
       }
     }
   }
+
+  // ── Capture button ──
+  captureBtn.addEventListener('click', function () {
+    if (ch) ch.postMessage({ type: 'preview-start' })
+  })
 
   // ── Copy IDs ── (wired once; `selected` and `filteredItems` are module-level)
   var copyCountEl = document.getElementById('copy-count')
@@ -310,6 +351,13 @@ body.has-status { padding-top: 68px; }
       saveSelected()
       updateCount()
       allItems = e.data.items || []
+      var mc = e.data.missingCount != null ? e.data.missingCount : 0
+      if (mc > 0) {
+        captureBtn.textContent = 'Capture ' + mc + ' preview' + (mc === 1 ? '' : 's')
+        captureBtn.classList.add('visible')
+      } else {
+        captureBtn.classList.remove('visible')
+      }
       applyFilter(e.data.activePreset || '')
       return
     }
@@ -404,7 +452,7 @@ body.has-status { padding-top: 68px; }
     var overlayLbl = document.getElementById('overlay-label')
 
     var tile = document.createElement('div')
-    tile.className = 'tile'
+    tile.className = 'tile' + (item.missing ? ' missing' : '')
     tile.title = item.presetName
     tilesByName[item.presetName] = tile
 
@@ -413,6 +461,11 @@ body.has-status { padding-top: 68px; }
     img.alt = item.presetName
     img.loading = 'lazy'
     img.draggable = false
+
+    // Name overlay (centered, front-truncated at 60 chars)
+    var nameDiv = document.createElement('div')
+    nameDiv.className = 'tile-name'
+    nameDiv.textContent = truncateFront(item.presetName, 60)
 
     var heart = document.createElement('span')
     heart.className = 'tile-heart'
@@ -458,8 +511,7 @@ body.has-status { padding-top: 68px; }
     })
 
     tile.appendChild(img)
-
-    // Restore persisted liked state (hash-based, cross-group)
+    tile.appendChild(nameDiv)
     if (liked.has(item.hash)) {
       tile.classList.add('liked')
       heart.textContent = '\u2665'  // ♥ filled

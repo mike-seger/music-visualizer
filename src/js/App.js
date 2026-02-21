@@ -377,15 +377,12 @@ export default class App {
         break
 
       case 'preview-ready': {
-        // Send any already-captured images immediately (current group only)
-        const items = this.previewBatch.openPreview(App.currentGroup, App.visualizerList)
-        if (items) this._broadcastToControls({ type: 'preview-data', items, activePreset: App.visualizerType })
+        // Send all presets (captured + placeholders for missing) to the preview panel
+        const { items: allItems, missingCount } = this._buildAllPreviewItems(App.currentGroup, App.visualizerList)
+        this._broadcastToControls({ type: 'preview-data', items: allItems, activePreset: App.visualizerType, missingCount })
         // Sync current name filter so the preview panel starts filtered
         const currentFilter = this.visualizerSwitcherConfig?.presetFilter || ''
         if (currentFilter) this._broadcastToControls({ type: 'preview-filter', filter: currentFilter })
-        // Auto-start capture for the current group (unless already running)
-        clearTimeout(this._previewAutoStart)
-        if (!this.previewBatch.isRunning()) this._startPreviewCapture()
         break
       }
 
@@ -3507,6 +3504,31 @@ export default class App {
   }
 
   /** Build capture params from stored config, feed them to PreviewBatch. */
+  /**
+   * Build a full items array for the preview panel: captured presets get their
+   * real blob URL; missing presets get a placeholder image.
+   * Returns { items, missingCount }.
+   */
+  _buildAllPreviewItems(group, list) {
+    const captured = this.previewBatch.openPreview(group, list) ?? []
+    const capturedByName = new Map(captured.map((it) => [it.presetName, it]))
+    const placeholderUrl = `${import.meta.env.BASE_URL}img/preview.png`
+    let missingCount = 0
+    const items = (list || []).map((name) => {
+      if (capturedByName.has(name)) return capturedByName.get(name)
+      missingCount++
+      return {
+        hash: 'placeholder:' + name,
+        blobUrl: placeholderUrl,
+        presetName: name,
+        group,
+        jsonPath: null,
+        missing: true,
+      }
+    })
+    return { items, missingCount }
+  }
+
   async _startPreviewCapture() {
     if (this.previewBatch.isRunning()) {
       this.previewBatch.cancel()
@@ -3567,10 +3589,10 @@ export default class App {
       await this.switchVisualizer(originalPreset, { notify: false })
     }
 
-    // Push the completed batch to the preview panel (current group only)
+    // Push updated items (captured + any remaining placeholders) to the preview panel
     if (this._controlsPopup && !this._controlsPopup.closed) {
-      const items = this.previewBatch.openPreview(group, App.visualizerList)
-      if (items) this._broadcastToControls({ type: 'preview-data', items, activePreset: App.visualizerType })
+      const { items: allItems, missingCount } = this._buildAllPreviewItems(group, App.visualizerList)
+      this._broadcastToControls({ type: 'preview-data', items: allItems, activePreset: App.visualizerType, missingCount })
     }
   }
 
@@ -4899,11 +4921,11 @@ export default class App {
       perfHidden: this._isButterchurnGroup(groupName),
     })
 
-    // Auto-regenerate previews if the panels popup is open
+    // Refresh preview panel with new group's items (captured + placeholders)
     if (this._controlsPopup && !this._controlsPopup.closed) {
-      this.previewBatch.cancel()
-      clearTimeout(this._previewAutoStart)
-      this._previewAutoStart = setTimeout(() => this._startPreviewCapture(), 250)
+      if (this.previewBatch.isRunning()) this.previewBatch.cancel()
+      const { items: allItems, missingCount } = this._buildAllPreviewItems(groupName, App.visualizerList)
+      this._broadcastToControls({ type: 'preview-data', items: allItems, activePreset: target, missingCount })
     }
 
     // Switch visualizer if needed
