@@ -3703,7 +3703,7 @@ export default class App {
 
     if (this._controlsPopup && !this._controlsPopup.closed) {
       const { items: allItems, missingCount } = this._buildAllPreviewItems(group, App.visualizerList)
-      this._broadcastToControls({ type: 'preview-data', items: allItems, activePreset: App.visualizerType, missingCount })
+      this._broadcastToControls({ type: 'preview-data', items: allItems, activePreset: App.visualizerType, missingCount, keepSelection: true })
     }
   }
 

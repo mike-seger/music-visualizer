@@ -551,7 +551,7 @@ export default class PreviewBatch {
         console.warn(`[PreviewBatch] skip (no data) "${name}"`)
         continue
       }
-      if (_store.has(hash) && _store.get(hash).group === group) continue
+      if (!forceCapture && _store.has(hash) && _store.get(hash).group === group) continue
 
       // Per-preset settle: random between settleDelay and settleDelayMax when regen
       const thisSettle = (settleDelayMax != null && settleDelayMax > settleDelay)

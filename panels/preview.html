@@ -349,10 +349,12 @@ body.has-status { padding-top: 68px; }
     }
     if (e.data.type === 'preview-data') {
       setStatus('')
-      // Reset selection when a new group's data arrives
-      selected.clear()
-      saveSelected()
-      updateCount()
+      // Reset selection only when a new group's data arrives (not after regen)
+      if (!e.data.keepSelection) {
+        selected.clear()
+        saveSelected()
+        updateCount()
+      }
       allItems = e.data.items || []
       var mc = e.data.missingCount != null ? e.data.missingCount : 0
       if (mc > 0) {
