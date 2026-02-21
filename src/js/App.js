@@ -184,6 +184,11 @@ export default class App {
     this._controlsChannel = null
     this._controlsPopup = null
     this._controlsPopupPollTimer = null
+    this._pendingPopupGeo = null
+    this._popupGeoApplied = false
+    this._popupControlsReady = false
+    this._wmPermissionGranted = false
+    this._isUnloading = false
     this._setupControlsChannel()
 
     // GUI controller references
@@ -303,6 +308,11 @@ export default class App {
       case 'controls-ready':
         // Popup is open and waiting — send full init state
         this._sendControlsInit()
+        // Mark the popup as ready, then attempt to apply saved geometry.
+        // Both popup-ready and window-management permission must be in place
+        // before moveTo() will actually cross to another screen.
+        this._popupControlsReady = true
+        this._applyPendingPopupGeo()
         break
 
       case 'controls-closed':
@@ -490,42 +500,118 @@ export default class App {
     })
   }
 
-  _openPanelsPopup() {
-    const w = Math.min(1400, screen.availWidth - 20)
-    const h = Math.min(900, screen.availHeight - 40)
-    const left = Math.round((screen.availWidth - w) / 2)
-    const top  = Math.round((screen.availHeight - h) / 2)
+  _applyPendingPopupGeo() {
+    if (this._popupGeoApplied || !this._pendingPopupGeo) return
+    if (!this._popupControlsReady) return
+    if (!this._wmPermissionGranted && window.getScreenDetails) return
+    if (!this._controlsPopup || this._controlsPopup.closed) return
+    const geo = this._pendingPopupGeo
+    this._pendingPopupGeo = null
+    this._popupGeoApplied = true
+    try {
+      this._controlsPopup.moveTo(geo.left, geo.top)
+      this._controlsPopup.resizeTo(geo.w, geo.h)
+    } catch { /* ignore */ }
+  }
 
-    // If already open and alive, reposition/focus it
+  static _popupGeometryKey = 'visualizer.panelsPopupGeometry'
+
+  _savePopupGeometry() {
+    if (!this._controlsPopup || this._controlsPopup.closed) return
+    try {
+      const geo = {
+        left: this._controlsPopup.screenX,
+        top:  this._controlsPopup.screenY,
+        w:    this._controlsPopup.outerWidth,
+        h:    this._controlsPopup.outerHeight,
+      }
+      localStorage.setItem(App._popupGeometryKey, JSON.stringify(geo))
+    } catch { /* */ }
+  }
+
+  _loadPopupGeometry() {
+    try {
+      const raw = localStorage.getItem(App._popupGeometryKey)
+      if (!raw) return null
+      const geo = JSON.parse(raw)
+      if (Number.isFinite(geo.left) && Number.isFinite(geo.top) &&
+          Number.isFinite(geo.w)    && Number.isFinite(geo.h)) {
+        return geo
+      }
+    } catch { /* */ }
+    return null
+  }
+
+  _openPanelsPopup() {
+    // If already open and alive, just focus it (preserve user's current position)
     if (this._controlsPopup && !this._controlsPopup.closed) {
-      try {
-        this._controlsPopup.moveTo(left, top)
-        this._controlsPopup.resizeTo(w, h)
-      } catch { /* cross-origin or permission error — ignore */ }
       this._controlsPopup.focus()
       return
     }
 
-    // Resolve panels/index.html relative to the current page
-    const base = new URL('.', window.location.href).href
-    const url  = new URL('panels/index.html', base).href
+    const saved = this._loadPopupGeometry()
 
-    const features = `popup=yes,width=${w},height=${h},left=${left},top=${top},resizable=yes,scrollbars=no,menubar=no,toolbar=no,location=no,status=no`
+    this._pendingPopupGeo  = saved || null
+    this._popupGeoApplied  = false
+    this._popupControlsReady = false
+    this._wmPermissionGranted = false
 
-    this._controlsPopup = window.open(url, '', features)
+    // Chrome requires the Window Management permission to open/move a popup
+    // to a screen other than the current one.  window.getScreenDetails() both
+    // requests that permission AND must be called from a user gesture.
+    // We request it first (we ARE inside a user gesture here), and open the
+    // popup in the .then() so it inherits the granted permission.
+    const doOpen = () => {
+      const w    = saved ? saved.w    : Math.min(1400, screen.availWidth - 20)
+      const h    = saved ? saved.h    : Math.min(900,  screen.availHeight - 40)
+      const left = saved ? saved.left : Math.round((screen.availWidth  - w) / 2)
+      const top  = saved ? saved.top  : Math.round((screen.availHeight - h) / 2)
 
-    if (!this._controlsPopup) {
-      alert('Popup blocked. Please allow popups for this site.')
-      return
+      const base = new URL('.', window.location.href).href
+      const url  = new URL('panels/index.html', base).href
+      const features = `popup=yes,width=${w},height=${h},left=${left},top=${top},resizable=yes,scrollbars=no,menubar=no,toolbar=no,location=no,status=no`
+      this._controlsPopup = window.open(url, '', features)
+
+      if (!this._controlsPopup) {
+        alert('Popup blocked. Please allow popups for this site.')
+        return
+      }
+
+      // Remember that the popup is open across reloads
+      try { localStorage.setItem('visualizer.panelsPopupOpen', '1') } catch { /* */ }
+
+      // Poll for popup close and continuously save its geometry so position/size
+      // survive a page reload even if beforeunload doesn't fire in time.
+      if (this._controlsPopupPollTimer) clearInterval(this._controlsPopupPollTimer)
+      this._controlsPopupPollTimer = setInterval(() => {
+        if (!this._controlsPopup || this._controlsPopup.closed) {
+          this._onControlsPopupClosed()
+        } else {
+          this._savePopupGeometry()
+        }
+      }, 500)
     }
 
-    // Poll for popup close (beforeunload isn't always reliable cross-window)
-    if (this._controlsPopupPollTimer) clearInterval(this._controlsPopupPollTimer)
-    this._controlsPopupPollTimer = setInterval(() => {
-      if (!this._controlsPopup || this._controlsPopup.closed) {
-        this._onControlsPopupClosed()
-      }
-    }, 500)
+    if (saved && window.getScreenDetails) {
+      // Request window-management permission so Chrome allows cross-screen open.
+      window.getScreenDetails()
+        .then((details) => {
+          console.log('[Popup] window-management granted, screens:', details.screens.length)
+          this._wmPermissionGranted = true
+          doOpen()
+          this._applyPendingPopupGeo()
+        })
+        .catch((err) => {
+          console.warn('[Popup] window-management denied:', err?.message ?? err)
+          // Fall through: open without cross-screen capability
+          doOpen()
+        })
+    } else {
+      // No Window Management API (Firefox / Safari) — open directly; moveTo
+      // cross-screen may or may not work depending on browser.
+      this._wmPermissionGranted = true
+      doOpen()
+    }
   }
 
   _onControlsPopupClosed() {
@@ -534,6 +620,11 @@ export default class App {
       this._controlsPopupPollTimer = null
     }
     this._controlsPopup = null
+    // Don't clear the flag if the page itself is unloading — the popup was
+    // force-closed by beforeunload, not by the user, so we want it to reopen.
+    if (!this._isUnloading) {
+      try { localStorage.removeItem('visualizer.panelsPopupOpen') } catch { /* */ }
+    }
     try { this.previewBatch?.closePreview() } catch { /* */ }
   }
 
@@ -675,6 +766,8 @@ export default class App {
   _startCycleTimer() {
     this._stopCycleTimer()
     if (!this._cycleEnabled || this._cycleTime <= 0) return
+    // Don't start ticking while audio is paused — will be restarted on 'play'
+    if (App.audioManager?.audio?.paused) return
     this._cycleTimerHandle = setInterval(() => {
       this.cycleVisualizer(1)
     }, this._cycleTime * 1000)
@@ -1326,6 +1419,13 @@ export default class App {
     if (App.audioManager?.audio) {
       App.audioManager.audio.addEventListener('play', updatePlayState)
       App.audioManager.audio.addEventListener('pause', updatePlayState)
+      // Restart cycle timer with a fresh full interval after unpausing
+      App.audioManager.audio.addEventListener('play', () => this._resetCycleTimer())
+      // Stop cycle timer while paused
+      App.audioManager.audio.addEventListener('pause', () => this._stopCycleTimer())
+      // Persist play/pause state across reloads
+      App.audioManager.audio.addEventListener('play',  () => { try { localStorage.setItem('visualizer.audioState', 'playing') } catch { /* */ } })
+      App.audioManager.audio.addEventListener('pause', () => { try { localStorage.setItem('visualizer.audioState', 'paused')  } catch { /* */ } })
     }
 
     muteBtn?.addEventListener('click', () => {
@@ -1461,6 +1561,10 @@ export default class App {
     }
 
     window.addEventListener('beforeunload', () => {
+      // Mark as unloading so forced popup close doesn't clear the auto-open flag
+      this._isUnloading = true
+      // Final save of popup position/size before the page goes away
+      this._savePopupGeometry()
       // Close all pop-out windows so they don't linger after the page unloads
       try { if (this._controlsPopup && !this._controlsPopup.closed) this._controlsPopup.close() } catch { /* */ }
       // Revoke any lingering preview blob URLs
@@ -2268,6 +2372,9 @@ export default class App {
     // Start auto-cycle if enabled
     if (this._cycleEnabled) this._startCycleTimer()
 
+    // Re-open the panels popup if it was open when the page was last closed
+    if (localStorage.getItem('visualizer.panelsPopupOpen') === '1') this._openPanelsPopup()
+
     // Now create the actual visualizer.
     this.switchVisualizer(initialVisualizer, { notify: false })
 
@@ -2276,6 +2383,13 @@ export default class App {
 
     // Start playback (user already clicked to initialize the app)
     App.audioManager.play()
+
+    // Restore paused state from previous session (standalone mode only).
+    // Bridge/autostart modes handle their own playback state.
+    const _isBridgeMode = !!this.bridgeTarget || urlParams.get('autostart') === '1'
+    if (!_isBridgeMode && localStorage.getItem('visualizer.audioState') === 'paused') {
+      App.audioManager.audio?.pause()
+    }
 
     // Detect BPM in the background after 30 seconds
     setTimeout(async () => {
