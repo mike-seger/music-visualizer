@@ -385,6 +385,14 @@ body.has-status { padding-top: 68px; }
       }
       return
     }
+    if (e.data.type === 'preview-regen-request') {
+      var regenNames = []
+      for (var ai = 0; ai < allItems.length; ai++) {
+        if (selected.has(allItems[ai].hash)) regenNames.push(allItems[ai].presetName)
+      }
+      if (ch) ch.postMessage({ type: 'preview-regen', names: regenNames })
+      return
+    }
     if (e.data.type === 'preview-filter') {
       currentFilter = e.data.filter || ''
       applyFilter()
