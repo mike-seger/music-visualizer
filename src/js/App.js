@@ -446,6 +446,31 @@ export default class App {
         if (msg.url) App.audioManager.setSource(msg.url)
         break
 
+      case 'preview-snapshot': {
+        // Capture the live visualizer canvas at configured dimensions → clipboard
+        const { width: snapW = 160, height: snapH = 90 } = msg.config || {}
+        const snapSrc = (App.currentVisualizer?.isButterchurn && App.currentVisualizer?._canvas)
+          ? App.currentVisualizer._canvas
+          : this.renderer?.domElement
+        if (!snapSrc) break
+        try {
+          const off = new OffscreenCanvas(snapW, snapH)
+          const ctx2 = off.getContext('2d')
+          ctx2.drawImage(snapSrc, 0, 0, snapW, snapH)
+          off.convertToBlob({ type: 'image/png' }).then((blob) => {
+            return navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })])
+          }).then(() => {
+            this._broadcastToControls({ type: 'preview-status', text: `Snapshot copied to clipboard (${snapW}×${snapH})` })
+          }).catch((e) => {
+            console.warn('[Snapshot] clipboard write failed:', e)
+            this._broadcastToControls({ type: 'preview-status', text: `Snapshot failed: ${e?.message ?? e}` })
+          })
+        } catch (e) {
+          console.warn('[Snapshot] error:', e)
+        }
+        break
+      }
+
       case 'preview-zip':
         this._downloadPreviewZip(msg.hashes)
         break

@@ -1073,6 +1073,11 @@ export default class ControlsApp {
     folder
       .add({ regen: () => this._send({ type: 'preview-start-regen', config: { ...cfg } }) }, 'regen')
       .name('Re-Generate')
+
+    // Snapshot — capture main visualizer canvas at preview dimensions → clipboard
+    folder
+      .add({ snap: () => this._send({ type: 'preview-snapshot', config: { width: cfg.width, height: cfg.height } }) }, 'snap')
+      .name('Snapshot → Clipboard')
   }
 
   // -------------------------------------------------------------------

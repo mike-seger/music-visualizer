@@ -36,8 +36,26 @@ body {
 }
 .toolbar-btn:hover { background: #2e2e2e; }
 #copy-count { color: #fa4; }
-.toolbar-follow { display:flex; align-items:center; gap:5px; color:#aaa; font-size:12px; cursor:pointer; white-space:nowrap; user-select:none; }
-.toolbar-follow input { cursor:pointer; accent-color:#44ff9a; width:13px; height:13px; flex-shrink:0; }
+.toolbar-follow {
+  display: flex; align-items: center; gap: 6px;
+  color: #aaa; font-size: 12px; cursor: pointer;
+  white-space: nowrap; user-select: none;
+}
+.toolbar-follow input[type=checkbox] {
+  appearance: none; -webkit-appearance: none;
+  width: 15px; height: 15px;
+  background: #424242;
+  border-radius: 2px;
+  cursor: pointer; flex-shrink: 0;
+  text-align: center;
+}
+.toolbar-follow input[type=checkbox]::before {
+  content: "✓";
+  display: block;
+  color: #eee; font-size: 11px; line-height: 15px;
+  visibility: hidden;
+}
+.toolbar-follow input[type=checkbox]:checked::before { visibility: visible; }
 
 /* ── Status bar ── */
 #status-bar {
