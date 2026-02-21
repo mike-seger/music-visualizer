@@ -538,29 +538,28 @@ export default class PreviewBatch {
       }
       if (_store.has(hash) && _store.get(hash).group === group) continue
 
-      viz.loadPreset(presetJson, 0)
+      let blob = null
+      try {
+        viz.loadPreset(presetJson, 0)
 
-      // Render for settleDelay ms so the preset's initial animation plays out
-      const t0 = performance.now()
-      while (performance.now() - t0 < settleDelay) {
+        // Render for settleDelay ms so the preset's initial animation plays out
+        const t0 = performance.now()
+        while (performance.now() - t0 < settleDelay) {
+          if (this._cancelled) break
+          viz.render()
+          await _sleep(16)
+        }
         if (this._cancelled) break
-        viz.render()
-        await _sleep(16)
-      }
-      if (this._cancelled) break
 
-      viz.render() // final render before capturing
+        viz.render() // final render before capturing
 
-      const blob = await new Promise((res) => {
-        if (resolution === 'fixed') {
-          // Already the right size — capture directly
+        blob = await new Promise((res) => {
           try { offCanvas.toBlob(res, mimeType, quality) }
           catch (e) { console.warn('[PreviewBatch] toBlob failed:', e); res(null) }
-        } else {
-          try { offCanvas.toBlob(res, mimeType, quality) }
-          catch (e) { res(null) }
-        }
-      })
+        })
+      } catch (err) {
+        console.warn(`[PreviewBatch] skip (render error) "${name}":`, err?.message ?? err)
+      }
 
       if (blob) {
         const stem = getFileStem ? getFileStem(name) : name
