@@ -402,6 +402,7 @@ export default class PreviewBatch {
     height = 90,
     format = 'PNG',
     onStatus,
+    onCaptured,
   } = {}) {
     if (this._running) return
     if (!list || list.length === 0) return
@@ -578,6 +579,10 @@ export default class PreviewBatch {
           filename: `previews/${_sanitize(stem)}.${ext}`,
           blob, presetName: name, group, jsonPath: stem,
         })
+        // Create blob URL and fire progressive callback immediately
+        const blobUrl = URL.createObjectURL(blob)
+        _previewUrls.set(hash, blobUrl)
+        onCaptured?.({ name, hash, blobUrl, group, jsonPath: stem })
         captured++
       }
 

@@ -355,6 +355,27 @@ body.has-status { padding-top: 68px; }
       applyFilter(e.data.activePreset || '')
       return
     }
+    if (e.data.type === 'preview-tile-update') {
+      var upd = e.data.item
+      if (!upd) return
+      // Mutate the existing item object so all makeTile closures see the new values
+      for (var ai = 0; ai < allItems.length; ai++) {
+        if (allItems[ai].presetName === upd.presetName) {
+          allItems[ai].hash    = upd.hash
+          allItems[ai].blobUrl = upd.blobUrl
+          allItems[ai].missing = false
+          break
+        }
+      }
+      // Patch the DOM tile in place — no full re-render needed
+      var updTile = tilesByName[upd.presetName]
+      if (updTile) {
+        updTile.classList.remove('missing')
+        var updImg = updTile.querySelector('img')
+        if (updImg) updImg.src = upd.blobUrl
+      }
+      return
+    }
     if (e.data.type === 'preview-filter') {
       currentFilter = e.data.filter || ''
       applyFilter()

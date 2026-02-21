@@ -3599,6 +3599,14 @@ export default class App {
         ? (name) => (_getEntry(name)?.file ?? (name + '.json')).replace(/\.json$/i, '')
         : undefined,
       onStatus,
+      onCaptured: ({ name, hash, blobUrl, group: g, jsonPath }) => {
+        if (this._controlsPopup && !this._controlsPopup.closed) {
+          this._broadcastToControls({
+            type: 'preview-tile-update',
+            item: { hash, blobUrl, presetName: name, group: g, jsonPath, missing: false },
+          })
+        }
+      },
     })
 
     // Push updated items (captured + any remaining placeholders) to the preview panel
