@@ -140,6 +140,7 @@ export default class ControlsApp {
         this._perfHidden = !!msg.perfHidden
         this._audioSources = msg.audioSources || []
         this._currentAudioUrl = msg.currentAudioUrl || ''
+        this._bcPresetsBase = msg.bcPresetsBase ?? ''
         this.initGui()
         break
       case 'visualizer-changed':
@@ -378,6 +379,17 @@ export default class ControlsApp {
       .onChange((value) => {
         this._send({ type: 'set-cycle-time', time: value })
       })
+
+    // Custom butterchurn presets base path (overrides default 'butterchurn-presets')
+    this.visualizerSwitcherConfig.bcPresetsBase = this._bcPresetsBase || ''
+    const _bcCtrl = folder
+      .add(this.visualizerSwitcherConfig, 'bcPresetsBase')
+      .name('Custom BC Location')
+      .onFinishChange((value) => {
+        this._send({ type: 'set-bc-presets-base', base: (value || '').trim() })
+      })
+    const _bcInput = _bcCtrl.domElement.querySelector('input')
+    if (_bcInput) _bcInput.setAttribute('placeholder', 'butterchurn-presets')
   }
 
   /**

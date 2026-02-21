@@ -168,6 +168,20 @@ export default class App {
     catch { return new Set() }
   })()
 
+  // Overrideable base path for butterchurn preset folders (default: 'butterchurn-presets')
+  static _BC_PRESETS_STORAGE_KEY = 'visualizer.bcPresetsBase'
+  static get _bcPresetsBase() {
+    try { return localStorage.getItem(App._BC_PRESETS_STORAGE_KEY)?.trim() || 'butterchurn-presets' }
+    catch { return 'butterchurn-presets' }
+  }
+  static set _bcPresetsBase(val) {
+    try {
+      const v = (val || '').trim()
+      if (!v || v === 'butterchurn-presets') localStorage.removeItem(App._BC_PRESETS_STORAGE_KEY)
+      else localStorage.setItem(App._BC_PRESETS_STORAGE_KEY, v)
+    } catch { /* */ }
+  }
+
   constructor() {
     this.onClickBinder = () => this.init()
     document.addEventListener('click', this.onClickBinder)
@@ -423,6 +437,11 @@ export default class App {
         break
       }
 
+      case 'set-bc-presets-base':
+        App._bcPresetsBase = msg.base ?? ''
+        window.location.reload()
+        break
+
       case 'set-audio-source':
         if (msg.url) App.audioManager.setSource(msg.url)
         break
@@ -480,6 +499,7 @@ export default class App {
       perfHidden: this._isButterchurnGroup(),
       audioSources: AudioManager.SOURCES,
       currentAudioUrl: App.audioManager?.song?.url ?? AudioManager.SOURCES[0].url,
+      bcPresetsBase: App._bcPresetsBase,
     })
     // Also send current visualizer details
     this._broadcastVisualizerChanged()
@@ -3154,8 +3174,8 @@ export default class App {
       const entry = index?.find((e) => e.name === name)
       const file = entry?.file ?? (name + '.json')
       const baseUrl = import.meta.env.BASE_URL
-      let resp = await fetch(`${baseUrl}butterchurn-presets/${encodeURIComponent(resolvedGroup)}/presets/${encodeURIComponent(file)}`)
-      if (!resp.ok) resp = await fetch(`${baseUrl}butterchurn-presets/${encodeURIComponent(resolvedGroup)}/${encodeURIComponent(file)}`)
+      let resp = await fetch(`${baseUrl}${App._bcPresetsBase}/${encodeURIComponent(resolvedGroup)}/presets/${encodeURIComponent(file)}`)
+      if (!resp.ok) resp = await fetch(`${baseUrl}${App._bcPresetsBase}/${encodeURIComponent(resolvedGroup)}/${encodeURIComponent(file)}`)
       if (!resp.ok) return
       const hash = await App._hashText(await resp.text())
       if (App.currentGroup === group && App.visualizerType === name) {
@@ -3621,7 +3641,7 @@ export default class App {
       getPresetUrl: _entryByName.size > 0
         ? (g, name) => {
             const file = (_getEntry(name)?.file) ?? (name + '.json')
-            return `${import.meta.env.BASE_URL}butterchurn-presets/${encodeURIComponent(g)}/presets/${encodeURIComponent(file)}`
+            return `${import.meta.env.BASE_URL}${App._bcPresetsBase}/${encodeURIComponent(g)}/presets/${encodeURIComponent(file)}`
           }
         : undefined,
       getFileStem: _entryByName.size > 0
@@ -3684,7 +3704,7 @@ export default class App {
       getPresetUrl: _entryByName.size > 0
         ? (g, name) => {
             const file = (_getEntry(name)?.file) ?? (name + '.json')
-            return `${import.meta.env.BASE_URL}butterchurn-presets/${encodeURIComponent(g)}/presets/${encodeURIComponent(file)}`
+            return `${import.meta.env.BASE_URL}${App._bcPresetsBase}/${encodeURIComponent(g)}/presets/${encodeURIComponent(file)}`
           }
         : undefined,
       getFileStem: _entryByName.size > 0
@@ -4788,7 +4808,7 @@ export default class App {
   async _initPresetGroups() {
     const baseUrl = import.meta.env.BASE_URL
     try {
-      const resp = await fetch(baseUrl + 'butterchurn-presets/preset-groups.json')
+      const resp = await fetch(baseUrl + App._bcPresetsBase + '/preset-groups.json')
       if (resp.ok) {
         const groups = await resp.json()
         if (Array.isArray(groups)) {
@@ -4932,7 +4952,7 @@ export default class App {
   async _loadUserGroupIndex(groupName) {
     const baseUrl = import.meta.env.BASE_URL
     try {
-      const resp = await fetch(`${baseUrl}butterchurn-presets/${encodeURIComponent(groupName)}/index.json`)
+      const resp = await fetch(`${baseUrl}${App._bcPresetsBase}/${encodeURIComponent(groupName)}/index.json`)
       if (!resp.ok) { App._userGroupIndex.set(groupName, []); return }
       const index = await resp.json()
       if (Array.isArray(index)) {
@@ -4974,9 +4994,9 @@ export default class App {
     const baseUrl = import.meta.env.BASE_URL
     try {
       // Try new presets/ subfolder first, fall back to old top-level layout
-      let resp = await fetch(`${baseUrl}butterchurn-presets/${encodeURIComponent(groupName)}/presets/${encodeURIComponent(entry.file)}`)
+      let resp = await fetch(`${baseUrl}${App._bcPresetsBase}/${encodeURIComponent(groupName)}/presets/${encodeURIComponent(entry.file)}`)
       if (!resp.ok) {
-        resp = await fetch(`${baseUrl}butterchurn-presets/${encodeURIComponent(groupName)}/${encodeURIComponent(entry.file)}`)
+        resp = await fetch(`${baseUrl}${App._bcPresetsBase}/${encodeURIComponent(groupName)}/${encodeURIComponent(entry.file)}`)
       }
       if (!resp.ok) return null
       const data = await resp.json()
