@@ -447,36 +447,8 @@ export default class App {
         break
 
       case 'preview-snapshot': {
-        // Capture the live visualizer canvas at configured dimensions.
-        // Deferred into the next rAF so we read the canvas AFTER butterchurn's
-        // WebGL→2D copy is complete (mid-frame reads arrive after clearRect but
-        // before drawImage, producing a black image).
         const { width: snapW = 160, height: snapH = 90 } = msg.config || {}
-        const doCapture = () => {
-          const snapSrc = (App.currentVisualizer?.isButterchurn && App.currentVisualizer?._canvas)
-            ? App.currentVisualizer._canvas
-            : this.renderer?.domElement
-          if (!snapSrc) return
-          try {
-            const off = new OffscreenCanvas(snapW, snapH)
-            const ctx2 = off.getContext('2d')
-            // Fill black first — ensures opaque PNG even if source has alpha
-            ctx2.fillStyle = '#000'
-            ctx2.fillRect(0, 0, snapW, snapH)
-            ctx2.drawImage(snapSrc, 0, 0, snapW, snapH)
-            off.convertToBlob({ type: 'image/png' }).then((blob) => {
-              this._broadcastToControls({ type: 'snapshot-ready', blob, width: snapW, height: snapH })
-            }).catch((e) => {
-              console.warn('[Snapshot] canvas capture failed:', e)
-              this._broadcastToControls({ type: 'preview-status', text: `Snapshot failed: ${e?.message ?? e}` })
-            })
-          } catch (e) {
-            console.warn('[Snapshot] error:', e)
-          }
-        }
-        // One rAF delay: butterchurn's clearRect+drawImage finish within the
-        // current rAF; our callback runs in the next one with a complete frame.
-        requestAnimationFrame(doCapture)
+        this._doSnapshot(snapW, snapH)
         break
       }
 
@@ -3538,6 +3510,14 @@ export default class App {
       return
     }
 
+    // S key — snapshot the visualizer canvas to clipboard
+    if (event.key === 's' || event.key === 'S') {
+      event.preventDefault()
+      const cfg = this._previewConfig
+      this._doSnapshot(cfg?.width ?? 160, cfg?.height ?? 90)
+      return
+    }
+
     // X key — start/restart preview batch capture
     if (event.key === 'x' || event.key === 'X') {
       event.preventDefault()
@@ -3556,6 +3536,43 @@ export default class App {
   // -------------------------------------------------------------------
   // Preview batch helpers
   // -------------------------------------------------------------------
+
+  /**
+   * Capture the live visualizer canvas as a PNG and broadcast it back to the
+   * controls popup as a `snapshot-ready` message so the popup (which holds
+   * focus) can write it to the clipboard.
+   *
+   * Deferred into the next rAF so we read the canvas AFTER butterchurn's
+   * WebGL→2D copy is complete (mid-frame reads arrive after clearRect but
+   * before drawImage, producing an all-black image).
+   */
+  _doSnapshot(snapW = 160, snapH = 90) {
+    const doCapture = () => {
+      const snapSrc = (App.currentVisualizer?.isButterchurn && App.currentVisualizer?._canvas)
+        ? App.currentVisualizer._canvas
+        : this.renderer?.domElement
+      if (!snapSrc) return
+      try {
+        const off = new OffscreenCanvas(snapW, snapH)
+        const ctx2 = off.getContext('2d')
+        // Fill black first — ensures opaque PNG even if source has alpha
+        ctx2.fillStyle = '#000'
+        ctx2.fillRect(0, 0, snapW, snapH)
+        ctx2.drawImage(snapSrc, 0, 0, snapW, snapH)
+        off.convertToBlob({ type: 'image/png' }).then((blob) => {
+          this._broadcastToControls({ type: 'snapshot-ready', blob, width: snapW, height: snapH })
+        }).catch((e) => {
+          console.warn('[Snapshot] canvas capture failed:', e)
+          this._broadcastToControls({ type: 'preview-status', text: `Snapshot failed: ${e?.message ?? e}` })
+        })
+      } catch (e) {
+        console.warn('[Snapshot] error:', e)
+      }
+    }
+    // One rAF delay: butterchurn's clearRect+drawImage finish within the
+    // current rAF; our callback runs in the next one with a complete frame.
+    requestAnimationFrame(doCapture)
+  }
 
   /**
    * Return the currently-visible rendering canvas.
