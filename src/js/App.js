@@ -3005,8 +3005,18 @@ export default class App {
       return
     }
     try {
-      const url = `butterchurn-presets/${encodeURIComponent(group)}/${encodeURIComponent(name)}.json`
-      const resp = await fetch(url)
+      // Resolve the correct filename via index (entry.file has proper casing)
+      let resolvedGroup = group
+      if (group === ALL_BC_GROUP) {
+        resolvedGroup = App._allBcSourceGroup.get(name)
+        if (!resolvedGroup) return
+      }
+      const index = App._userGroupIndex.get(resolvedGroup)
+      const entry = index?.find((e) => e.name === name)
+      const file = entry?.file ?? (name + '.json')
+      const baseUrl = import.meta.env.BASE_URL
+      let resp = await fetch(`${baseUrl}butterchurn-presets/${encodeURIComponent(resolvedGroup)}/presets/${encodeURIComponent(file)}`)
+      if (!resp.ok) resp = await fetch(`${baseUrl}butterchurn-presets/${encodeURIComponent(resolvedGroup)}/${encodeURIComponent(file)}`)
       if (!resp.ok) return
       const hash = await App._hashText(await resp.text())
       if (App.currentGroup === group && App.visualizerType === name) {
@@ -3381,6 +3391,7 @@ export default class App {
     const cfg = this._previewConfig
 
     const onStatus = (text) => {
+      console.log('[PreviewCapture]', text)
       // Show in the visualizer toast area
       if (this.visualizerToastName) {
         this.visualizerToastName.textContent = text
@@ -3393,6 +3404,10 @@ export default class App {
 
     onStatus(`Capturing group "${group}"…`)
 
+    const _groupIndex = App._userGroupIndex.get(group) ?? []
+    const _entryByName = new Map(_groupIndex.map((e) => [e.name, e]))
+    const _getEntry = (name) => _entryByName.get(name)
+
     await this.previewBatch.startCapture({
       list,
       startIndex,
@@ -3404,6 +3419,15 @@ export default class App {
       width: cfg.width,
       height: cfg.height,
       format: cfg.format,
+      getPresetUrl: _entryByName.size > 0
+        ? (g, name) => {
+            const file = (_getEntry(name)?.file) ?? (name + '.json')
+            return `${import.meta.env.BASE_URL}butterchurn-presets/${encodeURIComponent(g)}/presets/${encodeURIComponent(file)}`
+          }
+        : undefined,
+      getFileStem: _entryByName.size > 0
+        ? (name) => (_getEntry(name)?.file ?? (name + '.json')).replace(/\.json$/i, '')
+        : undefined,
       onStatus,
     })
 

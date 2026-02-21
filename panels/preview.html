@@ -84,6 +84,9 @@ body.has-status { padding-top: 68px; }
 .tile.selected { outline-color: #fa4; }
 .tile.active { outline-color: #44ff9a; }
 .tile.active.selected { outline-color: #fa4; }
+.tile.keyboard-focus { outline-color: #0af; }
+.tile.keyboard-focus.selected { outline-color: #fa4; }
+.tile.keyboard-focus.active { outline-color: #44ff9a; }
 
 /* Checkbox — custom, appears on hover */
 .tile-cb {
@@ -181,6 +184,7 @@ body.has-status { padding-top: 68px; }
   var statusBar = document.getElementById('status-bar')
   var tilesByName = Object.create(null) // presetName → tile element
   var activeName = ''
+  var focusIdx = -1          // keyboard-navigation cursor index in filteredItems
   var allItems = []  // full unfiltered list for the current group
   var currentFilter = ''  // tracks the viz-controls name filter
   var filteredItems = []  // current rendered items (after filter)
@@ -220,6 +224,30 @@ body.has-status { padding-top: 68px; }
     if (activeName && tilesByName[activeName]) {
       tilesByName[activeName].classList.add('active')
       tilesByName[activeName].scrollIntoView({ block: 'center', inline: 'nearest', behavior: 'smooth' })
+    }
+  }
+
+  function getTilesPerRow() {
+    var grid = document.querySelector('.grid')
+    if (!grid || filteredItems.length === 0) return 1
+    var tileW = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--tile-w')) || 160
+    var gap = 6
+    return Math.max(1, Math.floor((grid.clientWidth + gap) / (tileW + gap)))
+  }
+
+  function setFocusedTile(idx, noScroll) {
+    // Remove focus from old tile
+    if (focusIdx >= 0 && focusIdx < filteredItems.length) {
+      var old = tilesByName[filteredItems[focusIdx].presetName]
+      if (old) old.classList.remove('keyboard-focus')
+    }
+    focusIdx = idx
+    if (focusIdx >= 0 && focusIdx < filteredItems.length) {
+      var tile = tilesByName[filteredItems[focusIdx].presetName]
+      if (tile) {
+        tile.classList.add('keyboard-focus')
+        if (!noScroll) tile.scrollIntoView({ block: 'nearest', inline: 'nearest', behavior: 'smooth' })
+      }
     }
   }
 
@@ -292,6 +320,12 @@ body.has-status { padding-top: 68px; }
     }
     if (e.data.type === 'visualizer-changed' && e.data.name) {
       setActive(e.data.name)
+      // Keep keyboard cursor in sync with what's playing
+      var changeIdx = -1
+      for (var ci = 0; ci < filteredItems.length; ci++) {
+        if (filteredItems[ci].presetName === e.data.name) { changeIdx = ci; break }
+      }
+      setFocusedTile(changeIdx, /*noScroll=*/true) // setActive already scrolled
     }
   })
 
@@ -355,6 +389,13 @@ body.has-status { padding-top: 68px; }
 
     // Mark the active preset after all tiles are in the DOM
     if (activePreset) setActive(activePreset)
+
+    // Initialise keyboard cursor to the active preset (or clear it)
+    var kbIdx = -1
+    for (var ki = 0; ki < items.length; ki++) {
+      if (items[ki].presetName === (activePreset || activeName)) { kbIdx = ki; break }
+    }
+    setFocusedTile(kbIdx, /*noScroll=*/true)  // don't double-scroll; setActive already did
   }
 
   function makeTile(item) {
@@ -440,8 +481,59 @@ body.has-status { padding-top: 68px; }
   overlay.addEventListener('click', function (e) {
     if (e.target !== document.getElementById('overlay-img')) overlay.classList.remove('open')
   })
+  // ── Keyboard navigation ──
   document.addEventListener('keydown', function (e) {
-    if (e.key === 'Escape') overlay.classList.remove('open')
+    if (e.key === 'Escape') { overlay.classList.remove('open'); return }
+
+    // Arrow-key navigation only when the overlay is closed and there are tiles
+    if (overlay.classList.contains('open')) return
+    if (!filteredItems.length) return
+
+    var n = filteredItems.length
+    var handled = true
+    var wasArrow = false
+
+    if (e.key === 'ArrowRight') {
+      setFocusedTile(focusIdx < 0 ? 0 : (focusIdx + 1) % n); wasArrow = true
+    } else if (e.key === 'ArrowLeft') {
+      setFocusedTile(focusIdx < 0 ? n - 1 : (focusIdx - 1 + n) % n); wasArrow = true
+    } else if (e.key === 'ArrowDown') {
+      if (focusIdx < 0) {
+        setFocusedTile(0)
+      } else {
+        var perRow = getTilesPerRow()
+        var next = focusIdx + perRow
+        setFocusedTile(next < n ? next : focusIdx) // clamp at last row
+      }
+      wasArrow = true
+    } else if (e.key === 'ArrowUp') {
+      if (focusIdx < 0) {
+        setFocusedTile(0)
+      } else {
+        var perRow = getTilesPerRow()
+        var prev = focusIdx - perRow
+        setFocusedTile(prev >= 0 ? prev : focusIdx) // clamp at first row
+      }
+      wasArrow = true
+    } else if ((e.key === 'Enter' || e.key === ' ') && focusIdx >= 0) {
+      var item = filteredItems[focusIdx]
+      if (IS_FILE) {
+        document.getElementById('overlay-img').src = item.blobUrl
+        document.getElementById('overlay-label').textContent = item.presetName
+        overlay.classList.add('open')
+      } else {
+        if (ch) ch.postMessage({ type: 'select-visualizer', name: item.presetName })
+      }
+    } else {
+      handled = false
+    }
+
+    // Immediately switch preset on arrow navigation (no Enter required)
+    if (wasArrow && !IS_FILE && ch && focusIdx >= 0) {
+      ch.postMessage({ type: 'select-visualizer', name: filteredItems[focusIdx].presetName })
+    }
+
+    if (handled) e.preventDefault()
   })
 
   function fallbackCopy(text) {

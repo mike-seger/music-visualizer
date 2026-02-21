@@ -20,6 +20,7 @@ import { zipSync } from 'fflate'
  * @type {Map<string, PreviewEntry>}  key = 12-char SHA-256 hex prefix
  */
 const _store = new Map()
+if (typeof window !== 'undefined') window._previewStore = _store
 
 /** Revocable object URLs for the live preview panel */
 const _previewUrls = new Map() // hash → object URL
@@ -77,6 +78,7 @@ export default class PreviewBatch {
     switchTo,
     getCanvas,
     getPresetUrl,
+    getFileStem,
     settleDelay = 300,
     resolution = 'fixed',
     width = 160,
@@ -89,6 +91,11 @@ export default class PreviewBatch {
 
     this._running = true
     this._cancelled = false
+
+    // Clear previous results for this group so re-pressing X always re-captures
+    for (const [hash, entry] of _store) {
+      if (entry.group === group) _store.delete(hash)
+    }
 
     const total = list.length
     const mimeType = format === 'JPG' ? 'image/jpeg' : 'image/png'
@@ -121,7 +128,7 @@ export default class PreviewBatch {
         if (!name) continue
         const hash = prebuilt.byName.get(name)
         if (!hash) continue
-        if (_store.has(hash)) { skipped++; continue }
+        if (_store.has(hash) && _store.get(hash).group === group) { skipped++; continue }
         prebuiltWork.push({ name, hash })
       }
 
@@ -136,8 +143,9 @@ export default class PreviewBatch {
             const imgResp = await fetch(pb.imageUrl)
             if (imgResp.ok) {
               const blob = await imgResp.blob()
-              const filename = `previews/${_sanitize(name)}.${pb.imgExt}`
-              const jsonPath = name
+              const fileStem = getFileStem ? getFileStem(name) : name
+              const filename = `previews/${_sanitize(fileStem)}.${pb.imgExt}`
+              const jsonPath = fileStem
               _store.set(hash, { filename, blob, presetName: name, group, jsonPath })
               fromDisk++
             }
@@ -156,12 +164,8 @@ export default class PreviewBatch {
       const name = list[idx]
       if (!name) continue
       const knownHash = prebuilt.byName.get(name)
-      if (knownHash && _store.has(knownHash)) continue
+      if (knownHash && _store.has(knownHash) && _store.get(knownHash).group === group) continue
       toCapture.push(name)
-    }
-
-    if (toCapture.length > 0 && !this._cancelled) {
-      onStatus?.(`Capturing 0 / ${toCapture.length} new presets…`)
     }
 
     for (const name of toCapture) {
@@ -179,11 +183,11 @@ export default class PreviewBatch {
         } catch { /* network failure */ }
       }
 
-      if (hash !== null && _store.has(hash)) { skipped++; continue }
+      if (hash !== null && _store.has(hash) && _store.get(hash).group === group) { skipped++; continue }
 
       if (hash === null) {
-        console.warn(`[PreviewBatch] skipping "${name}" — could not fetch / hash preset JSON`)
-        continue
+        console.warn(`[PreviewBatch] skip (no hash) "${name}" — could not fetch / hash preset JSON`)
+        skipped++; continue
       }
 
       try {
@@ -210,8 +214,9 @@ export default class PreviewBatch {
       }
 
       if (blob) {
-        const filename = `previews/${_sanitize(name)}.${ext}`
-        const jsonPath = name
+        const fileStem = getFileStem ? getFileStem(name) : name
+        const filename = `previews/${_sanitize(fileStem)}.${ext}`
+        const jsonPath = fileStem
         _store.set(hash, { filename, blob, presetName: name, group, jsonPath })
         captured++
       }
@@ -273,7 +278,7 @@ export default class PreviewBatch {
       const n = encodeURIComponent(entry.jsonPath)
       let resp = await fetch(`butterchurn-presets/${g}/presets/${n}.json`).catch(() => null)
       if (!resp?.ok) resp = await fetch(`butterchurn-presets/${g}/${n}.json`).catch(() => null)
-      if (resp?.ok) files[`presets/${_sanitize(entry.jsonPath)}.json`] = new Uint8Array(await resp.arrayBuffer())
+      if (resp?.ok) files[`presets/${entry.jsonPath}.json`] = new Uint8Array(await resp.arrayBuffer())
     }))
 
     // index.html — static viewer
@@ -339,7 +344,7 @@ function _sleep(ms) {
 }
 
 function _sanitize(str) {
-  return String(str ?? '').replace(/[/\\:*?"<>|]/g, '_').trim()
+  return String(str ?? '').replace(/[/\\*?"<>|]/g, '_').trim()
 }
 
 function _enc(str) {
@@ -357,9 +362,9 @@ function _enc(str) {
  * pre-built images by the preset JSON's SHA-256 hash instead of by filename.
  */
 async function _loadPreviewIndex(group) {
-  const url = `butterchurn-presets/${encodeURIComponent(group)}/index.js`
+  const url = `butterchurn-presets/${encodeURIComponent(group)}/index.js?t=${Date.now()}`
   try {
-    const resp = await fetch(url)
+    const resp = await fetch(url, { cache: 'no-store' })
     if (!resp.ok) return { byHash: new Map(), byName: new Map() }
     const code = await resp.text()
     // Execute the script to extract its exported values
@@ -384,8 +389,9 @@ async function _loadPreviewIndex(group) {
       const relPath = dir ? `${dir}/${sanitizedFile}` : sanitizedFile
       const imageUrl = base + relPath.split('/').map(encodeURIComponent).join('/')
       byHash.set(hash, { imageUrl, imgExt: ext })
-      // byName: presetName is the raw fileBase (before sanitization) — matches list entries
-      byName.set(fileBase, hash)
+      // byName key is lowercased so it matches e.name from index.json regardless
+      // of whether the jsonPath in index.js uses original case or lowercase
+      byName.set(fileBase.toLowerCase(), hash)
     }
     console.log(`[PreviewBatch] pre-built index for "${group}": ${byHash.size} entries`)
     return { byHash, byName }
@@ -518,7 +524,7 @@ body {
 <script>
 (function () {
   // previewMeta is injected by previews/index.js (Map<hash, presetName>)
-  function sanitize(s) { return s.replace(/[\/\\:*?"<>|]/g, '_').trim() }
+  function sanitize(s) { return s.replace(/[\/\\*?"<>|]/g, '_').trim() }
 
   const root = document.getElementById('root')
   const overlay = document.getElementById('overlay')
