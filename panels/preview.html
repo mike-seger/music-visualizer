@@ -113,24 +113,23 @@ body.has-status { padding-top: 68px; }
 .tile:hover .tile-cb:checked { border-color: #44ff9a; }
 .tile.selected .tile-cb { opacity: 1; }
 
-/* Preset name overlay — always visible */
+/* Preset name — bottom bar, single line, left-side ellipsis via direction:rtl */
 .tile-name {
   position: absolute;
-  inset: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 8px;
-  background: rgba(0,0,0,.35);
-  color: #eee;
+  bottom: 0; left: 0; right: 0;
+  padding: 3px 6px;
+  background: rgba(0,0,0,.6);
+  color: #ddd;
   font-size: 11px;
   line-height: 1.4;
-  text-align: center;
-  word-break: break-word;
+  white-space: nowrap;
   overflow: hidden;
+  text-overflow: ellipsis;
+  direction: rtl;
+  text-align: left;
   pointer-events: none;
 }
-.tile.missing .tile-name { background: rgba(0,0,0,.6); }
+.tile.missing .tile-name { background: rgba(0,0,0,.75); color: #aaa; }
 
 /* Blue capture button */
 .btn-capture {
@@ -236,11 +235,6 @@ body.has-status { padding-top: 68px; }
 
   function saveLiked() {
     try { localStorage.setItem('visualizer-liked', JSON.stringify([...liked])) } catch { /* ignore */ }
-  }
-
-  function truncateFront(str, max) {
-    if (!str || str.length <= max) return str
-    return '\u2026' + str.slice(str.length - (max - 1))
   }
 
   function setStatus(text) {
@@ -465,7 +459,7 @@ body.has-status { padding-top: 68px; }
     // Name overlay (centered, front-truncated at 60 chars)
     var nameDiv = document.createElement('div')
     nameDiv.className = 'tile-name'
-    nameDiv.textContent = truncateFront(item.presetName, 60)
+    nameDiv.textContent = item.presetName
 
     var heart = document.createElement('span')
     heart.className = 'tile-heart'

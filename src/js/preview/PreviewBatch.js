@@ -297,6 +297,76 @@ export default class PreviewBatch {
   }
 
   /**
+   * Load pre-built preview images for a group without any canvas capture.
+   * Fetches `butterchurn-presets/<group>/previews/index.js` to discover
+   * which presets have pre-built images, then fetches those images in
+   * parallel (64 at a time) and stores them in `_store`.
+   *
+   * Returns the set of preset names that are NOT covered by pre-built images
+   * (i.e. they would require canvas capture).
+   *
+   * @param {string}   group
+   * @param {string[]} list          Ordered preset names for the group
+   * @param {object}   [opts]
+   * @param {(name: string) => string} [opts.getFileStem]  Name → file stem
+   * @param {(text: string) => void}  [opts.onStatus]
+   * @returns {Promise<{ missingNames: string[] }>}
+   */
+  async loadPrebuilt(group, list, { getFileStem, onStatus } = {}) {
+    const prebuilt = await _loadPreviewIndex(group)
+
+    if (prebuilt.byName.size === 0) {
+      // No pre-built index — everything would need canvas capture
+      return { missingNames: list.filter(Boolean) }
+    }
+
+    const CONCURRENCY = 64
+    const toFetch = []
+    for (const name of list) {
+      if (!name) continue
+      const hash = prebuilt.byName.get(name)
+      if (!hash) continue
+      if (_store.has(hash) && _store.get(hash).group === group) continue
+      toFetch.push({ name, hash })
+    }
+
+    let loaded = 0
+    for (let i = 0; i < toFetch.length && !this._cancelled; i += CONCURRENCY) {
+      const batch = toFetch.slice(i, i + CONCURRENCY)
+      await Promise.all(batch.map(async ({ name, hash }) => {
+        const pb = prebuilt.byHash.get(hash)
+        if (!pb) return
+        try {
+          const resp = await fetch(pb.imageUrl)
+          if (resp.ok) {
+            const blob = await resp.blob()
+            const fileStem = getFileStem ? getFileStem(name) : name
+            _store.set(hash, {
+              filename: `previews/${_sanitize(fileStem)}.${pb.imgExt}`,
+              blob,
+              presetName: name,
+              group,
+              jsonPath: fileStem,
+            })
+            loaded++
+          }
+        } catch { /* unavailable */ }
+      }))
+      onStatus?.(`Loading previews… ${loaded} / ${toFetch.length}`)
+    }
+
+    // Names with no pre-built image (need canvas capture)
+    const missingNames = list.filter((name) => {
+      if (!name) return false
+      const hash = prebuilt.byName.get(name)
+      if (!hash) return true  // not in index at all
+      return !(_store.has(hash) && _store.get(hash).group === group)
+    })
+
+    return { missingNames }
+  }
+
+  /**
    * Build the items array the preview panel needs.
    * Creates (or refreshes) blob URLs for every stored image.
    * Returns null if there are no entries for the given group.
