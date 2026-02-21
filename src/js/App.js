@@ -447,28 +447,36 @@ export default class App {
         break
 
       case 'preview-snapshot': {
-        // Capture the live visualizer canvas at configured dimensions
-        // Then send the PNG blob BACK to the controls popup to write to clipboard
-        // (the main window is not focused; the popup is the focused document)
+        // Capture the live visualizer canvas at configured dimensions.
+        // Deferred into the next rAF so we read the canvas AFTER butterchurn's
+        // WebGL→2D copy is complete (mid-frame reads arrive after clearRect but
+        // before drawImage, producing a black image).
         const { width: snapW = 160, height: snapH = 90 } = msg.config || {}
-        const snapSrc = (App.currentVisualizer?.isButterchurn && App.currentVisualizer?._canvas)
-          ? App.currentVisualizer._canvas
-          : this.renderer?.domElement
-        if (!snapSrc) break
-        try {
-          const off = new OffscreenCanvas(snapW, snapH)
-          const ctx2 = off.getContext('2d')
-          ctx2.drawImage(snapSrc, 0, 0, snapW, snapH)
-          off.convertToBlob({ type: 'image/png' }).then((blob) => {
-            // Send blob to controls popup which IS focused and can write clipboard
-            this._broadcastToControls({ type: 'snapshot-ready', blob, width: snapW, height: snapH })
-          }).catch((e) => {
-            console.warn('[Snapshot] canvas capture failed:', e)
-            this._broadcastToControls({ type: 'preview-status', text: `Snapshot failed: ${e?.message ?? e}` })
-          })
-        } catch (e) {
-          console.warn('[Snapshot] error:', e)
+        const doCapture = () => {
+          const snapSrc = (App.currentVisualizer?.isButterchurn && App.currentVisualizer?._canvas)
+            ? App.currentVisualizer._canvas
+            : this.renderer?.domElement
+          if (!snapSrc) return
+          try {
+            const off = new OffscreenCanvas(snapW, snapH)
+            const ctx2 = off.getContext('2d')
+            // Fill black first — ensures opaque PNG even if source has alpha
+            ctx2.fillStyle = '#000'
+            ctx2.fillRect(0, 0, snapW, snapH)
+            ctx2.drawImage(snapSrc, 0, 0, snapW, snapH)
+            off.convertToBlob({ type: 'image/png' }).then((blob) => {
+              this._broadcastToControls({ type: 'snapshot-ready', blob, width: snapW, height: snapH })
+            }).catch((e) => {
+              console.warn('[Snapshot] canvas capture failed:', e)
+              this._broadcastToControls({ type: 'preview-status', text: `Snapshot failed: ${e?.message ?? e}` })
+            })
+          } catch (e) {
+            console.warn('[Snapshot] error:', e)
+          }
         }
+        // One rAF delay: butterchurn's clearRect+drawImage finish within the
+        // current rAF; our callback runs in the next one with a complete frame.
+        requestAnimationFrame(doCapture)
         break
       }
 
