@@ -484,14 +484,25 @@ export default class PreviewBatch {
       analyser.fftSize = 1024
 
       if (audioUrl) {
-        audioEl = document.createElement('audio')
-        audioEl.crossOrigin = 'anonymous'
-        audioEl.src = audioUrl
-        audioEl.loop = true
-        audioCtx.createMediaElementSource(audioEl).connect(analyser)
-        analyser.connect(audioCtx.destination)
-        await audioCtx.resume()
-        audioEl.play().catch(() => { /* autoplay blocked — audio silent but renders ok */ })
+        // Use AudioBufferSourceNode with loop=true for true gapless looping.
+        // HTMLMediaElement always has a small gap at the loop point;
+        // BufferSource is sample-accurate and has none.
+        try {
+          const resp = await fetch(audioUrl)
+          const arrayBuf = await resp.arrayBuffer()
+          const audioBuf = await audioCtx.decodeAudioData(arrayBuf)
+          audioEl = audioCtx.createBufferSource()
+          audioEl.buffer = audioBuf
+          audioEl.loop = true
+          audioEl.connect(analyser)
+          analyser.connect(audioCtx.destination)
+          await audioCtx.resume()
+          audioEl.start(0)
+        } catch (audioErr) {
+          console.warn('[PreviewBatch] audio load failed, capturing silent:', audioErr?.message ?? audioErr)
+          analyser.connect(audioCtx.destination)
+          await audioCtx.resume()
+        }
       }
 
       // Canvas must be in the document for butterchurn's 2D copy step to work
@@ -510,7 +521,7 @@ export default class PreviewBatch {
       onStatus?.('Offscreen setup failed: ' + (err?.message ?? err))
       this._running = false
       if (offCanvas) offCanvas.remove()
-      try { audioEl?.pause(); if (audioCtx) await audioCtx.close() } catch { /* */ }
+      try { audioEl?.stop(); if (audioCtx) await audioCtx.close() } catch { /* */ }
       return
     }
 
@@ -578,7 +589,7 @@ export default class PreviewBatch {
     // ── Teardown ──────────────────────────────────────────────────────────────
     offCanvas.remove()
     try {
-      if (audioEl) { audioEl.pause(); audioEl.src = '' }
+      if (audioEl) audioEl.stop()
       await audioCtx.close()
     } catch { /* ignore */ }
 
