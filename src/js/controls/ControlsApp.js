@@ -202,6 +202,24 @@ export default class ControlsApp {
           this._previewStatusCtrl?.updateDisplay?.()
         }
         break
+      case 'snapshot-ready':
+        // Main window sent PNG blob back; write to clipboard here since this popup is focused
+        if (msg.blob instanceof Blob) {
+          navigator.clipboard.write([new ClipboardItem({ 'image/png': msg.blob })])
+            .then(() => {
+              if (this._previewConfig) {
+                this._previewConfig.status = `Snapshot copied (${msg.width}\u00d7${msg.height})`
+                this._previewStatusCtrl?.updateDisplay?.()
+              }
+            })
+            .catch((e) => {
+              if (this._previewConfig) {
+                this._previewConfig.status = `Snapshot failed: ${e?.message ?? e}`
+                this._previewStatusCtrl?.updateDisplay?.()
+              }
+            })
+        }
+        break
       default:
         break
     }

@@ -447,7 +447,9 @@ export default class App {
         break
 
       case 'preview-snapshot': {
-        // Capture the live visualizer canvas at configured dimensions → clipboard
+        // Capture the live visualizer canvas at configured dimensions
+        // Then send the PNG blob BACK to the controls popup to write to clipboard
+        // (the main window is not focused; the popup is the focused document)
         const { width: snapW = 160, height: snapH = 90 } = msg.config || {}
         const snapSrc = (App.currentVisualizer?.isButterchurn && App.currentVisualizer?._canvas)
           ? App.currentVisualizer._canvas
@@ -458,11 +460,10 @@ export default class App {
           const ctx2 = off.getContext('2d')
           ctx2.drawImage(snapSrc, 0, 0, snapW, snapH)
           off.convertToBlob({ type: 'image/png' }).then((blob) => {
-            return navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })])
-          }).then(() => {
-            this._broadcastToControls({ type: 'preview-status', text: `Snapshot copied to clipboard (${snapW}×${snapH})` })
+            // Send blob to controls popup which IS focused and can write clipboard
+            this._broadcastToControls({ type: 'snapshot-ready', blob, width: snapW, height: snapH })
           }).catch((e) => {
-            console.warn('[Snapshot] clipboard write failed:', e)
+            console.warn('[Snapshot] canvas capture failed:', e)
             this._broadcastToControls({ type: 'preview-status', text: `Snapshot failed: ${e?.message ?? e}` })
           })
         } catch (e) {
