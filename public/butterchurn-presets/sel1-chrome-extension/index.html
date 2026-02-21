@@ -80,7 +80,7 @@ body {
 <script>
 (function () {
   // previewMeta is injected by previews/index.js (Map<hash, presetName>)
-  function sanitize(s) { return s.replace(/[/\:*?"<>|]/g, '_').trim() }
+  function sanitize(s) { return s.replace(/[/\*?"<>|]/g, '_').trim() }
 
   const root = document.getElementById('root')
   const overlay = document.getElementById('overlay')
