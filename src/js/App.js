@@ -400,6 +400,29 @@ export default class App {
         break
       }
 
+      case 'preview-start-regen': {
+        // Update config, then ask the preview panel which tiles are selected
+        if (msg.config && typeof msg.config === 'object') {
+          Object.assign(this._previewConfig, msg.config)
+          App._savePreviewConfig(this._previewConfig)
+        }
+        this._broadcastToControls({ type: 'preview-regen-request' })
+        break
+      }
+
+      case 'preview-regen': {
+        // Preview panel replied with selected preset names — start regen
+        const names = msg.names
+        if (!names || names.length === 0) {
+          const noSel = 'Re-Generate: no presets selected.'
+          console.info('[PreviewRegen]', noSel)
+          this._broadcastToControls({ type: 'preview-status', text: noSel })
+          break
+        }
+        this._startPreviewRegen(names)
+        break
+      }
+
       case 'set-audio-source':
         if (msg.url) App.audioManager.setSource(msg.url)
         break
@@ -3616,6 +3639,68 @@ export default class App {
     })
 
     // Push updated items (captured + any remaining placeholders) to the preview panel
+    if (this._controlsPopup && !this._controlsPopup.closed) {
+      const { items: allItems, missingCount } = this._buildAllPreviewItems(group, App.visualizerList)
+      this._broadcastToControls({ type: 'preview-data', items: allItems, activePreset: App.visualizerType, missingCount })
+    }
+  }
+
+  /** Re-capture a specific list of presets (by name) for the current group, using
+   *  a random settle delay between settleDelay and regenSettleMax per preset. */
+  async _startPreviewRegen(names) {
+    if (this.previewBatch.isRunning()) {
+      this.previewBatch.cancel()
+      return
+    }
+
+    const group = App.currentGroup
+    const cfg   = this._previewConfig
+
+    const onStatus = (text) => {
+      console.log('[PreviewRegen]', text)
+      if (this.visualizerToastName) this.visualizerToastName.textContent = text
+      const el = this.visualizerToast
+      if (el) el.style.opacity = '0.9'
+      this._broadcastToControls({ type: 'preview-status', text })
+    }
+
+    onStatus(`Re-generating ${names.length} selected preset(s)…`)
+
+    const _groupIndex = App._userGroupIndex.get(group) ?? []
+    const _entryByName = new Map(_groupIndex.map((e) => [e.name, e]))
+    const _getEntry = (name) => _entryByName.get(name)
+
+    await this.previewBatch.startOffscreenCapture({
+      list: names,
+      group,
+      audioUrl: `${import.meta.env.BASE_URL}audio/preview-loop.flac`,
+      settleDelay: cfg.settleDelay,
+      settleDelayMax: cfg.regenSettleMax,
+      forceCapture: true,
+      resolution: cfg.resolution,
+      width: cfg.width,
+      height: cfg.height,
+      format: cfg.format,
+      getPresetUrl: _entryByName.size > 0
+        ? (g, name) => {
+            const file = (_getEntry(name)?.file) ?? (name + '.json')
+            return `${import.meta.env.BASE_URL}butterchurn-presets/${encodeURIComponent(g)}/presets/${encodeURIComponent(file)}`
+          }
+        : undefined,
+      getFileStem: _entryByName.size > 0
+        ? (name) => (_getEntry(name)?.file ?? (name + '.json')).replace(/\.json$/i, '')
+        : undefined,
+      onStatus,
+      onCaptured: ({ name, hash, blobUrl, group: g, jsonPath }) => {
+        if (this._controlsPopup && !this._controlsPopup.closed) {
+          this._broadcastToControls({
+            type: 'preview-tile-update',
+            item: { hash, blobUrl, presetName: name, group: g, jsonPath, missing: false },
+          })
+        }
+      },
+    })
+
     if (this._controlsPopup && !this._controlsPopup.closed) {
       const { items: allItems, missingCount } = this._buildAllPreviewItems(group, App.visualizerList)
       this._broadcastToControls({ type: 'preview-data', items: allItems, activePreset: App.visualizerType, missingCount })

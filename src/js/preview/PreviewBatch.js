@@ -397,6 +397,8 @@ export default class PreviewBatch {
     getPresetUrl,
     getFileStem,
     settleDelay = 300,
+    settleDelayMax = null,   // if > settleDelay, use random ms per preset in [settleDelay, settleDelayMax]
+    forceCapture = false,    // re-capture even if already in _store
     resolution = 'fixed',
     width = 160,
     height = 90,
@@ -456,9 +458,10 @@ export default class PreviewBatch {
       }
     }
 
-    // ── Phase 2: offscreen butterchurn for remaining presets ──────────────────
+    // ── Phase 2: offscreen butterchurn for remaining (or forced) presets ──────
     const toCapture = list.filter((name) => {
       if (!name) return false
+      if (forceCapture) return true  // always re-capture when forcing regen
       const hash = prebuilt.byName.get(name)
       if (hash && _store.has(hash) && _store.get(hash).group === group) return false
       return true
@@ -550,13 +553,18 @@ export default class PreviewBatch {
       }
       if (_store.has(hash) && _store.get(hash).group === group) continue
 
+      // Per-preset settle: random between settleDelay and settleDelayMax when regen
+      const thisSettle = (settleDelayMax != null && settleDelayMax > settleDelay)
+        ? settleDelay + Math.random() * (settleDelayMax - settleDelay)
+        : settleDelay
+
       let blob = null
       try {
         viz.loadPreset(presetJson, 0)
 
-        // Render for settleDelay ms so the preset's initial animation plays out
+        // Render for thisSettle ms so the preset's initial animation plays out
         const t0 = performance.now()
-        while (performance.now() - t0 < settleDelay) {
+        while (performance.now() - t0 < thisSettle) {
           if (this._cancelled) break
           viz.render()
           await _sleep(16)

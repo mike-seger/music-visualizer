@@ -1026,14 +1026,16 @@ export default class ControlsApp {
 
     folder.add(cfg, 'settleDelay', 0, 2000, 50).name('Settle ms').onChange(save)
 
+    folder.add(cfg, 'regenSettleMax', 0, 10000, 50).name('Regen settle max. ms').onChange(save)
+
     this._previewStatusCtrl = folder
       .add(cfg, 'status')
       .name('Status')
       .disable()
 
-    // Re-Generate button
+    // Re-Generate button — re-captures only selected tiles with random settle
     folder
-      .add({ capture: () => this._send({ type: 'preview-start', config: { ...cfg } }) }, 'capture')
+      .add({ regen: () => this._send({ type: 'preview-start-regen', config: { ...cfg } }) }, 'regen')
       .name('Re-Generate')
   }
 
@@ -1044,7 +1046,7 @@ export default class ControlsApp {
   static _previewConfigKey = 'visualizer.preview.config'
 
   static _loadPreviewConfig() {
-    const defaults = { resolution: 'fixed', format: 'PNG', width: 160, height: 90, settleDelay: 300 }
+    const defaults = { resolution: 'fixed', format: 'PNG', width: 160, height: 90, settleDelay: 300, regenSettleMax: 1500 }
     try {
       const saved = JSON.parse(localStorage.getItem(ControlsApp._previewConfigKey) ?? 'null')
       if (saved && typeof saved === 'object') return { ...defaults, ...saved }
@@ -1054,8 +1056,8 @@ export default class ControlsApp {
 
   static _savePreviewConfig(cfg) {
     try {
-      const { resolution, format, width, height, settleDelay } = cfg
-      localStorage.setItem(ControlsApp._previewConfigKey, JSON.stringify({ resolution, format, width, height, settleDelay }))
+      const { resolution, format, width, height, settleDelay, regenSettleMax } = cfg
+      localStorage.setItem(ControlsApp._previewConfigKey, JSON.stringify({ resolution, format, width, height, settleDelay, regenSettleMax }))
     } catch { /* ignore */ }
   }
 }

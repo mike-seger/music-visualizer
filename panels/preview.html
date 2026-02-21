@@ -88,11 +88,12 @@ body.has-status { padding-top: 68px; }
 .tile.keyboard-focus.selected { outline-color: #fa4; }
 .tile.keyboard-focus.active { outline-color: #44ff9a; }
 
-/* Checkbox — custom, appears on hover */
+/* Checkbox — custom, appears on hover, lives inside the name bar */
 .tile-cb {
-  position: absolute; bottom: 5px; right: 5px;
+  flex-shrink: 0;
   width: 15px; height: 15px;
   cursor: pointer;
+  pointer-events: auto;
   opacity: 0;
   transition: opacity 0.1s;
   -webkit-appearance: none;
@@ -100,7 +101,6 @@ body.has-status { padding-top: 68px; }
   background: transparent;
   border: 1px solid transparent;
   border-radius: 2px;
-  flex-shrink: 0;
 }
 .tile-cb:checked {
   background: transparent;
@@ -113,23 +113,31 @@ body.has-status { padding-top: 68px; }
 .tile:hover .tile-cb:checked { border-color: #44ff9a; }
 .tile.selected .tile-cb { opacity: 1; }
 
-/* Preset name — bottom bar, single line, centered, left-side ellipsis */
+/* Name bar — flex row: [text ···] [♡] [☐] */
 .tile-name {
   position: absolute;
   bottom: 0; left: 0; right: 0;
-  padding: 3px 6px;
+  padding: 2px 4px;
   background: rgba(0,0,0,.6);
-  color: #ddd;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  pointer-events: none;
+}
+.tile-name-text {
+  flex: 1;
+  min-width: 0;
   font-size: 11px;
   line-height: 1.4;
+  color: #ddd;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
   direction: rtl;
   text-align: center;
-  pointer-events: none;
 }
-.tile.missing .tile-name { background: rgba(0,0,0,.75); color: #aaa; }
+.tile.missing .tile-name { background: rgba(0,0,0,.75); }
+.tile.missing .tile-name-text { color: #aaa; }
 
 /* Blue capture button */
 .btn-capture {
@@ -141,11 +149,12 @@ body.has-status { padding-top: 68px; }
 .btn-capture:hover { background: #2179e8; }
 .btn-capture.visible { display: inline-block; }
 
-/* Heart — like state, appears on hover */
+/* Heart — like button, lives inside the name bar */
 .tile-heart {
-  position: absolute; bottom: 5px; right: 24px;
+  flex-shrink: 0;
   width: 15px; height: 15px;
   cursor: pointer;
+  pointer-events: auto;
   opacity: 0;
   transition: opacity 0.1s;
   display: flex; align-items: center; justify-content: center;
@@ -477,10 +486,12 @@ body.has-status { padding-top: 68px; }
     img.loading = 'lazy'
     img.draggable = false
 
-    // Name overlay (centered, front-truncated at 60 chars)
+    // Name bar: [text ···] [♡] [☐]
     var nameDiv = document.createElement('div')
     nameDiv.className = 'tile-name'
-    nameDiv.textContent = item.presetName
+    var nameText = document.createElement('span')
+    nameText.className = 'tile-name-text'
+    nameText.textContent = item.presetName
 
     var heart = document.createElement('span')
     heart.className = 'tile-heart'
@@ -525,6 +536,11 @@ body.has-status { padding-top: 68px; }
       }
     })
 
+    // Assemble name bar: text + heart + checkbox
+    nameDiv.appendChild(nameText)
+    nameDiv.appendChild(heart)
+    nameDiv.appendChild(cb)
+
     tile.appendChild(img)
     tile.appendChild(nameDiv)
     if (liked.has(item.hash)) {
@@ -538,8 +554,6 @@ body.has-status { padding-top: 68px; }
       tile.classList.add('selected')
     }
 
-    tile.appendChild(heart)
-    tile.appendChild(cb)
     return tile
   }
 
