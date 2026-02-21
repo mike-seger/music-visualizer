@@ -3561,20 +3561,16 @@ export default class App {
     const list = App.visualizerList
     if (!list || list.length === 0) return
 
-    const originalPreset = App.visualizerType
-    const startIndex = Math.max(0, list.indexOf(originalPreset))
     const group = App.currentGroup
-    const cfg = this._previewConfig
+    const cfg   = this._previewConfig
 
     const onStatus = (text) => {
       console.log('[PreviewCapture]', text)
-      // Show in the visualizer toast area
       if (this.visualizerToastName) {
         this.visualizerToastName.textContent = text
         const el = this.visualizerToast
         if (el) el.style.opacity = '0.9'
       }
-      // Forward to controls popup
       this._broadcastToControls({ type: 'preview-status', text })
     }
 
@@ -3584,12 +3580,10 @@ export default class App {
     const _entryByName = new Map(_groupIndex.map((e) => [e.name, e]))
     const _getEntry = (name) => _entryByName.get(name)
 
-    await this.previewBatch.startCapture({
+    await this.previewBatch.startOffscreenCapture({
       list,
-      startIndex,
       group,
-      switchTo: (name) => this.switchVisualizer(name, { notify: false, blendTime: 0 }),
-      getCanvas: () => this.getActiveCanvas(),
+      audioUrl: `${import.meta.env.BASE_URL}audio/preview-loop.mp3`,
       settleDelay: cfg.settleDelay,
       resolution: cfg.resolution,
       width: cfg.width,
@@ -3606,11 +3600,6 @@ export default class App {
         : undefined,
       onStatus,
     })
-
-    // Restore the preset that was active before capture
-    if (originalPreset && App.visualizerType !== originalPreset) {
-      await this.switchVisualizer(originalPreset, { notify: false })
-    }
 
     // Push updated items (captured + any remaining placeholders) to the preview panel
     if (this._controlsPopup && !this._controlsPopup.closed) {

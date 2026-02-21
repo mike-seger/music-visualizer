@@ -1,4 +1,5 @@
 import { zipSync } from 'fflate'
+import butterchurn from 'butterchurn'
 
 /**
  * PreviewBatch – captures image previews of every preset in the current group
@@ -364,6 +365,229 @@ export default class PreviewBatch {
     })
 
     return { missingNames }
+  }
+
+  /**
+   * Capture preview thumbnails for all presets in `group` using a fully
+   * independent offscreen Butterchurn instance driven by `audioUrl`.
+   *
+   * Phase 1 — loads any pre-built on-disk images (same parallel fetch as
+   *            `startCapture`).
+   * Phase 2 — canvas-captures anything still missing using an offscreen
+   *            <canvas> + its own AudioContext + the provided audio clip.
+   *            The main visualizer is never interrupted.
+   *
+   * @param {Object} opts
+   * @param {string[]}  opts.list
+   * @param {string}    opts.group
+   * @param {string}    opts.audioUrl          URL of the audio clip to drive the viz
+   * @param {Function}  [opts.getPresetUrl]
+   * @param {Function}  [opts.getFileStem]
+   * @param {number}    [opts.settleDelay=300]  ms of rendered frames before capture
+   * @param {'fixed'|'dynamic'} [opts.resolution='fixed']
+   * @param {number}    [opts.width=160]
+   * @param {number}    [opts.height=90]
+   * @param {'PNG'|'JPG'} [opts.format='PNG']
+   * @param {Function}  [opts.onStatus]
+   */
+  async startOffscreenCapture({
+    list,
+    group,
+    audioUrl,
+    getPresetUrl,
+    getFileStem,
+    settleDelay = 300,
+    resolution = 'fixed',
+    width = 160,
+    height = 90,
+    format = 'PNG',
+    onStatus,
+  } = {}) {
+    if (this._running) return
+    if (!list || list.length === 0) return
+
+    this._running = true
+    this._cancelled = false
+
+    const mimeType = format === 'JPG' ? 'image/jpeg' : 'image/png'
+    const ext      = format === 'JPG' ? 'jpg' : 'png'
+    const quality  = format === 'JPG' ? 0.92 : undefined
+    const tw = width
+    const th = height
+
+    const urlFor = getPresetUrl ??
+      ((g, n) => `butterchurn-presets/${encodeURIComponent(g)}/presets/${encodeURIComponent(n)}.json`)
+
+    // ── Phase 1: load pre-built images ────────────────────────────────────────
+    const prebuilt = await _loadPreviewIndex(group)
+    const CONCURRENCY = 64
+
+    if (prebuilt.byName.size > 0) {
+      const toFetch = []
+      for (const name of list) {
+        if (!name) continue
+        const hash = prebuilt.byName.get(name)
+        if (!hash) continue
+        if (_store.has(hash) && _store.get(hash).group === group) continue
+        toFetch.push({ name, hash })
+      }
+
+      let loaded = 0
+      for (let i = 0; i < toFetch.length && !this._cancelled; i += CONCURRENCY) {
+        const batch = toFetch.slice(i, i + CONCURRENCY)
+        await Promise.all(batch.map(async ({ name, hash }) => {
+          const pb = prebuilt.byHash.get(hash)
+          if (!pb) return
+          try {
+            const resp = await fetch(pb.imageUrl)
+            if (resp.ok) {
+              const blob = await resp.blob()
+              const stem = getFileStem ? getFileStem(name) : name
+              _store.set(hash, {
+                filename: `previews/${_sanitize(stem)}.${pb.imgExt}`,
+                blob, presetName: name, group, jsonPath: stem,
+              })
+              loaded++
+            }
+          } catch { /* unavailable */ }
+        }))
+        onStatus?.(`Loading ${loaded} / ${toFetch.length} pre-built…`)
+      }
+    }
+
+    // ── Phase 2: offscreen butterchurn for remaining presets ──────────────────
+    const toCapture = list.filter((name) => {
+      if (!name) return false
+      const hash = prebuilt.byName.get(name)
+      if (hash && _store.has(hash) && _store.get(hash).group === group) return false
+      return true
+    })
+
+    if (toCapture.length === 0 || this._cancelled) {
+      this._running = false
+      const total = list.length - toCapture.length
+      onStatus?.(this._cancelled
+        ? `Cancelled — ${total} loaded. Press Z to ZIP.`
+        : `Done — all ${total} pre-built. Press Z to ZIP.`)
+      return
+    }
+
+    // Set up isolated audio context + butterchurn instance
+    let audioCtx  = null
+    let audioEl   = null
+    let viz       = null
+    let offCanvas = null
+
+    try {
+      audioCtx = new AudioContext()
+      const analyser = audioCtx.createAnalyser()
+      analyser.fftSize = 1024
+
+      if (audioUrl) {
+        audioEl = document.createElement('audio')
+        audioEl.crossOrigin = 'anonymous'
+        audioEl.src = audioUrl
+        audioEl.loop = true
+        audioCtx.createMediaElementSource(audioEl).connect(analyser)
+        analyser.connect(audioCtx.destination)
+        await audioCtx.resume()
+        audioEl.play().catch(() => { /* autoplay blocked — audio silent but renders ok */ })
+      }
+
+      // Canvas must be in the document for butterchurn's 2D copy step to work
+      offCanvas = document.createElement('canvas')
+      offCanvas.width  = tw
+      offCanvas.height = th
+      offCanvas.style.cssText = 'position:fixed;top:-9999px;left:-9999px;pointer-events:none'
+      document.body.appendChild(offCanvas)
+
+      viz = butterchurn.createVisualizer(audioCtx, offCanvas, {
+        width: tw, height: th, pixelRatio: 1, textureRatio: 1,
+      })
+      viz.connectAudio(analyser)
+    } catch (err) {
+      console.error('[PreviewBatch] offscreen setup failed:', err)
+      onStatus?.('Offscreen setup failed: ' + (err?.message ?? err))
+      this._running = false
+      if (offCanvas) offCanvas.remove()
+      try { audioEl?.pause(); if (audioCtx) await audioCtx.close() } catch { /* */ }
+      return
+    }
+
+    let captured = 0
+    onStatus?.(`Capturing ${toCapture.length} previews…`)
+
+    for (const name of toCapture) {
+      if (this._cancelled) break
+
+      let presetJson = null
+      let hash = prebuilt.byName.get(name) ?? null
+
+      try {
+        const resp = await fetch(urlFor(group, name))
+        if (resp.ok) {
+          const text = await resp.text()
+          presetJson = JSON.parse(text)
+          if (!hash) hash = await _sha256short(text)
+        }
+      } catch { /* network failure */ }
+
+      if (!presetJson || !hash) {
+        console.warn(`[PreviewBatch] skip (no data) "${name}"`)
+        continue
+      }
+      if (_store.has(hash) && _store.get(hash).group === group) continue
+
+      viz.loadPreset(presetJson, 0)
+
+      // Render for settleDelay ms so the preset's initial animation plays out
+      const t0 = performance.now()
+      while (performance.now() - t0 < settleDelay) {
+        if (this._cancelled) break
+        viz.render()
+        await _sleep(16)
+      }
+      if (this._cancelled) break
+
+      viz.render() // final render before capturing
+
+      const blob = await new Promise((res) => {
+        if (resolution === 'fixed') {
+          // Already the right size — capture directly
+          try { offCanvas.toBlob(res, mimeType, quality) }
+          catch (e) { console.warn('[PreviewBatch] toBlob failed:', e); res(null) }
+        } else {
+          try { offCanvas.toBlob(res, mimeType, quality) }
+          catch (e) { res(null) }
+        }
+      })
+
+      if (blob) {
+        const stem = getFileStem ? getFileStem(name) : name
+        _store.set(hash, {
+          filename: `previews/${_sanitize(stem)}.${ext}`,
+          blob, presetName: name, group, jsonPath: stem,
+        })
+        captured++
+      }
+
+      if (captured % 5 === 0 || captured === toCapture.length) {
+        onStatus?.(`Capturing ${captured} / ${toCapture.length}…`)
+      }
+    }
+
+    // ── Teardown ──────────────────────────────────────────────────────────────
+    offCanvas.remove()
+    try {
+      if (audioEl) { audioEl.pause(); audioEl.src = '' }
+      await audioCtx.close()
+    } catch { /* ignore */ }
+
+    this._running = false
+    const total = list.length - toCapture.length + captured
+    onStatus?.(this._cancelled
+      ? `Cancelled — ${captured} captured, ${total - captured} pre-built. Press Z to ZIP.`
+      : `Done — ${captured} captured, ${total - captured} pre-built. Press Z to ZIP.`)
   }
 
   /**
