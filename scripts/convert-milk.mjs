@@ -28,10 +28,11 @@ const require = createRequire(import.meta.url)
 const milkdropParser = require('milkdrop-eel-parser')
 const { splitPreset, createBasePresetFuns } = require('milkdrop-preset-utils')
 
-// Optional: --src <dir> --dst <dir> on the command line
+// Optional: --src <dir> --dst <dir> --force on the command line
 const _args = process.argv.slice(2)
 const _srcArg = _args[_args.indexOf('--src') + 1]
 const _dstArg = _args[_args.indexOf('--dst') + 1]
+const FORCE_CONVERT = _args.includes('--force')
 const SOURCE_DIR = path.resolve(_srcArg || 'src/milkdrop-presets')
 const TARGET_DIR = path.resolve(_dstArg || 'public/milkdrop-presets')
 
@@ -213,6 +214,36 @@ function retFromVec4Fix(src) {
 }
 
 /**
+ * Uniforms already declared in butterchurn's shader preamble.
+ * Any matching declaration in the preset shader body would be a GLSL
+ * redeclaration error, so they must be stripped during conversion.
+ * Custom sampler declarations (e.g. sampler_heart) are NOT listed here and
+ * are intentionally kept so butterchurn's getUserSamplers() can detect them.
+ */
+const BUTTERCHURN_PREAMBLE_UNIFORMS = new Set([
+  'sampler_main', 'sampler_fw_main', 'sampler_fc_main',
+  'sampler_pw_main', 'sampler_pc_main',
+  'sampler_blur1', 'sampler_blur2', 'sampler_blur3',
+  'sampler_noise_lq', 'sampler_noise_lq_lite',
+  'sampler_noise_mq', 'sampler_noise_hq',
+  'sampler_pw_noise_lq',
+  'sampler_noisevol_lq', 'sampler_noisevol_hq',
+  'time', 'decay', 'gammaAdj', 'echo_zoom', 'echo_alpha', 'echo_orientation',
+  'invert', 'brighten', 'darken', 'solarize',
+  'resolution', 'aspect', 'texsize',
+  'texsize_noise_lq', 'texsize_noise_mq', 'texsize_noise_hq',
+  'texsize_noise_lq_lite', 'texsize_noisevol_lq', 'texsize_noisevol_hq',
+  'bass', 'mid', 'treb', 'vol',
+  'bass_att', 'mid_att', 'treb_att', 'vol_att',
+  'frame', 'fps',
+  '_qa', '_qb', '_qc', '_qd', '_qe', '_qf', '_qg', '_qh',
+  'slow_roam_cos', 'roam_cos', 'slow_roam_sin', 'roam_sin',
+  'blur1_min', 'blur1_max', 'blur2_min', 'blur2_max', 'blur3_min', 'blur3_max',
+  'scale1', 'scale2', 'scale3', 'bias1', 'bias2', 'bias3',
+  'rand_frame', 'rand_preset', 'fShader',
+])
+
+/**
  * Convert MilkDrop HLSL shader text to Butterchurn-compatible GLSL.
  *
  * Handles: types, tex2D, lerp, frac, saturate, mul, atan2,
@@ -259,6 +290,14 @@ function hlslToGlsl(shaderText) {
   // (must run AFTER type replacements so float4→vec4 is done)
   s = s.replace(/^(\s*)(?!uniform\s)(sampler2D\s)/gm, '$1uniform $2')
   s = s.replace(/^(\s*)(?!uniform\s)(vec4\s+texsize_)/gm, '$1uniform $2')
+
+  // ── Strip uniform declarations that conflict with butterchurn's preamble ──
+  // butterchurn already provides these in the fragment shader preamble; a
+  // second declaration would be a GLSL redeclaration compile error.
+  // Custom sampler uniforms (sampler_heart, etc.) are preserved because
+  // butterchurn uses getUserSamplers() to auto-bind them.
+  s = s.replace(/^[ \t]*uniform\s+\S+\s+(\w+)\s*;[ \t]*(?:\r?\n)?/gm,
+    (match, name) => BUTTERCHURN_PREAMBLE_UNIFORMS.has(name) ? '' : match)
 
   // ── Simple function renames ──
   s = s.replace(/\btex2D\b/g, 'texture')
@@ -561,12 +600,15 @@ async function main() {
 
     // Check mtime — skip if destination is up-to-date (only meaningful for .milk;
     // .milk2 embedded presets always check against the container file mtime).
+    // Pass --force to bypass the freshness check and reconvert everything.
     const srcStat = await fs.stat(sourcePath)
     let needsConvert = true
-    try {
-      const dstStat = await fs.stat(targetPath)
-      if (dstStat.mtimeMs >= srcStat.mtimeMs) { needsConvert = false; skipped++ }
-    } catch { /* target missing → convert */ }
+    if (!FORCE_CONVERT) {
+      try {
+        const dstStat = await fs.stat(targetPath)
+        if (dstStat.mtimeMs >= srcStat.mtimeMs) { needsConvert = false; skipped++ }
+      } catch { /* target missing → convert */ }
+    }
 
     if (!needsConvert) continue
 

@@ -24,6 +24,37 @@ import App from '../App'
 const _urlParams = new URLSearchParams(window.location.search)
 const _isBridgeMode = _urlParams.get('autostart') === '1' || _urlParams.get('hideui') === '1'
 
+/**
+ * Patch WebGL2RenderingContext.prototype so that shader compile and program
+ * link errors are automatically logged to the console with full info logs.
+ * Must run before butterchurn creates its internal WebGL2 context.
+ * Safe to call multiple times (idempotent via __logPatched flag).
+ */
+function patchWebGL2Logging() {
+  if (typeof WebGL2RenderingContext === 'undefined') return
+  if (WebGL2RenderingContext.prototype.__logPatched) return
+  WebGL2RenderingContext.prototype.__logPatched = true
+
+  const proto = WebGL2RenderingContext.prototype
+
+  const origCompile = proto.compileShader
+  proto.compileShader = function (shader) {
+    origCompile.call(this, shader)
+    if (!this.getShaderParameter(shader, this.COMPILE_STATUS)) {
+      console.error('[GLSL compile error]\n' + this.getShaderInfoLog(shader))
+    }
+  }
+
+  const origLink = proto.linkProgram
+  proto.linkProgram = function (prog) {
+    origLink.call(this, prog)
+    if (!this.getProgramParameter(prog, this.LINK_STATUS)) {
+      console.error('[GL link error]\n' + this.getProgramInfoLog(prog))
+    }
+  }
+}
+patchWebGL2Logging()
+
 export default class ButterchurnVisualizer {
   /**
    * @param {Object} opts
