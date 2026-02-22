@@ -746,6 +746,173 @@ export default class PreviewBatch {
   }
 
   /**
+   * Capture preview images for a Shadertoy group using an independent offscreen
+   * WebGL1 canvas — no interruption of the live visualizer.
+   *
+   * For each shader: fetch the GLSL source, inject a standard preamble, compile
+   * it in a throw-away WebGL program, render `settleDelay` ms worth of frames,
+   * then capture.  Shaders that fail to compile or render are skipped silently.
+   *
+   * @param {Object}      opts
+   * @param {string[]}    opts.list           Preset display names to capture
+   * @param {string}      opts.group          Group name (used as store key)
+   * @param {Map}         opts.shaderMeta     name → filename (e.g. 'audio-eclipse.glsl')
+   * @param {string}      opts.presetBase     Base URL, e.g. '/shadertoy-presets/default'
+   * @param {number}      [opts.settleDelay]  ms to render before capture (default 500)
+   * @param {'fixed'|'dynamic'} [opts.resolution]
+   * @param {number}      [opts.width=160]
+   * @param {number}      [opts.height=90]
+   * @param {'PNG'|'JPG'} [opts.format='PNG']
+   * @param {boolean}     [opts.forceCapture] Re-capture even if already stored
+   * @param {Function}    [opts.onStatus]
+   * @param {Function}    [opts.onCaptured]
+   */
+  async startOffscreenShaderCapture({
+    list,
+    group,
+    shaderMeta,
+    presetBase,
+    settleDelay = 500,
+    resolution = 'fixed',
+    width = 160,
+    height = 90,
+    format = 'PNG',
+    forceCapture = false,
+    onStatus,
+    onCaptured,
+  } = {}) {
+    if (this._running) return
+    if (!list || list.length === 0) return
+
+    this._running = true
+    this._cancelled = false
+
+    // Clear existing store entries for this group unless we're just forcing
+    // specific presets (regen path keeps previously loaded previews)
+    if (!forceCapture) {
+      for (const [hash, entry] of _store) {
+        if (entry.group === group && !hash.startsWith('prebuilt:')) _store.delete(hash)
+      }
+    }
+
+    const mimeType = format === 'JPG' ? 'image/jpeg' : 'image/png'
+    const ext      = format === 'JPG' ? 'jpg' : 'png'
+    const quality  = format === 'JPG' ? 0.92 : undefined
+
+    // Create an independent offscreen canvas with its own WebGL context
+    const offCanvas = document.createElement('canvas')
+    offCanvas.width  = width
+    offCanvas.height = height
+    offCanvas.style.cssText = 'position:fixed;top:-9999px;left:-9999px;pointer-events:none'
+    document.body.appendChild(offCanvas)
+
+    const gl = offCanvas.getContext('webgl', { preserveDrawingBuffer: true, antialias: false })
+           || offCanvas.getContext('experimental-webgl', { preserveDrawingBuffer: true })
+
+    if (!gl) {
+      console.warn('[PreviewBatch] WebGL not available for offscreen shader capture')
+      offCanvas.remove()
+      this._running = false
+      onStatus?.('WebGL unavailable — cannot capture shader previews offscreen.')
+      return
+    }
+
+    // Shared black 1×1 texture bound to all iChannel slots
+    const blackTex = _makeBlackTex1x1(gl)
+
+    // Shared fullscreen-quad VBOs
+    const posBuf = gl.createBuffer()
+    gl.bindBuffer(gl.ARRAY_BUFFER, posBuf)
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1,-1,0, 1,-1,0, 1,1,0, -1,-1,0, 1,1,0, -1,1,0]), gl.STATIC_DRAW)
+    const uvBuf = gl.createBuffer()
+    gl.bindBuffer(gl.ARRAY_BUFFER, uvBuf)
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([0,0, 1,0, 1,1, 0,0, 1,1, 0,1]), gl.STATIC_DRAW)
+
+    let captured = 0
+    onStatus?.(`Preparing offscreen shader capture (${list.length})…`)
+
+    for (const name of list) {
+      if (this._cancelled) break
+
+      const file = shaderMeta?.get(name)
+      if (!file) continue
+
+      const hash = `prebuilt:${_sanitize(group)}/${_sanitize(name)}`
+      if (!forceCapture && _store.has(hash) && _store.get(hash).group === group) continue
+
+      let source = ''
+      try {
+        const resp = await fetch(`${presetBase}/presets/${encodeURIComponent(file)}`)
+        if (resp.ok) source = await resp.text()
+      } catch { /* skip */ }
+      if (!source) { console.warn(`[PreviewBatch] skip (no source) "${name}"`); continue }
+
+      // Build fragment source with preamble + compat transforms
+      const fragSrc = _buildPreviewFragment(source)
+
+      let program = null
+      try { program = _compilePreviewProgram(gl, fragSrc) }
+      catch (err) {
+        console.warn(`[PreviewBatch] shader compile skipped "${name}":`, String(err.message).split('\n')[0])
+        continue
+      }
+
+      let blob = null
+      try {
+        gl.viewport(0, 0, width, height)
+        gl.useProgram(program)
+
+        // Render frames for settleDelay ms so the animation reaches a good frame
+        const t0 = performance.now()
+        while (performance.now() - t0 < settleDelay) {
+          if (this._cancelled) break
+          _drawPreviewFrame(gl, program, posBuf, uvBuf, blackTex, width, height, (performance.now() - t0) / 1000 + 1.5)
+          await _sleep(16)
+        }
+        if (!this._cancelled) {
+          _drawPreviewFrame(gl, program, posBuf, uvBuf, blackTex, width, height, settleDelay / 1000 + 1.5)
+        }
+
+        blob = await new Promise((res) => {
+          try { offCanvas.toBlob(res, mimeType, quality) }
+          catch (e) { console.warn('[PreviewBatch] toBlob failed:', e); res(null) }
+        })
+      } catch (err) {
+        console.warn(`[PreviewBatch] render failed "${name}":`, err?.message ?? err)
+      } finally {
+        gl.deleteProgram(program)
+      }
+
+      if (blob) {
+        const stem = file.replace(/\.glsl$/i, '')
+        _store.set(hash, {
+          filename: `shaders-previews/${stem}.${ext}`,
+          blob, presetName: name, group, jsonPath: stem,
+        })
+        const blobUrl = URL.createObjectURL(blob)
+        _previewUrls.set(hash, blobUrl)
+        onCaptured?.({ name, hash, blobUrl, group, jsonPath: stem })
+        captured++
+      }
+
+      if (captured % 5 === 0 || captured === list.length) {
+        onStatus?.(`Capturing ${captured}… (${list.length - captured} remaining)`)
+      }
+    }
+
+    // Cleanup
+    gl.deleteTexture(blackTex)
+    gl.deleteBuffer(posBuf)
+    gl.deleteBuffer(uvBuf)
+    offCanvas.remove()
+
+    this._running = false
+    onStatus?.(this._cancelled
+      ? `Cancelled — ${captured} captured. Press Z to ZIP.`
+      : `Done — ${captured} captured. Press Z to ZIP.`)
+  }
+
+  /**
    * Build the items array the preview panel needs.
    * Creates (or refreshes) blob URLs for every stored image.
    * Returns null if there are no entries for the given group.
@@ -787,6 +954,127 @@ export default class PreviewBatch {
 }
 
 // ─── Private helpers ──────────────────────────────────────────────────────────
+
+// ─── Offscreen shader preview renderer ───────────────────────────────────────
+// Lightweight standalone WebGL1 renderer used by startOffscreenShaderCapture.
+// Has NO dependency on Three.js or App — pure WebGL1 API.
+
+const _PREVIEW_VERT = /* glsl */`
+autribute vec3 position;
+autribute vec2 uv;
+void main() { gl_Position = vec4(position, 1.0); }
+`
+
+/** Inject a Shadertoy-compatible preamble and wrap in main() if needed. */
+function _buildPreviewFragment(source) {
+  // Strip existing precision statements; we inject our own
+  let body = String(source)
+    .replace(/^\s*precision\s+\w+\s+\w+\s*;\s*\n?/gm, '')
+    // texture() → texture2D()  (WebGL1)
+    .replace(/\btexture\s*\(/g, 'texture2D(')
+    // float literal suffix: 1.0f → 1.0
+    .replace(/(\b(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][+-]?\d+)?)f\b/g, '$1')
+
+  const preamble = [
+    'precision highp float;',
+    'precision highp int;',
+    'uniform vec3  iResolution;',
+    'uniform float uPixelRatio;',
+    'uniform float iTime;',
+    'uniform float iTimeDelta;',
+    'uniform float iFrameRate;',
+    'uniform int   iFrame;',
+    'uniform vec4  iMouse;',
+    'uniform vec4  iDate;',
+    'uniform float iSampleRate;',
+    'uniform sampler2D iChannel0;',
+    'uniform sampler2D iChannel1;',
+    'uniform sampler2D iChannel2;',
+    'uniform sampler2D iChannel3;',
+    'uniform vec3  iChannelResolution[4];',
+    'uniform float iChannelTime[4];',
+  ].join('\n')
+
+  const hasMain = /void\s+main\s*\(/.test(body)
+  const wrapper = hasMain ? '' :
+    '\nvoid main() {\n  vec4 c = vec4(0.0);\n  mainImage(c, gl_FragCoord.xy);\n  c.a = 1.0;\n  gl_FragColor = c;\n}\n'
+
+  return `${preamble}\n${body}\n${wrapper}`
+}
+
+/** Compile a minimal preview WebGL1 program; throws on error. */
+function _compilePreviewProgram(gl, fragSrc) {
+  function compile(src, type) {
+    const sh = gl.createShader(type)
+    gl.shaderSource(sh, src)
+    gl.compileShader(sh)
+    if (!gl.getShaderParameter(sh, gl.COMPILE_STATUS)) {
+      const log = gl.getShaderInfoLog(sh)
+      gl.deleteShader(sh)
+      throw new Error(log)
+    }
+    return sh
+  }
+  const vert = compile(_PREVIEW_VERT, gl.VERTEX_SHADER)
+  const frag = compile(fragSrc, gl.FRAGMENT_SHADER)
+  const prog = gl.createProgram()
+  gl.attachShader(prog, vert)
+  gl.attachShader(prog, frag)
+  gl.linkProgram(prog)
+  gl.deleteShader(vert)
+  gl.deleteShader(frag)
+  if (!gl.getProgramParameter(prog, gl.LINK_STATUS)) {
+    const log = gl.getProgramInfoLog(prog)
+    gl.deleteProgram(prog)
+    throw new Error(log)
+  }
+  return prog
+}
+
+/** Create a 1×1 opaque black texture. */
+function _makeBlackTex1x1(gl) {
+  const tex = gl.createTexture()
+  gl.bindTexture(gl.TEXTURE_2D, tex)
+  gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, 1, 1, 0, gl.RGBA, gl.UNSIGNED_BYTE, new Uint8Array([0,0,0,255]))
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST)
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST)
+  gl.bindTexture(gl.TEXTURE_2D, null)
+  return tex
+}
+
+/** Render one frame with the given iTime value. */
+function _drawPreviewFrame(gl, prog, posBuf, uvBuf, blackTex, w, h, iTime) {
+  const u = (n) => gl.getUniformLocation(prog, n)
+  const d = new Date()
+
+  gl.uniform3f(u('iResolution'), w, h, 1.0)
+  gl.uniform1f(u('uPixelRatio'), 1.0)
+  gl.uniform1f(u('iTime'), iTime)
+  gl.uniform1f(u('iTimeDelta'), 1 / 60)
+  gl.uniform1f(u('iFrameRate'), 60.0)
+  gl.uniform1i(u('iFrame'), Math.floor(iTime * 60))
+  gl.uniform4f(u('iMouse'), 0, 0, 0, 0)
+  gl.uniform4f(u('iDate'), d.getFullYear(), d.getMonth(), d.getDate(), d.getSeconds())
+  gl.uniform1f(u('iSampleRate'), 44100.0)
+  // Bind black texture to iChannel0-3
+  for (let i = 0; i < 4; i++) {
+    gl.activeTexture(gl.TEXTURE0 + i)
+    gl.bindTexture(gl.TEXTURE_2D, blackTex)
+    const loc = gl.getUniformLocation(prog, `iChannel${i}`)
+    if (loc !== null) gl.uniform1i(loc, i)
+  }
+  gl.uniform3fv(u('iChannelResolution'), [512,2,1, 512,2,1, 512,2,1, 512,2,1])
+  gl.uniform1fv(u('iChannelTime'), [0,0,0,0])
+
+  // Draw fullscreen quad
+  const posLoc = gl.getAttribLocation(prog, 'position')
+  const uvLoc  = gl.getAttribLocation(prog, 'uv')
+  gl.bindBuffer(gl.ARRAY_BUFFER, posBuf)
+  if (posLoc >= 0) { gl.enableVertexAttribArray(posLoc); gl.vertexAttribPointer(posLoc, 3, gl.FLOAT, false, 0, 0) }
+  gl.bindBuffer(gl.ARRAY_BUFFER, uvBuf)
+  if (uvLoc >= 0) { gl.enableVertexAttribArray(uvLoc); gl.vertexAttribPointer(uvLoc, 2, gl.FLOAT, false, 0, 0) }
+  gl.drawArrays(gl.TRIANGLES, 0, 6)
+}
 
 function _sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, Math.max(0, ms)))

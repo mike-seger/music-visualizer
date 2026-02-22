@@ -1,65 +1,55 @@
 import ShadertoyMultipassVisualizer from './ShadertoyMultipassVisualizer'
 import { loadShaderConfig, injectUniforms } from '../shaderCustomization'
 
-// Eager-load all GLSL sources as raw strings.
-// Note: path is relative to this file: src/js/visualizers -> src/shaders
-const shaderModules = import.meta.glob('../../shaders/*.glsl', { query: '?raw', import: 'default', eager: true })
+// Shaders are served from public/shadertoy-presets/default/ and fetched at runtime.
+// The index.json lists available presets; individual .glsl files are fetched on demand.
+export const PRESETS_BASE = 'shadertoy-presets/default'
 
-function fileBaseName(filePath) {
-  const parts = String(filePath).split('/')
-  return parts[parts.length - 1] || filePath
-}
+/** Mutable arrays populated once `shadertoyReady` resolves. */
+export const SHADER_VISUALIZERS = []       // { name, fileName, filePath, create }[]
+export const SHADER_VISUALIZER_NAMES = []  // display names in stable sort order
 
-function niceTitleFromFile(filePath) {
-  const base = fileBaseName(filePath)
-    .replace(/\.glsl$/i, '')
-    .replace(/[_-]+/g, ' ')
-    .replace(/\s+/g, ' ')
-    .trim()
+/**
+ * Promise that resolves once the shader preset index is loaded from
+ * public/shadertoy-presets/default/index.json.  Eagerly initiated at module
+ * load so it is ready by the time the UI renders.
+ */
+export const shadertoyReady = (async () => {
+  try {
+    const baseUrl = import.meta.env?.BASE_URL ?? '/'
+    const resp = await fetch(`${baseUrl}${PRESETS_BASE}/index.json`)
+    if (!resp.ok) { console.warn('[shaderRegistry] index.json not found'); return }
+    const index = await resp.json()
+    if (!Array.isArray(index)) { console.warn('[shaderRegistry] index.json is not an array'); return }
 
-  if (base && base === base.toLowerCase()) {
-    return base.replace(/\b\w/g, (m) => m.toUpperCase())
-  }
-  return base
-}
-
-function stableSortEntries(entries) {
-  return [...entries].sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: 'base' }))
-}
-
-const entries = Object.entries(shaderModules).map(([filePath, source]) => {
-  const displayName = niceTitleFromFile(filePath)
-  const fileName = fileBaseName(filePath)
-  
-  return {
-    name: displayName,
-    filePath,
-    fileName,
-    create: async () => {
-      // Try to load optional shader config
-      const config = await loadShaderConfig(fileName)
-      
-      // Inject uniforms if config exists
-      const processedSource = config ? injectUniforms(source, config) : source
-      
-      const visualizer = new ShadertoyMultipassVisualizer({ 
-        name: displayName, 
-        source: processedSource, 
-        filePath,
-        shaderConfig: config
+    for (const { name, file } of index) {
+      if (!name || !file) continue
+      SHADER_VISUALIZERS.push({
+        name,
+        fileName: file,
+        filePath: `${PRESETS_BASE}/presets/${file}`,
+        create: async () => {
+          const baseUrl2 = import.meta.env?.BASE_URL ?? '/'
+          const srcResp = await fetch(`${baseUrl2}${PRESETS_BASE}/presets/${encodeURIComponent(file)}`)
+          const source = srcResp.ok ? await srcResp.text() : ''
+          const config = await loadShaderConfig(file)
+          const processedSource = config ? injectUniforms(source, config) : source
+          return new ShadertoyMultipassVisualizer({
+            name, source: processedSource, filePath: file, shaderConfig: config,
+          })
+        },
       })
-      
-      return visualizer
-    },
+      SHADER_VISUALIZER_NAMES.push(name)
+    }
+    console.log(`[shaderRegistry] ${SHADER_VISUALIZER_NAMES.length} shader preset(s) loaded from ${PRESETS_BASE}/index.json`)
+  } catch (err) {
+    console.warn('[shaderRegistry] could not load presets index:', err)
   }
-})
+})()
 
-export const SHADER_VISUALIZERS = stableSortEntries(entries)
-export const SHADER_VISUALIZER_NAMES = SHADER_VISUALIZERS.map((e) => e.name)
-
-const factoryMap = new Map(SHADER_VISUALIZERS.map((e) => [e.name, e.create]))
-
-export function createShaderVisualizerByName(name) {
-  const fn = factoryMap.get(name)
-  return fn ? fn() : null
+/** Create (and return a Promise for) the named shader visualizer. */
+export async function createShaderVisualizerByName(name) {
+  await shadertoyReady
+  const entry = SHADER_VISUALIZERS.find((e) => e.name === name)
+  return entry ? entry.create() : null
 }

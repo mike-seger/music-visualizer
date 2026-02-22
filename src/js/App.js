@@ -1,6 +1,6 @@
 import * as THREE from 'three'
 import { ENTITY_VISUALIZER_NAMES, createEntityVisualizerByName } from './visualizers/entityRegistry'
-import { SHADER_VISUALIZERS, SHADER_VISUALIZER_NAMES, createShaderVisualizerByName } from './visualizers/shaderRegistry'
+import { SHADER_VISUALIZERS, SHADER_VISUALIZER_NAMES, shadertoyReady, PRESETS_BASE as SHADERTOY_PRESETS_BASE, createShaderVisualizerByName } from './visualizers/shaderRegistry'
 import PreviewBatch from './preview/PreviewBatch'
 
 // MilkDrop (Butterchurn) presets are lazy-loaded to keep the initial bundle small.
@@ -3737,27 +3737,26 @@ export default class App {
     }
 
     if (group === 'Shadertoy') {
-      // Load pre-built images from shaders-previews/ first, then live-canvas
-      // capture anything that doesn't have a pre-built image yet.
+      await shadertoyReady
+      // Phase 1: load any pre-built images from shaders-previews/
       const shaderMeta = new Map(
         SHADER_VISUALIZERS.map((e) => [e.name, e.fileName.replace(/\.glsl$/i, '')])
       )
       const { missing } = await this.previewBatch.loadShaderPreviews(
         group, list, shaderMeta, { onStatus, onCaptured }
       )
+      // Phase 2: offscreen-canvas render for any without pre-built images
       if (missing.length > 0) {
-        await this.previewBatch.startCapture({
+        await this.previewBatch.startOffscreenShaderCapture({
           list: missing,
-          startIndex: Math.max(0, missing.indexOf(App.visualizerType)),
           group,
-          switchTo: async (name) => { await this.switchVisualizer(name) },
-          getCanvas: () => this.getActiveCanvas(),
+          shaderMeta: new Map(SHADER_VISUALIZERS.map((e) => [e.name, e.fileName])),
+          presetBase: `${import.meta.env.BASE_URL}${SHADERTOY_PRESETS_BASE}`,
           settleDelay: Math.max(cfg.settleDelay, 500),
           resolution: cfg.resolution,
           width: cfg.width,
           height: cfg.height,
           format: cfg.format,
-          skipClear: true,
           onStatus,
           onCaptured,
         })
@@ -3843,7 +3842,23 @@ export default class App {
       }
     }
 
-    if (DEFAULT_GROUPS.includes(group)) {
+    if (group === 'Shadertoy') {
+      await shadertoyReady
+      await this.previewBatch.startOffscreenShaderCapture({
+        list: names,
+        group,
+        shaderMeta: new Map(SHADER_VISUALIZERS.map((e) => [e.name, e.fileName])),
+        presetBase: `${import.meta.env.BASE_URL}${SHADERTOY_PRESETS_BASE}`,
+        settleDelay: Math.max(cfg.settleDelay, 500),
+        resolution: cfg.resolution,
+        width: cfg.width,
+        height: cfg.height,
+        format: cfg.format,
+        forceCapture: true,
+        onStatus,
+        onCaptured,
+      })
+    } else if (DEFAULT_GROUPS.includes(group)) {
       await this.previewBatch.startCapture({
         list: names,
         startIndex: Math.max(0, names.indexOf(App.visualizerType)),
@@ -5026,6 +5041,7 @@ export default class App {
       return [...ENTITY_VISUALIZER_NAMES]
     }
     if (groupName === 'Shadertoy') {
+      await shadertoyReady
       return [...SHADER_VISUALIZER_NAMES]
     }
 
