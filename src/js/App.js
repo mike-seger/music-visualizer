@@ -5245,7 +5245,12 @@ export default class App {
     }
     this.groupController?.updateDisplay?.()
 
-    // Get presets for this group (may trigger lazy load)
+    // Invalidate the in-memory index cache so index.json is always re-fetched on
+    // group switch (prevents stale preset counts after the preset list changes).
+    App._userGroupIndex.delete(groupName)
+    App._userGroupLoadPromise.delete(groupName)
+
+    // Get presets for this group (triggers fresh load)
     const presets = await this._getPresetsForGroup(groupName)
     App.visualizerList = presets
 
