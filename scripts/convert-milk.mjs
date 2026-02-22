@@ -94,6 +94,125 @@ function splitTopLevelCommas(str) {
 }
 
 /**
+ * Fix all "ret = <expr>" assignments where the RHS is a wrong type for vec3:
+ *  • ret = vec4(...)           → ret = vec4(...).xyz
+ *  • ret = expr.x / .y / .z   → ret = vec3(expr.x)   (float → vec3)
+ *  • ret = numericLiteral      → ret = vec3(numericLiteral)
+ *
+ * Uses a depth-counting paren scanner so expressions like
+ * `ret = texture(sampler_main, uv).x` are handled correctly (the inner
+ * comma inside texture() does not terminate the expression scan).
+ */
+function fixRetAssignment(src) {
+  let result = ''
+  let pos = 0
+
+  while (pos < src.length) {
+    // Find the next "ret =" plain assignment (not ret +=, ret -=, etc.)
+    const ahead = src.substring(pos)
+    const m = ahead.match(/\bret\s*=/)
+    if (!m) { result += ahead; break }
+
+    const matchPos = pos + m.index
+    const afterEqPos = matchPos + m[0].length  // position just after '='
+
+    // Verify the char immediately before '=' is not a compound-assignment op
+    const eqIdx = matchPos + m[0].lastIndexOf('=')
+    const before = eqIdx > 0 ? src[eqIdx - 1] : ' '
+    if (/[+\-*\/!&|^%<>]/.test(before)) {
+      // compound assignment (+=, -=, etc.) — skip
+      result += src.substring(pos, afterEqPos)
+      pos = afterEqPos
+      continue
+    }
+
+    // Copy everything up to and including "ret ="
+    result += src.substring(pos, afterEqPos)
+
+    // Skip leading whitespace of the expression
+    let j = afterEqPos
+    while (j < src.length && src[j] === ' ') j++
+
+    // Scan the expression: run until a depth-0 ';' or ','
+    const exprStart = j
+    let depth = 0
+    while (j < src.length) {
+      const c = src[j]
+      if (c === '(' || c === '[') depth++
+      else if (c === ')' || c === ']') {
+        if (depth === 0) break   // closing paren that doesn't belong to us
+        depth--
+      } else if ((c === ';' || c === ',') && depth === 0) break
+      j++
+    }
+
+    const expr = src.substring(exprStart, j).trimEnd()
+
+    // ── vec4(...) → vec4(...).xyz ──
+    const isVec4Ctor = /^\s*vec4\s*\(/.test(expr)
+    if (isVec4Ctor) {
+      // Find the matching close-paren of vec4(
+      const pOpen = expr.indexOf('(')
+      const pClose = findMatchingParen(expr, pOpen + 1)
+      const rest = pClose >= 0 ? expr.substring(pClose + 1) : ''
+      if (pClose >= 0 && !/^\s*\./.test(rest)) {
+        result += expr.substring(0, pClose + 1) + '.xyz' + rest
+      } else {
+        result += expr
+      }
+      pos = j
+      continue
+    }
+
+    // ── trailing single-component swizzle → vec3(expr) ──
+    const swM = expr.match(/\.([xyzwrgba])(?![xyzwrgba\w])\s*$/)
+    if (swM) {
+      result += `vec3(${expr})`
+      pos = j
+      continue
+    }
+
+    // ── bare numeric literal → vec3(num) ──
+    const numM = expr.match(/^([-+]?(?:\d+\.?\d*|\.\d+)f?)\s*$/)
+    if (numM) {
+      result += `vec3(${numM[1]})`
+      pos = j
+      continue
+    }
+
+    result += expr
+    pos = j
+  }
+
+  return result
+}
+
+/**
+ * Fix `ret = vec4(...)` assignments by appending `.xyz` after the closing paren,
+ * so the vec4 expression yields vec3 (matching butterchurn's `vec3 ret` declaration).
+ * (kept for compatibility; fixRetAssignment supersedes this for the common case)
+ */
+function retFromVec4Fix(src) {
+  let result = ''
+  let i = 0
+  while (i < src.length) {
+    const sub = src.substring(i)
+    const m = sub.match(/\bret\s*=\s*vec4\s*\(/)
+    if (!m || m.index === undefined) { result += sub; break }
+    result += sub.substring(0, m.index + m[0].length)
+    const parenOpen = i + m.index + m[0].length
+    const parenClose = findMatchingParen(src, parenOpen)
+    if (parenClose < 0) { result += sub.substring(m.index + m[0].length); break }
+    result += src.substring(parenOpen, parenClose + 1)
+    // check if .xyz already follows
+    const after = src.substring(parenClose + 1)
+    if (!/^\s*\./.test(after)) result += '.xyz'
+    i = parenClose + 1
+  }
+  return result
+}
+
+/**
  * Convert MilkDrop HLSL shader text to Butterchurn-compatible GLSL.
  *
  * Handles: types, tex2D, lerp, frac, saturate, mul, atan2,
@@ -108,6 +227,7 @@ function hlslToGlsl(shaderText) {
   s = s.replace(/\/\*[\s\S]*?\*\//g, '')
 
   // ── Type replacements (order matters: float4x4 before float4) ──
+  s = s.replace(/\bdouble\b/g, 'float')   // GLSL ES has no double precision
   s = s.replace(/\bfloat4x4\b/g, 'mat4')
   s = s.replace(/\bfloat3x3\b/g, 'mat3')
   s = s.replace(/\bfloat2x2\b/g, 'mat2')
@@ -177,6 +297,54 @@ function hlslToGlsl(shaderText) {
   // In GLSL, texture() returns vec4 — assigning to vec3 is an error.
   // Add .xyz to any texture() call not already followed by a swizzle.
   s = addTextureSwizzle(s)
+
+  // ── Fix vec4 var = expr.xyz → vec3 var (type mismatch after addTextureSwizzle) ──
+  // addTextureSwizzle may add .xyz to a texture() call that initialises a vec4
+  // variable (originally float4 in HLSL), making the RHS vec3 but decl vec4.
+  // Use lazy `[\s\S]*?` so we match up to the LATEST .xyz before the semicolon.
+  s = s.replace(/\bvec4(\s+\w+\s*=(?:[\s\S])*?\.xyz\b)(\s*;)/g, 'vec3$1$2')
+
+  // ── pow(A, numericLiteral) → _pow(A, numericLiteral) ──
+  // GLSL ES 3.00 requires pow(genType, genType) — both args the same type.
+  // HLSL allows pow(vec3, float) with implicit broadcast of the exponent.
+  // Overloaded _pow() helpers (injected into the shader header below) handle
+  // float/vec2/vec3/vec4 bases with a float exponent transparently.
+  let _powUsed = false
+  s = replaceFuncCall(s, 'pow', inner => {
+    const args = splitTopLevelCommas(inner)
+    if (args.length === 2) {
+      const arg2 = args[1].trim()
+      if (/^[-+]?(?:\d+\.?\d*|\.\d+)f?$/.test(arg2)) {
+        _powUsed = true
+        return `_pow(${inner})`
+      }
+    }
+    return `pow(${inner})`
+  })
+
+  // ── ret = vec4(...) → ret = vec4(...).xyz ──
+  // butterchurn declares `vec3 ret`; a vec4 constructor produces the wrong type.
+  // ── ret = expr.x / ret = literal → vec3(…) ──
+  // All three cases handled by the paren-aware fixRetAssignment pass.
+  s = fixRetAssignment(s)
+
+  // ── vec2/3/4 var = scalarLiteral → vec2/3/4 var = vecN(scalarLiteral) ──
+  // HLSL allows implicit scalar broadcast; GLSL ES 3.00 does not.
+  s = s.replace(
+    /\b(vec[234])(\s+\w+\s*=\s*)([-+]?(?:\d+\.?\d*|\.\d+)f?)(\s*[;,])/g,
+    (_, type, mid, num, end) => `${type}${mid}${type}(${num})${end}`
+  )
+
+  // ── Inject _pow overload helpers before shader_body ──
+  // These allow pow(vecN, float) to work like HLSL by broadcasting the exponent.
+  if (_powUsed && s.includes('shader_body')) {
+    const POW_HELPERS =
+      'float _pow(float b,float e){return pow(b,e);}\n' +
+      'vec2  _pow(vec2  b,float e){return pow(b,vec2(e));}\n' +
+      'vec3  _pow(vec3  b,float e){return pow(b,vec3(e));}\n' +
+      'vec4  _pow(vec4  b,float e){return pow(b,vec4(e));}\n'
+    s = s.replace('shader_body', POW_HELPERS + 'shader_body')
+  }
 
   return s
 }

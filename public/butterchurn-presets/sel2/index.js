@@ -42,7 +42,6 @@ const previewMeta = new Map([
   ["20fac611c0fb", "Dancer:Infect:LuxXx - iFucking Like Drugs v01 (burning)"],
   ["3b40587095d8", "Dancer:Infect:LuxXx - iWhat Happened Right After I Ate That Toxic Waste cbarlie-whiskey (dancing flame dance)"],
   ["d0165a631de1", "Dancer:Infect:LuxXx - iWhat Happened Right After I Ate That Toxic Waste e for escher"],
-  ["7cb65cdf16fd", "Dancer:Jello Mirror:martin - shader pimped caleidoscope"],
   ["8a76036b25f1", "Dancer:Lasers:Beat it up AdamFX REMIX 2 Zylot - In death there is life (Geiss Layered Mix) Swelling Spiral Including Martin Remix"],
   ["9b5d14cc8855", "Dancer:Lasers:EoS + Phat - vacuum deity watching you"],
   ["34065863722b", "Dancer:Lasers:fat cancer dead gun"],
