@@ -5175,7 +5175,7 @@ export default class App {
   async _loadUserGroupIndex(groupName) {
     const baseUrl = import.meta.env.BASE_URL
     try {
-      const resp = await fetch(`${baseUrl}${App._bcPresetsBase}/${encodeURIComponent(groupName)}/index.json`)
+      const resp = await fetch(`${baseUrl}${App._bcPresetsBase}/${encodeURIComponent(groupName)}/index.json`, { cache: 'no-store' })
       if (!resp.ok) { App._userGroupIndex.set(groupName, []); return }
       const index = await resp.json()
       if (Array.isArray(index)) {
