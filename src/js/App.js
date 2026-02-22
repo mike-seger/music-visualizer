@@ -3727,34 +3727,56 @@ export default class App {
     const _entryByName = new Map(_groupIndex.map((e) => [e.name, e]))
     const _getEntry = (name) => _entryByName.get(name)
 
-    await this.previewBatch.startOffscreenCapture({
-      list,
-      group,
-      audioUrl: `${import.meta.env.BASE_URL}audio/preview-loop.flac`,
-      settleDelay: cfg.settleDelay,
-      resolution: cfg.resolution,
-      width: cfg.width,
-      height: cfg.height,
-      format: cfg.format,
-      getPresetUrl: _entryByName.size > 0
-        ? (g, name) => {
-            const file = (_getEntry(name)?.file) ?? (name + '.json')
-            return `${import.meta.env.BASE_URL}${App._bcPresetsBase}/${encodeURIComponent(g)}/presets/${encodeURIComponent(file)}`
-          }
-        : undefined,
-      getFileStem: _entryByName.size > 0
-        ? (name) => (_getEntry(name)?.file ?? (name + '.json')).replace(/\.json$/i, '')
-        : undefined,
-      onStatus,
-      onCaptured: ({ name, hash, blobUrl, group: g, jsonPath }) => {
-        if (this._controlsPopup && !this._controlsPopup.closed) {
-          this._broadcastToControls({
-            type: 'preview-tile-update',
-            item: { hash, blobUrl, presetName: name, group: g, jsonPath, missing: false },
-          })
-        }
-      },
-    })
+    const onCaptured = ({ name, hash, blobUrl, group: g, jsonPath }) => {
+      if (this._controlsPopup && !this._controlsPopup.closed) {
+        this._broadcastToControls({
+          type: 'preview-tile-update',
+          item: { hash, blobUrl, presetName: name, group: g, jsonPath, missing: false },
+        })
+      }
+    }
+
+    if (DEFAULT_GROUPS.includes(group)) {
+      // Shadertoy / Custom WebGL — these are compiled GLSL shaders, not BC JSON.
+      // Use the live-canvas path: switch the main visualizer for each preset,
+      // settle, then capture the active canvas directly.
+      await this.previewBatch.startCapture({
+        list,
+        startIndex: Math.max(0, list.indexOf(App.visualizerType)),
+        group,
+        switchTo: async (name) => { await this.switchVisualizer(name) },
+        getCanvas: () => this.getActiveCanvas(),
+        settleDelay: Math.max(cfg.settleDelay, 500), // shaders need a bit to warm up
+        resolution: cfg.resolution,
+        width: cfg.width,
+        height: cfg.height,
+        format: cfg.format,
+        onStatus,
+        onCaptured,
+      })
+    } else {
+      await this.previewBatch.startOffscreenCapture({
+        list,
+        group,
+        audioUrl: `${import.meta.env.BASE_URL}audio/preview-loop.flac`,
+        settleDelay: cfg.settleDelay,
+        resolution: cfg.resolution,
+        width: cfg.width,
+        height: cfg.height,
+        format: cfg.format,
+        getPresetUrl: _entryByName.size > 0
+          ? (g, name) => {
+              const file = (_getEntry(name)?.file) ?? (name + '.json')
+              return `${import.meta.env.BASE_URL}${App._bcPresetsBase}/${encodeURIComponent(g)}/presets/${encodeURIComponent(file)}`
+            }
+          : undefined,
+        getFileStem: _entryByName.size > 0
+          ? (name) => (_getEntry(name)?.file ?? (name + '.json')).replace(/\.json$/i, '')
+          : undefined,
+        onStatus,
+        onCaptured,
+      })
+    }
 
     // Push updated items (captured + any remaining placeholders) to the preview panel
     if (this._controlsPopup && !this._controlsPopup.closed) {
@@ -3788,36 +3810,55 @@ export default class App {
     const _entryByName = new Map(_groupIndex.map((e) => [e.name, e]))
     const _getEntry = (name) => _entryByName.get(name)
 
-    await this.previewBatch.startOffscreenCapture({
-      list: names,
-      group,
-      audioUrl: `${import.meta.env.BASE_URL}audio/preview-loop.flac`,
-      settleDelay: cfg.settleDelay,
-      settleDelayMax: cfg.regenSettleMax,
-      forceCapture: true,
-      resolution: cfg.resolution,
-      width: cfg.width,
-      height: cfg.height,
-      format: cfg.format,
-      getPresetUrl: _entryByName.size > 0
-        ? (g, name) => {
-            const file = (_getEntry(name)?.file) ?? (name + '.json')
-            return `${import.meta.env.BASE_URL}${App._bcPresetsBase}/${encodeURIComponent(g)}/presets/${encodeURIComponent(file)}`
-          }
-        : undefined,
-      getFileStem: _entryByName.size > 0
-        ? (name) => (_getEntry(name)?.file ?? (name + '.json')).replace(/\.json$/i, '')
-        : undefined,
-      onStatus,
-      onCaptured: ({ name, hash, blobUrl, group: g, jsonPath }) => {
-        if (this._controlsPopup && !this._controlsPopup.closed) {
-          this._broadcastToControls({
-            type: 'preview-tile-update',
-            item: { hash, blobUrl, presetName: name, group: g, jsonPath, missing: false },
-          })
-        }
-      },
-    })
+    const onCaptured = ({ name, hash, blobUrl, group: g, jsonPath }) => {
+      if (this._controlsPopup && !this._controlsPopup.closed) {
+        this._broadcastToControls({
+          type: 'preview-tile-update',
+          item: { hash, blobUrl, presetName: name, group: g, jsonPath, missing: false },
+        })
+      }
+    }
+
+    if (DEFAULT_GROUPS.includes(group)) {
+      await this.previewBatch.startCapture({
+        list: names,
+        startIndex: Math.max(0, names.indexOf(App.visualizerType)),
+        group,
+        switchTo: async (name) => { await this.switchVisualizer(name) },
+        getCanvas: () => this.getActiveCanvas(),
+        settleDelay: Math.max(cfg.settleDelay, 500),
+        resolution: cfg.resolution,
+        width: cfg.width,
+        height: cfg.height,
+        format: cfg.format,
+        onStatus,
+        onCaptured,
+      })
+    } else {
+      await this.previewBatch.startOffscreenCapture({
+        list: names,
+        group,
+        audioUrl: `${import.meta.env.BASE_URL}audio/preview-loop.flac`,
+        settleDelay: cfg.settleDelay,
+        settleDelayMax: cfg.regenSettleMax,
+        forceCapture: true,
+        resolution: cfg.resolution,
+        width: cfg.width,
+        height: cfg.height,
+        format: cfg.format,
+        getPresetUrl: _entryByName.size > 0
+          ? (g, name) => {
+              const file = (_getEntry(name)?.file) ?? (name + '.json')
+              return `${import.meta.env.BASE_URL}${App._bcPresetsBase}/${encodeURIComponent(g)}/presets/${encodeURIComponent(file)}`
+            }
+          : undefined,
+        getFileStem: _entryByName.size > 0
+          ? (name) => (_getEntry(name)?.file ?? (name + '.json')).replace(/\.json$/i, '')
+          : undefined,
+        onStatus,
+        onCaptured,
+      })
+    }
 
     if (this._controlsPopup && !this._controlsPopup.closed) {
       const { items: allItems, missingCount } = this._buildAllPreviewItems(group, App.visualizerList)

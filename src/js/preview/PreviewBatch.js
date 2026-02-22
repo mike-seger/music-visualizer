@@ -121,6 +121,7 @@ export default class PreviewBatch {
     height = 160,
     format = 'PNG',
     onStatus,
+    onCaptured,
   } = {}) {
     if (this._running) return
     if (!list || list.length === 0) return
@@ -222,8 +223,9 @@ export default class PreviewBatch {
       if (hash !== null && _store.has(hash) && _store.get(hash).group === group) { skipped++; continue }
 
       if (hash === null) {
-        console.warn(`[PreviewBatch] skip (no hash) "${name}" — could not fetch / hash preset JSON`)
-        skipped++; continue
+        // No JSON available (e.g. Shadertoy / Custom WebGL shaders); use a
+        // stable synthetic key so the preset still gets captured.
+        hash = `synthetic:${_sanitize(group)}/${_sanitize(name)}`
       }
 
       try {
@@ -254,6 +256,9 @@ export default class PreviewBatch {
         const filename = `previews/${_sanitize(fileStem)}.${ext}`
         const jsonPath = fileStem
         _store.set(hash, { filename, blob, presetName: name, group, jsonPath })
+        const blobUrl = URL.createObjectURL(blob)
+        _previewUrls.set(hash, blobUrl)
+        onCaptured?.({ name, hash, blobUrl, group, jsonPath })
         captured++
       }
 
