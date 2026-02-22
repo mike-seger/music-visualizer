@@ -2935,6 +2935,14 @@ export default class App {
       }
 
       if (presetData) {
+        if (this.debugInformationEnabled) {
+          const grp = (App.currentGroup === ALL_BC_GROUP)
+            ? (App._allBcSourceGroup.get(type) || ALL_BC_GROUP)
+            : App.currentGroup
+          console.log(`[preset] [${grp}] ${type}`)
+        }
+        // Set name before loadPreset so GL compile/link errors reference the correct preset.
+        App.currentVisualizer.name = type
         try {
           App.currentVisualizer.loadPreset(presetData, blendTimeOverride ?? this._transitionTime)
         } catch (e) {
@@ -2944,7 +2952,6 @@ export default class App {
         }
       }
       if (presetData) {
-        App.currentVisualizer.name = type
         App.visualizerType = type
         this.saveVisualizerType(type)
         this._currentPresetHash = this.previewBatch?.findHash(App.currentGroup, type) ?? null
@@ -2992,7 +2999,9 @@ export default class App {
     const resolvedFolder = (App.currentGroup === ALL_BC_GROUP)
       ? (App._allBcSourceGroup.get(type) || ALL_BC_GROUP)
       : App.currentGroup
-    console.log(`[butterchurn] switching to [${resolvedFolder}] ${type}`)
+    if (this.debugInformationEnabled) {
+      console.log(`[preset] [${resolvedFolder}] ${type}`)
+    }
 
     // Create new visualizer (async now due to shader config loading)
     let newVisualizer = null

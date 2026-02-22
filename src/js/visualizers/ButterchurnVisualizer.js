@@ -24,9 +24,14 @@ import App from '../App'
 const _urlParams = new URLSearchParams(window.location.search)
 const _isBridgeMode = _urlParams.get('autostart') === '1' || _urlParams.get('hideui') === '1'
 
+// Tracks the name of the preset currently being compiled/rendered, used to
+// attribute GL error messages to the right preset in the console.
+let _currentPresetName = ''
+
 /**
  * Patch WebGL2RenderingContext.prototype so that shader compile and program
  * link errors are automatically logged to the console with full info logs.
+ * Includes the preset name when available for easy triage.
  * Must run before butterchurn creates its internal WebGL2 context.
  * Safe to call multiple times (idempotent via __logPatched flag).
  */
@@ -35,21 +40,34 @@ function patchWebGL2Logging() {
   if (WebGL2RenderingContext.prototype.__logPatched) return
   WebGL2RenderingContext.prototype.__logPatched = true
 
-  const proto = WebGL2RenderingContext.prototype
-
-  const origCompile = proto.compileShader
-  proto.compileShader = function (shader) {
-    origCompile.call(this, shader)
-    if (!this.getShaderParameter(shader, this.COMPILE_STATUS)) {
-      console.error('[GLSL compile error]\n' + this.getShaderInfoLog(shader))
-    }
+  // Also patch the parent prototype so the wrapper covers WebGL1 contexts too.
+  const protos = [WebGL2RenderingContext.prototype]
+  if (typeof WebGLRenderingContext !== 'undefined' &&
+      WebGLRenderingContext.prototype !== WebGL2RenderingContext.prototype) {
+    protos.push(WebGLRenderingContext.prototype)
   }
 
-  const origLink = proto.linkProgram
-  proto.linkProgram = function (prog) {
-    origLink.call(this, prog)
-    if (!this.getProgramParameter(prog, this.LINK_STATUS)) {
-      console.error('[GL link error]\n' + this.getProgramInfoLog(prog))
+  for (const proto of protos) {
+    const origCompile = proto.compileShader
+    if (origCompile) {
+      proto.compileShader = function (shader) {
+        origCompile.call(this, shader)
+        if (!this.getShaderParameter(shader, this.COMPILE_STATUS)) {
+          const who = _currentPresetName ? ` preset="${_currentPresetName}"` : ''
+          console.error(`[GLSL compile error]${who}\n` + this.getShaderInfoLog(shader))
+        }
+      }
+    }
+
+    const origLink = proto.linkProgram
+    if (origLink) {
+      proto.linkProgram = function (prog) {
+        origLink.call(this, prog)
+        if (!this.getProgramParameter(prog, this.LINK_STATUS)) {
+          const who = _currentPresetName ? ` preset="${_currentPresetName}"` : ''
+          console.error(`[GL link error]${who}\n` + this.getProgramInfoLog(prog))
+        }
+      }
     }
   }
 }
@@ -70,6 +88,8 @@ export default class ButterchurnVisualizer {
 
     this._visualizer = null   // butterchurn Visualizer instance
     this._canvas = null       // our output <canvas>
+    this._gl = null           // WebGL2 context (same reference butterchurn holds)
+    this._glErrFrames = 0     // frames remaining to poll gl.getError() after a preset load
     this._raf = null          // requestAnimationFrame id (not used – App drives update())
     this._resizeHandler = null
   }
@@ -104,12 +124,15 @@ export default class ButterchurnVisualizer {
     }
 
     // --- Create Butterchurn instance ---
+    _currentPresetName = this.name || ''
     this._visualizer = butterchurn.createVisualizer(audioCtx, this._canvas, {
       width: w,
       height: h,
       pixelRatio: window.devicePixelRatio || 1,
       textureRatio: 1,
     })
+    // Grab the same WebGL2 context butterchurn uses so we can poll gl.getError().
+    this._gl = this._canvas.getContext('webgl2') || null
 
     // Connect audio
     const analyser = App.audioManager?.analyserNode
@@ -119,7 +142,9 @@ export default class ButterchurnVisualizer {
 
     // Load preset
     if (this.preset) {
+      _currentPresetName = this.name || ''
       this._visualizer.loadPreset(this.preset, this.blendTime)
+      this._glErrFrames = 8  // poll for deferred GL errors over next 8 render frames
     }
 
     // Handle resize
@@ -150,11 +175,26 @@ export default class ButterchurnVisualizer {
             timeByteArrayR: wave,
           }
         })
+        this._pollGlErrors()
         return
       }
     }
 
     this._visualizer.render()
+    this._pollGlErrors()
+  }
+
+  /** Poll gl.getError() for the first few frames after a preset load.
+   *  Butterchurn lazily compiles/links shaders during initial render calls,
+   *  so GL errors only become visible here rather than at loadPreset() time. */
+  _pollGlErrors() {
+    if (!this._gl || this._glErrFrames <= 0) return
+    this._glErrFrames--
+    const err = this._gl.getError()
+    if (err !== this._gl.NO_ERROR) {
+      console.error(`[GL error] preset="${this.name}" code=0x${err.toString(16)}`)
+      this._glErrFrames = 0  // stop after first hit to avoid flooding
+    }
   }
 
   destroy() {
@@ -181,6 +221,7 @@ export default class ButterchurnVisualizer {
       this._canvas.parentElement.removeChild(this._canvas)
     }
     this._canvas = null
+    this._gl = null
 
     // Restore Three.js canvas visibility
     if (this._threeCanvas) {
@@ -201,7 +242,9 @@ export default class ButterchurnVisualizer {
    */
   loadPreset(preset, blendTime = 2.7) {
     if (!this._visualizer) return
+    _currentPresetName = this.name || ''
     this._visualizer.loadPreset(preset, blendTime)
+    this._glErrFrames = 8  // poll gl.getError() for next 8 render frames
   }
 
   /* ──────────────────── Internal helpers ──────────────────── */
