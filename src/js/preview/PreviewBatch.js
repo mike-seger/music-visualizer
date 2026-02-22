@@ -126,19 +126,25 @@ export default class PreviewBatch {
       }
     }
 
-    // Read image extension from previews/index.js (same format as butterchurn groups).
+    // Read image extension and hash index from previews/index.js.
     // Falls back to 'png' if the file is absent (no pre-built images yet).
     const base = (presetBase || 'shadertoy-presets/default').replace(/\/$/, '')
     let imgExt = 'png'
+    /** stem → 12-char sha256 hash (from the on-disk index.js) */
+    const hashByStem = new Map()
     try {
       const resp = await fetch(`${base}/previews/index.js`)
       if (resp.ok) {
         const code = await resp.text()
         // eslint-disable-next-line no-new-func
-        const { previewExt } = new Function(`${code}\nreturn { previewExt }`)() 
+        const { previewExt, previewMeta } = new Function(`${code}\nreturn { previewExt, previewMeta }`)() 
         if (typeof previewExt === 'string' && previewExt) imgExt = previewExt
+        // index.js maps hash → stem; invert to stem → hash for O(1) lookup
+        if (previewMeta instanceof Map) {
+          for (const [hash, stem] of previewMeta) hashByStem.set(stem, hash)
+        }
       }
-    } catch { /* use default png */ }
+    } catch { /* use defaults */ }
 
     const missing = []
     const toFetch = []
@@ -155,13 +161,13 @@ export default class PreviewBatch {
       const batch = toFetch.slice(i, i + CONCURRENCY)
       await Promise.all(batch.map(async ({ name, stem }) => {
         const imageUrl = `${base}/previews/${encodeURIComponent(_sanitize(stem))}.${imgExt}`
-        const hash = `prebuilt:${_sanitize(group)}/${_sanitize(name)}`
+        const hash = hashByStem.get(stem) ?? `prebuilt:${_sanitize(group)}/${_sanitize(name)}`
         try {
           const resp = await fetch(imageUrl)
           if (resp.ok) {
             const blob = await resp.blob()
             const filename = `previews/${stem}.${imgExt}`
-            _store.set(hash, { filename, blob, presetName: name, group, jsonPath: stem, glsl: true })
+            _store.set(hash, { filename, blob, presetName: name, group, jsonPath: stem, glsl: true, prebuilt: true })
             const blobUrl = URL.createObjectURL(blob)
             _previewUrls.set(hash, blobUrl)
             onCaptured?.({ name, hash, blobUrl, group, jsonPath: stem })
@@ -803,10 +809,11 @@ export default class PreviewBatch {
     this._cancelled = false
 
     // Clear existing store entries for this group unless we're just forcing
-    // specific presets (regen path keeps previously loaded previews)
+    // specific presets (regen path keeps previously loaded previews).
+    // Entries with prebuilt:true were loaded from disk in loadShaderPreviews; keep them.
     if (!forceCapture) {
       for (const [hash, entry] of _store) {
-        if (entry.group === group && !hash.startsWith('prebuilt:')) _store.delete(hash)
+        if (entry.group === group && !entry.prebuilt) _store.delete(hash)
       }
     }
 
@@ -852,15 +859,16 @@ export default class PreviewBatch {
       const file = shaderMeta?.get(name)
       if (!file) continue
 
-      const hash = `prebuilt:${_sanitize(group)}/${_sanitize(name)}`
-      if (!forceCapture && _store.has(hash) && _store.get(hash).group === group) continue
-
       let source = ''
       try {
         const resp = await fetch(`${presetBase}/presets/${encodeURIComponent(file)}`)
         if (resp.ok) source = await resp.text()
       } catch { /* skip */ }
       if (!source) { console.warn(`[PreviewBatch] skip (no source) "${name}"`); continue }
+
+      // Hash the GLSL source — consistent with the key used in loadShaderPreviews + index.js
+      const hash = await _sha256short(source)
+      if (!forceCapture && _store.has(hash) && _store.get(hash).group === group) continue
 
       // Build fragment source with preamble + compat transforms
       const fragSrc = _buildPreviewFragment(source)
