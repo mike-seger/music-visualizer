@@ -1162,7 +1162,7 @@ async function _loadPreviewIndex(group) {
 }
 
 /**
- * SHA-256 of `text`, returned as the first 12 hex chars (48 bits).
+ * SHA-256 of `text`, returned as the first 20 hex chars (80 bits).
  * Uses the built-in Web Crypto API (no dependencies).
  */
 async function _sha256short(text) {
@@ -1170,7 +1170,7 @@ async function _sha256short(text) {
   return [...new Uint8Array(buf)]
     .map((b) => b.toString(16).padStart(2, '0'))
     .join('')
-    .slice(0, 12)
+    .slice(0, 20)
 }
 
 /**
