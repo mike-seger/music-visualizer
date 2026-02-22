@@ -89,6 +89,85 @@ export default class PreviewBatch {
   }
 
   /**
+   * Load pre-built preview images for the Shadertoy group from the static
+   * `shaders-previews/` directory.  Reads `shaders-previews/settings.json`
+   * to discover the image extension, then fetches each image in parallel.
+   *
+   * Clears any existing store entries for `group` before loading.
+   *
+   * @param {string}          group       Group name (e.g. 'Shadertoy')
+   * @param {string[]}        list        Ordered preset display names
+   * @param {Map<string,string>} shaderMeta  displayName → file stem (e.g. 'audio-eclipse')
+   * @param {object}          [opts]
+   * @param {Function}        [opts.onStatus]
+   * @param {Function}        [opts.onCaptured]
+   * @returns {Promise<{ loaded: number, missing: string[] }>}
+   */
+  async loadShaderPreviews(group, list, shaderMeta, { onStatus, onCaptured } = {}) {
+    // Clear existing store entries for this group
+    for (const [hash, entry] of _store) {
+      if (entry.group === group) {
+        _store.delete(hash)
+        if (_previewUrls.has(hash)) {
+          URL.revokeObjectURL(_previewUrls.get(hash))
+          _previewUrls.delete(hash)
+        }
+      }
+    }
+
+    // Read image extension from settings.json
+    let imgExt = 'png'
+    try {
+      const resp = await fetch('shaders-previews/settings.json')
+      if (resp.ok) {
+        const cfg = await resp.json()
+        if (typeof cfg['image-type'] === 'string') imgExt = cfg['image-type'].toLowerCase()
+      }
+    } catch { /* use default png */ }
+
+    const missing = []
+    const toFetch = []
+    for (const name of list) {
+      if (!name) continue
+      const stem = shaderMeta.get(name)
+      if (!stem) { missing.push(name); continue }
+      toFetch.push({ name, stem })
+    }
+
+    let loaded = 0
+    const CONCURRENCY = 16
+    for (let i = 0; i < toFetch.length; i += CONCURRENCY) {
+      const batch = toFetch.slice(i, i + CONCURRENCY)
+      await Promise.all(batch.map(async ({ name, stem }) => {
+        const imageUrl = `shaders-previews/${encodeURIComponent(stem)}.${imgExt}`
+        const hash = `prebuilt:${_sanitize(group)}/${_sanitize(name)}`
+        try {
+          const resp = await fetch(imageUrl)
+          if (resp.ok) {
+            const blob = await resp.blob()
+            const filename = `shaders-previews/${stem}.${imgExt}`
+            _store.set(hash, { filename, blob, presetName: name, group, jsonPath: stem })
+            const blobUrl = URL.createObjectURL(blob)
+            _previewUrls.set(hash, blobUrl)
+            onCaptured?.({ name, hash, blobUrl, group, jsonPath: stem })
+            loaded++
+          } else {
+            missing.push(name)
+          }
+        } catch {
+          missing.push(name)
+        }
+      }))
+      onStatus?.(`Loading ${loaded} / ${toFetch.length} shader previews…`)
+    }
+
+    onStatus?.(`Loaded ${loaded} pre-built${missing.length ? `, ${missing.length} need capture` : ''}. ${
+      missing.length ? 'Capturing remaining…' : 'Press Z to ZIP.'
+    }`)
+    return { loaded, missing }
+  }
+
+  /**
    * Start a batch capture run.
    *
    * @param {Object} opts
@@ -120,6 +199,7 @@ export default class PreviewBatch {
     width = 160,
     height = 160,
     format = 'PNG',
+    skipClear = false,
     onStatus,
     onCaptured,
   } = {}) {
@@ -129,9 +209,12 @@ export default class PreviewBatch {
     this._running = true
     this._cancelled = false
 
-    // Clear previous results for this group so re-pressing X always re-captures
-    for (const [hash, entry] of _store) {
-      if (entry.group === group) _store.delete(hash)
+    // Clear previous results for this group so re-pressing X always re-captures.
+    // skipClear is set when loadShaderPreviews() has already pre-populated the store.
+    if (!skipClear) {
+      for (const [hash, entry] of _store) {
+        if (entry.group === group) _store.delete(hash)
+      }
     }
 
     const total = list.length
@@ -315,12 +398,21 @@ export default class PreviewBatch {
 
     // presets/<sanitized>.json — the raw preset JSON for each captured preview
     await Promise.all(groupEntries.map(async ([, entry]) => {
+      if (entry.filename.startsWith('shaders-previews/')) return  // no JSON for GLSL shaders
       const g = encodeURIComponent(entry.group)
       const n = encodeURIComponent(entry.jsonPath)
       let resp = await fetch(`${_getBcPresetsBase()}/${g}/presets/${n}.json`).catch(() => null)
       if (!resp?.ok) resp = await fetch(`${_getBcPresetsBase()}/${g}/${n}.json`).catch(() => null)
       if (resp?.ok) files[`presets/${entry.jsonPath}.json`] = new Uint8Array(await resp.arrayBuffer())
     }))
+
+    // For shader groups, include shaders-previews/settings.json in the ZIP as-is
+    if (groupEntries.some(([, e]) => e.filename.startsWith('shaders-previews/'))) {
+      try {
+        const resp = await fetch('shaders-previews/settings.json')
+        if (resp.ok) files['shaders-previews/settings.json'] = new Uint8Array(await resp.arrayBuffer())
+      } catch { /* ignore */ }
+    }
 
     // index.html — static viewer
     files['index.html'] = _enc(_buildIndexHtml())

@@ -1,6 +1,6 @@
 import * as THREE from 'three'
 import { ENTITY_VISUALIZER_NAMES, createEntityVisualizerByName } from './visualizers/entityRegistry'
-import { SHADER_VISUALIZER_NAMES, createShaderVisualizerByName } from './visualizers/shaderRegistry'
+import { SHADER_VISUALIZERS, SHADER_VISUALIZER_NAMES, createShaderVisualizerByName } from './visualizers/shaderRegistry'
 import PreviewBatch from './preview/PreviewBatch'
 
 // MilkDrop (Butterchurn) presets are lazy-loaded to keep the initial bundle small.
@@ -3736,17 +3736,41 @@ export default class App {
       }
     }
 
-    if (DEFAULT_GROUPS.includes(group)) {
-      // Shadertoy / Custom WebGL — these are compiled GLSL shaders, not BC JSON.
-      // Use the live-canvas path: switch the main visualizer for each preset,
-      // settle, then capture the active canvas directly.
+    if (group === 'Shadertoy') {
+      // Load pre-built images from shaders-previews/ first, then live-canvas
+      // capture anything that doesn't have a pre-built image yet.
+      const shaderMeta = new Map(
+        SHADER_VISUALIZERS.map((e) => [e.name, e.fileName.replace(/\.glsl$/i, '')])
+      )
+      const { missing } = await this.previewBatch.loadShaderPreviews(
+        group, list, shaderMeta, { onStatus, onCaptured }
+      )
+      if (missing.length > 0) {
+        await this.previewBatch.startCapture({
+          list: missing,
+          startIndex: Math.max(0, missing.indexOf(App.visualizerType)),
+          group,
+          switchTo: async (name) => { await this.switchVisualizer(name) },
+          getCanvas: () => this.getActiveCanvas(),
+          settleDelay: Math.max(cfg.settleDelay, 500),
+          resolution: cfg.resolution,
+          width: cfg.width,
+          height: cfg.height,
+          format: cfg.format,
+          skipClear: true,
+          onStatus,
+          onCaptured,
+        })
+      }
+    } else if (DEFAULT_GROUPS.includes(group)) {
+      // Custom WebGL — live-canvas path (no pre-built static images).
       await this.previewBatch.startCapture({
         list,
         startIndex: Math.max(0, list.indexOf(App.visualizerType)),
         group,
         switchTo: async (name) => { await this.switchVisualizer(name) },
         getCanvas: () => this.getActiveCanvas(),
-        settleDelay: Math.max(cfg.settleDelay, 500), // shaders need a bit to warm up
+        settleDelay: Math.max(cfg.settleDelay, 500),
         resolution: cfg.resolution,
         width: cfg.width,
         height: cfg.height,
