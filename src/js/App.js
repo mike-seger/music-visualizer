@@ -456,12 +456,12 @@ export default class App {
       }
 
       case 'set-bc-presets-base':
-        App._bcPresetsBase = msg.base ?? ''
+        if ((msg.base ?? '').trim()) App._bcPresetsBase = msg.base
         window.location.reload()
         break
 
       case 'set-shadertoy-presets-base':
-        App._shadertoyPresetsBase = msg.base ?? ''
+        if ((msg.base ?? '').trim()) App._shadertoyPresetsBase = msg.base
         window.location.reload()
         break
 

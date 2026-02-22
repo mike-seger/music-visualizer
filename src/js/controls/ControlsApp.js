@@ -405,18 +405,28 @@ export default class ControlsApp {
       .add(this.visualizerSwitcherConfig, 'bcPresetsBase')
       .name('Custom BC Location')
       .onFinishChange((value) => {
-        this._send({ type: 'set-bc-presets-base', base: (value || '').trim() })
+        const v = (value || '').trim()
+        try {
+          if (!v || v === 'butterchurn-presets') localStorage.removeItem('visualizer.bcPresetsBase')
+          else localStorage.setItem('visualizer.bcPresetsBase', v)
+        } catch { /* */ }
+        this._send({ type: 'set-bc-presets-base', base: v })
       })
     const _bcInput = _bcCtrl.domElement.querySelector('input')
     if (_bcInput) _bcInput.setAttribute('placeholder', 'butterchurn-presets')
 
-    // Custom Shadertoy presets base path (overrides default 'shadertoy-presets/default')
+    // Custom Shadertoy presets base path (overrides default 'shadertoy-presets')
     this.visualizerSwitcherConfig.shadertoyPresetsBase = this._shadertoyPresetsBase || ''
     const _stCtrl = folder
       .add(this.visualizerSwitcherConfig, 'shadertoyPresetsBase')
       .name('Custom Shadertoy Location')
       .onFinishChange((value) => {
-        this._send({ type: 'set-shadertoy-presets-base', base: (value || '').trim() })
+        const v = (value || '').trim()
+        try {
+          if (!v || v === 'shadertoy-presets') localStorage.removeItem('visualizer.shadertoyPresetsBase')
+          else localStorage.setItem('visualizer.shadertoyPresetsBase', v)
+        } catch { /* */ }
+        this._send({ type: 'set-shadertoy-presets-base', base: v })
       })
     const _stInput = _stCtrl.domElement.querySelector('input')
     if (_stInput) _stInput.setAttribute('placeholder', 'shadertoy-presets')
