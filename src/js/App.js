@@ -2437,6 +2437,9 @@ export default class App {
     await this._initPresetGroups()
     const initialGroupPresets = await this._getPresetsForGroup(App.currentGroup)
     App.visualizerList = initialGroupPresets
+    // Notify any persistent panels (preview, controls popup) that the app has
+    // (re)started and they should re-handshake to get fresh data.
+    this._broadcastToControls({ type: 'app-reconnected' })
 
     const urlVisualizer = resolveVisualizerName(urlVisualizerRaw)
     if (urlVisualizerRaw && !urlVisualizer) {

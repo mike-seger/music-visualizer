@@ -375,6 +375,11 @@ body.has-status { padding-top: 68px; }
   // ── Receive messages via BroadcastChannel ──
   if (ch) ch.addEventListener('message', function (e) {
     if (!e.data) return
+    if (e.data.type === 'app-reconnected') {
+      // Main app reloaded — re-announce so it sends fresh preview-data
+      if (ch) ch.postMessage({ type: 'preview-ready' })
+      return
+    }
     if (e.data.type === 'preview-status') {
       setStatus(e.data.text || '')
       return
