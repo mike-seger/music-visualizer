@@ -243,12 +243,13 @@ function convertMilkFile(text) {
   )
 
   // ─── IIFE-wrap EEL _str fields ────────────────────────────────────────────
-  // Butterchurn's milkdrop engine evaluates _str fields inside `return()` as a
-  // comma-expression.  When the EEL parser compiles loop(n, body) it emits a
-  // bare `for(...){}` statement which is invalid as an expression.
-  // Wrapping the entire field in an IIFE makes it a single call-expression
-  // that works in any expression context and still applies all side-effects.
-  const wrapEelStr = (s) => (s && s.trim()) ? `(function(){${s}}())` : s
+  // Butterchurn compiles _str fields as: new Function('a', str + ' return a;')
+  // When the EEL parser produces `for(...){}` loops, those are valid function-
+  // body statements — but without a semicolon between the IIFE and 'return a;'
+  // JavaScript tries to parse '(function(){...}()) return a;' as a call, which
+  // causes SyntaxError: Unexpected token 'return'.
+  // Fix: terminate the IIFE expression with ';' so 'return a;' is a new statement.
+  const wrapEelStr = (s) => (s && s.trim()) ? `(function(){${s}}());` : s
 
   presetMap.init_eqs_str   = wrapEelStr(presetMap.init_eqs_str)
   presetMap.frame_eqs_str  = wrapEelStr(presetMap.frame_eqs_str)

@@ -334,7 +334,7 @@ export default class App {
         break
 
       case 'select-visualizer':
-        if (msg.name) this.switchVisualizer(msg.name)
+        if (msg.name) this.switchVisualizer(msg.name).catch(e => console.error('[switchVisualizer] rejected:', e))
         break
 
       case 'select-group':
@@ -2935,7 +2935,15 @@ export default class App {
       }
 
       if (presetData) {
-        App.currentVisualizer.loadPreset(presetData, blendTimeOverride ?? this._transitionTime)
+        try {
+          App.currentVisualizer.loadPreset(presetData, blendTimeOverride ?? this._transitionTime)
+        } catch (e) {
+          console.error(`[switchVisualizer] loadPreset threw for "${type}":`, e)
+          // Fall through to full switch
+          presetData = null
+        }
+      }
+      if (presetData) {
         App.currentVisualizer.name = type
         App.visualizerType = type
         this.saveVisualizerType(type)
