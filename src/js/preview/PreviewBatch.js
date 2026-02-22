@@ -960,8 +960,8 @@ export default class PreviewBatch {
 // Has NO dependency on Three.js or App — pure WebGL1 API.
 
 const _PREVIEW_VERT = /* glsl */`
-autribute vec3 position;
-autribute vec2 uv;
+attribute vec3 position;
+attribute vec2 uv;
 void main() { gl_Position = vec4(position, 1.0); }
 `
 

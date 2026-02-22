@@ -3,7 +3,13 @@ import { loadShaderConfig, injectUniforms } from '../shaderCustomization'
 
 // Shaders are served from public/shadertoy-presets/default/ and fetched at runtime.
 // The index.json lists available presets; individual .glsl files are fetched on demand.
-export const PRESETS_BASE = 'shadertoy-presets/default'
+// Reads the same localStorage key as App._shadertoyPresetsBase so a custom location
+// set via the GUI takes effect on the next page reload.
+const _SHADERTOY_STORAGE_KEY = 'visualizer.shadertoyPresetsBase'
+export const PRESETS_BASE = (() => {
+  try { return localStorage.getItem(_SHADERTOY_STORAGE_KEY)?.trim() || 'shadertoy-presets/default' }
+  catch { return 'shadertoy-presets/default' }
+})()
 
 /** Mutable arrays populated once `shadertoyReady` resolves. */
 export const SHADER_VISUALIZERS = []       // { name, fileName, filePath, create }[]

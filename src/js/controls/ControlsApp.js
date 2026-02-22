@@ -141,6 +141,7 @@ export default class ControlsApp {
         this._audioSources = msg.audioSources || []
         this._currentAudioUrl = msg.currentAudioUrl || ''
         this._bcPresetsBase = msg.bcPresetsBase ?? ''
+        this._shadertoyPresetsBase = msg.shadertoyPresetsBase ?? ''
         this.initGui()
         break
       case 'visualizer-changed':
@@ -408,6 +409,17 @@ export default class ControlsApp {
       })
     const _bcInput = _bcCtrl.domElement.querySelector('input')
     if (_bcInput) _bcInput.setAttribute('placeholder', 'butterchurn-presets')
+
+    // Custom Shadertoy presets base path (overrides default 'shadertoy-presets/default')
+    this.visualizerSwitcherConfig.shadertoyPresetsBase = this._shadertoyPresetsBase || ''
+    const _stCtrl = folder
+      .add(this.visualizerSwitcherConfig, 'shadertoyPresetsBase')
+      .name('Custom Shadertoy Location')
+      .onFinishChange((value) => {
+        this._send({ type: 'set-shadertoy-presets-base', base: (value || '').trim() })
+      })
+    const _stInput = _stCtrl.domElement.querySelector('input')
+    if (_stInput) _stInput.setAttribute('placeholder', 'shadertoy-presets/default')
   }
 
   /**

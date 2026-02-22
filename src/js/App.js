@@ -1,6 +1,6 @@
 import * as THREE from 'three'
 import { ENTITY_VISUALIZER_NAMES, createEntityVisualizerByName } from './visualizers/entityRegistry'
-import { SHADER_VISUALIZERS, SHADER_VISUALIZER_NAMES, shadertoyReady, PRESETS_BASE as SHADERTOY_PRESETS_BASE, createShaderVisualizerByName } from './visualizers/shaderRegistry'
+import { SHADER_VISUALIZERS, SHADER_VISUALIZER_NAMES, shadertoyReady, createShaderVisualizerByName } from './visualizers/shaderRegistry'
 import PreviewBatch from './preview/PreviewBatch'
 
 // MilkDrop (Butterchurn) presets are lazy-loaded to keep the initial bundle small.
@@ -168,8 +168,9 @@ export default class App {
     catch { return new Set() }
   })()
 
-  // Overrideable base path for butterchurn preset folders (default: 'butterchurn-presets')
+  // Overrideable base paths
   static _BC_PRESETS_STORAGE_KEY = 'visualizer.bcPresetsBase'
+  static _SHADERTOY_PRESETS_STORAGE_KEY = 'visualizer.shadertoyPresetsBase'
   static get _bcPresetsBase() {
     try { return localStorage.getItem(App._BC_PRESETS_STORAGE_KEY)?.trim() || 'butterchurn-presets' }
     catch { return 'butterchurn-presets' }
@@ -179,6 +180,18 @@ export default class App {
       const v = (val || '').trim()
       if (!v || v === 'butterchurn-presets') localStorage.removeItem(App._BC_PRESETS_STORAGE_KEY)
       else localStorage.setItem(App._BC_PRESETS_STORAGE_KEY, v)
+    } catch { /* */ }
+  }
+
+  static get _shadertoyPresetsBase() {
+    try { return localStorage.getItem(App._SHADERTOY_PRESETS_STORAGE_KEY)?.trim() || 'shadertoy-presets/default' }
+    catch { return 'shadertoy-presets/default' }
+  }
+  static set _shadertoyPresetsBase(val) {
+    try {
+      const v = (val || '').trim()
+      if (!v || v === 'shadertoy-presets/default') localStorage.removeItem(App._SHADERTOY_PRESETS_STORAGE_KEY)
+      else localStorage.setItem(App._SHADERTOY_PRESETS_STORAGE_KEY, v)
     } catch { /* */ }
   }
 
@@ -442,6 +455,11 @@ export default class App {
         window.location.reload()
         break
 
+      case 'set-shadertoy-presets-base':
+        App._shadertoyPresetsBase = msg.base ?? ''
+        window.location.reload()
+        break
+
       case 'set-audio-source':
         if (msg.url) App.audioManager.setSource(msg.url)
         break
@@ -512,6 +530,7 @@ export default class App {
       audioSources: AudioManager.SOURCES,
       currentAudioUrl: App.audioManager?.song?.url ?? AudioManager.SOURCES[0].url,
       bcPresetsBase: App._bcPresetsBase,
+      shadertoyPresetsBase: App._shadertoyPresetsBase,
     })
     // Also send current visualizer details
     this._broadcastVisualizerChanged()
@@ -3184,6 +3203,9 @@ export default class App {
    * Checks the preview store synchronously first; falls back to fetching the JSON.
    */
   async _refreshCurrentPresetHash(group, name) {
+    // Shadertoy and Custom WebGL don't have JSON files — nothing to hash
+    if (DEFAULT_GROUPS.includes(group)) return
+
     const cached = this.previewBatch?.findHash(group, name)
     if (cached) {
       if (App.currentGroup === group && App.visualizerType === name) {
@@ -3751,7 +3773,7 @@ export default class App {
           list: missing,
           group,
           shaderMeta: new Map(SHADER_VISUALIZERS.map((e) => [e.name, e.fileName])),
-          presetBase: `${import.meta.env.BASE_URL}${SHADERTOY_PRESETS_BASE}`,
+          presetBase: `${import.meta.env.BASE_URL}${App._shadertoyPresetsBase}`,
           settleDelay: Math.max(cfg.settleDelay, 500),
           resolution: cfg.resolution,
           width: cfg.width,
@@ -3848,7 +3870,7 @@ export default class App {
         list: names,
         group,
         shaderMeta: new Map(SHADER_VISUALIZERS.map((e) => [e.name, e.fileName])),
-        presetBase: `${import.meta.env.BASE_URL}${SHADERTOY_PRESETS_BASE}`,
+        presetBase: `${import.meta.env.BASE_URL}${App._shadertoyPresetsBase}`,
         settleDelay: Math.max(cfg.settleDelay, 500),
         resolution: cfg.resolution,
         width: cfg.width,
