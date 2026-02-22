@@ -1,11 +1,8 @@
 const previewExt = "jpg";
 const previewMeta = new Map([
-  ["5ba11cc61e4111f86407", "_Geiss - Desert Rose 2"],
   ["701856137558a0d7e064", "An AdamFX n Martin Infusion 2 flexi - Why The Sky Looks Diffrent Today - AdamFx n Martin Infusion - Tack Tile Disfunction B"],
   ["5b0bfba228563ce2890d", "Flexi - alien fish pond"],
   ["adee776e16239188af33", "flexi + fishbrain - neon mindblob grafitti"],
-  ["d39713c8d8993fa6a213", "Geiss - Desert Rose (Grow Mix)"],
-  ["76817644fda0d749bd98", "Geiss - Desert Rose 2"],
   ["be731f5d240fc69ea816", "Geiss - Desert Rose 4"],
   ["c3590cb8b26e42eee9a5", "high-altitude basket unraveling - singh grooves nitrogen argon nz+"],
   ["787220d33456b47f807d", "martin - chain breaker"],
