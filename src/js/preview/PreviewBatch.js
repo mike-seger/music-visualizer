@@ -467,6 +467,14 @@ export default class PreviewBatch {
    * @returns {Promise<{ missingNames: string[] }>}
    */
   async loadPrebuilt(group, list, { getFileStem, onStatus } = {}) {
+    // Clear stale store entries for this group so removed presets don't persist.
+    for (const [hash, entry] of _store) {
+      if (entry.group === group) {
+        if (_previewUrls.has(hash)) { URL.revokeObjectURL(_previewUrls.get(hash)); _previewUrls.delete(hash) }
+        _store.delete(hash)
+      }
+    }
+
     const prebuilt = await _loadPreviewIndex(group)
 
     if (prebuilt.byName.size === 0) {
