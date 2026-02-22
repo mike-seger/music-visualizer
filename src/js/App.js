@@ -1,6 +1,6 @@
 import * as THREE from 'three'
 import { ENTITY_VISUALIZER_NAMES, createEntityVisualizerByName } from './visualizers/entityRegistry'
-import { SHADER_VISUALIZERS, SHADER_VISUALIZER_NAMES, shadertoyReady, createShaderVisualizerByName } from './visualizers/shaderRegistry'
+import { SHADER_VISUALIZERS, SHADER_VISUALIZER_NAMES, shadertoyReady, createShaderVisualizerByName, reloadShaderRegistry } from './visualizers/shaderRegistry'
 import PreviewBatch from './preview/PreviewBatch'
 
 // MilkDrop (Butterchurn) presets are lazy-loaded to keep the initial bundle small.
@@ -461,8 +461,8 @@ export default class App {
         break
 
       case 'set-shadertoy-presets-base':
-        if ((msg.base ?? '').trim()) App._shadertoyPresetsBase = msg.base
-        window.location.reload()
+        App._shadertoyPresetsBase = msg.base ?? ''
+        reloadShaderRegistry().then(() => this.switchGroup('Shadertoy'))
         break
 
       case 'set-audio-source':
