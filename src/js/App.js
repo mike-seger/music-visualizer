@@ -3760,12 +3760,13 @@ export default class App {
 
     if (group === 'Shadertoy') {
       await shadertoyReady
-      // Phase 1: load any pre-built images from shaders-previews/
+      // Phase 1: load any pre-built images from {shadertoyPresetsBase}/previews/
       const shaderMeta = new Map(
         SHADER_VISUALIZERS.map((e) => [e.name, e.fileName.replace(/\.glsl$/i, '')])
       )
       const { missing } = await this.previewBatch.loadShaderPreviews(
-        group, list, shaderMeta, { onStatus, onCaptured }
+        group, list, shaderMeta,
+        { presetBase: `${import.meta.env.BASE_URL}${App._shadertoyPresetsBase}`, onStatus, onCaptured }
       )
       // Phase 2: offscreen-canvas render for any without pre-built images
       if (missing.length > 0) {
