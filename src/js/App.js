@@ -3690,10 +3690,23 @@ export default class App {
    */
   async _loadPrebuiltAndBroadcast(group, list, activePreset) {
     if (!list || list.length === 0) return
-    const _groupIndex = App._userGroupIndex.get(group) ?? []
-    const _entryByName = new Map(_groupIndex.map((e) => [e.name, e]))
-    const getFileStem = (name) => (_entryByName.get(name)?.file ?? (name + '.json')).replace(/\.json$/i, '')
-    await this.previewBatch.loadPrebuilt(group, list, { getFileStem })
+    if (group === 'Shadertoy') {
+      // Shadertoy previews live at {shadertoyPresetsBase}/default/previews/ — not butterchurn path
+      await shadertoyReady
+      const shaderMeta = new Map(
+        SHADER_VISUALIZERS.map((e) => [e.name, e.fileName.replace(/\.glsl$/i, '')])
+      )
+      await this.previewBatch.loadShaderPreviews(
+        group, list, shaderMeta,
+        { presetBase: `${import.meta.env.BASE_URL}${App._shadertoyPresetsBase}/default` }
+      )
+    } else if (!DEFAULT_GROUPS.includes(group)) {
+      // Butterchurn groups only — Custom WebGL has no static pre-built previews
+      const _groupIndex = App._userGroupIndex.get(group) ?? []
+      const _entryByName = new Map(_groupIndex.map((e) => [e.name, e]))
+      const getFileStem = (name) => (_entryByName.get(name)?.file ?? (name + '.json')).replace(/\.json$/i, '')
+      await this.previewBatch.loadPrebuilt(group, list, { getFileStem })
+    }
     // Only broadcast if the popup is still open and still on the same group
     if (this._controlsPopup && !this._controlsPopup.closed && App.currentGroup === group) {
       const { items, missingCount } = this._buildAllPreviewItems(group, list)
