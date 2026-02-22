@@ -7,6 +7,14 @@ const _getBcPresetsBase = () => {
   catch { return 'butterchurn-presets' }
 }
 
+/** Reads the overridden shadertoy root path from localStorage, strips trailing /default. */
+const _getShadertoyPresetsBase = () => {
+  try {
+    const v = localStorage.getItem('visualizer.shadertoyPresetsBase')?.trim() || 'shadertoy-presets'
+    return v.replace(/\/default$/, '') || 'shadertoy-presets'
+  } catch { return 'shadertoy-presets' }
+}
+
 /**
  * PreviewBatch – captures image previews of every preset in the current group
  * and bundles them into a ZIP download.
@@ -403,10 +411,17 @@ export default class PreviewBatch {
       `const previewExt = ${JSON.stringify(ext)};\nconst previewMeta = new Map([\n${mapEntries.join(',\n')}\n]);\n`
     )
 
-    // presets/<sanitized>.json — the raw preset JSON for each captured preview
-    // (skipped for GLSL shader groups which have no JSON preset files)
+    // presets/ — raw preset files for each captured preview:
+    //   • butterchurn groups: <name>.json fetched from butterchurn-presets/<group>/presets/
+    //   • GLSL shader groups: <stem>.glsl fetched from shadertoy-presets/default/presets/
     await Promise.all(groupEntries.map(async ([, entry]) => {
-      if (entry.glsl) return
+      if (entry.glsl) {
+        const base = `${_getShadertoyPresetsBase()}/default`
+        const stem = entry.jsonPath  // already the file stem, e.g. 'audio-eclipse'
+        const resp = await fetch(`${base}/presets/${encodeURIComponent(stem)}.glsl`).catch(() => null)
+        if (resp?.ok) files[`presets/${stem}.glsl`] = new Uint8Array(await resp.arrayBuffer())
+        return
+      }
       const g = encodeURIComponent(entry.group)
       const n = encodeURIComponent(entry.jsonPath)
       let resp = await fetch(`${_getBcPresetsBase()}/${g}/presets/${n}.json`).catch(() => null)
