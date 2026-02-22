@@ -66,13 +66,18 @@ export default class PreviewBatch {
    */
   storeEntry(group, presetName, hash, blob) {
     const key = hash ?? `snapshot:${group}/${presetName}`
+    // Inherit filename / jsonPath from the existing store entry so the ZIP
+    // export uses the correct subdirectory (previews/) and file stem casing.
+    const existing = hash ? _store.get(hash) : null
+    const jsonPath = existing?.jsonPath || presetName
+    const filename = existing?.filename || `previews/${_sanitize(presetName)}.png`
     // Revoke any existing URL for this key
     if (_previewUrls.has(key)) {
       URL.revokeObjectURL(_previewUrls.get(key))
       _previewUrls.delete(key)
     }
     const blobUrl = URL.createObjectURL(blob)
-    _store.set(key, { filename: presetName + '.png', blob, presetName, group, jsonPath: '' })
+    _store.set(key, { filename, blob, presetName, group, jsonPath })
     _previewUrls.set(key, blobUrl)
     return { hash: key, blobUrl }
   }
