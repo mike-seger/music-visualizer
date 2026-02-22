@@ -84,7 +84,5 @@ const previewMeta = new Map([
   ["c4512437c351", "shifter + Geiss - molten glass (crystal glass mix)"],
   ["c3c236af35ab", "shifter + Geiss - molten glass wrap"],
   ["1cc38f972fb5", "Sparkle:Explosions:suksma - outrospective hybrid glass metal"],
-  ["c32f70d65a29", "Sparkle:Glimmer Tunnel:martin - disco mix 2"],
-  ["9326839b2032", "Waveform:Wire Flower:fiberglass-Fvese-remix"],
-  ["a8234b86b1ce", "Waveform:Wire Tangle:Goody - Acid Angel - Fallen Angel"]
+  ["9326839b2032", "Waveform:Wire Flower:fiberglass-Fvese-remix"]
 ]);
