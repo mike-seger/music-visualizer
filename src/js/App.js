@@ -2984,7 +2984,7 @@ export default class App {
     const resolvedFolder = (App.currentGroup === ALL_BC_GROUP)
       ? (App._allBcSourceGroup.get(type) || ALL_BC_GROUP)
       : App.currentGroup
-    console.log(`Switching to visualizer: ${resolvedFolder}/${type}`)
+    console.log(`[butterchurn] switching to [${resolvedFolder}] ${type}`)
 
     // Create new visualizer (async now due to shader config loading)
     let newVisualizer = null

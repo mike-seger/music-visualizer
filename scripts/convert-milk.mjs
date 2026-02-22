@@ -242,6 +242,32 @@ function convertMilkFile(text) {
     presetParts.waves
   )
 
+  // ─── IIFE-wrap EEL _str fields ────────────────────────────────────────────
+  // Butterchurn's milkdrop engine evaluates _str fields inside `return()` as a
+  // comma-expression.  When the EEL parser compiles loop(n, body) it emits a
+  // bare `for(...){}` statement which is invalid as an expression.
+  // Wrapping the entire field in an IIFE makes it a single call-expression
+  // that works in any expression context and still applies all side-effects.
+  const wrapEelStr = (s) => (s && s.trim()) ? `(function(){${s}}())` : s
+
+  presetMap.init_eqs_str   = wrapEelStr(presetMap.init_eqs_str)
+  presetMap.frame_eqs_str  = wrapEelStr(presetMap.frame_eqs_str)
+  presetMap.pixel_eqs_str  = wrapEelStr(presetMap.pixel_eqs_str)
+
+  for (const shape of presetMap.shapes || []) {
+    if (shape) {
+      shape.init_eqs_str  = wrapEelStr(shape.init_eqs_str)
+      shape.frame_eqs_str = wrapEelStr(shape.frame_eqs_str)
+    }
+  }
+  for (const wave of presetMap.waves || []) {
+    if (wave) {
+      wave.init_eqs_str  = wrapEelStr(wave.init_eqs_str)
+      wave.frame_eqs_str = wrapEelStr(wave.frame_eqs_str)
+      wave.point_eqs_str = wrapEelStr(wave.point_eqs_str)
+    }
+  }
+
   // 4. Store original EEL source for debugging
   presetMap.init_eqs_eel = presetParts.presetInit
     ? presetParts.presetInit.trim()
