@@ -28,8 +28,12 @@ const require = createRequire(import.meta.url)
 const milkdropParser = require('milkdrop-eel-parser')
 const { splitPreset, createBasePresetFuns } = require('milkdrop-preset-utils')
 
-const SOURCE_DIR = path.resolve('src/milkdrop-presets')
-const TARGET_DIR = path.resolve('public/milkdrop-presets')
+// Optional: --src <dir> --dst <dir> on the command line
+const _args = process.argv.slice(2)
+const _srcArg = _args[_args.indexOf('--src') + 1]
+const _dstArg = _args[_args.indexOf('--dst') + 1]
+const SOURCE_DIR = path.resolve(_srcArg || 'src/milkdrop-presets')
+const TARGET_DIR = path.resolve(_dstArg || 'public/milkdrop-presets')
 
 
 // ─── HLSL → GLSL shader conversion ────────────────────────────────────────
@@ -264,6 +268,28 @@ function convertMilkFile(text) {
   return output
 }
 
+// ─── .milk2 extraction ─────────────────────────────────────────────────────
+
+/**
+ * Extract embedded presets from a MilkDrop 3 .milk2 blend file.
+ * Returns an array of { name, text } objects (one per PRESET block).
+ */
+function extractMilk2Presets(src) {
+  const results = []
+  const blockRe = /\[PRESET(\d+)_BEGIN\]\r?\n([\s\S]*?)\[PRESET\1_END\]/g
+  let m
+  while ((m = blockRe.exec(src)) !== null) {
+    const block = m[2]
+    // First non-empty line may be NAME=...
+    const nameMatch = block.match(/^NAME=(.*)$/m)
+    const name = nameMatch ? nameMatch[1].trim() : `preset${m[1]}`
+    // Strip the NAME= line — the rest is standard .milk content
+    const text = block.replace(/^NAME=.*\r?\n?/m, '')
+    results.push({ name, text })
+  }
+  return results
+}
+
 // ─── Main ──────────────────────────────────────────────────────────────────
 
 async function main() {
@@ -278,11 +304,69 @@ async function main() {
 
   await fs.mkdir(TARGET_DIR, { recursive: true })
 
-  // Discover source .milk files
+  // Discover source files (.milk and .milk2)
   const srcEntries = await fs.readdir(SOURCE_DIR, { withFileTypes: true })
-  const milkFiles = srcEntries.filter(e => e.isFile() && e.name.endsWith('.milk'))
-  const expectedJsonNames = new Set(milkFiles.map(e => e.name.replace(/\.milk$/, '.json')))
-  expectedJsonNames.add('index.json') // don't delete the manifest
+  const milkFiles  = srcEntries.filter(e => e.isFile() && e.name.endsWith('.milk'))
+  const milk2Files = srcEntries.filter(e => e.isFile() && e.name.endsWith('.milk2'))
+
+  let converted = 0
+  let skipped = 0
+  let errors = 0
+  const manifest = []
+  const expectedJsonNames = new Set(['index.json'])
+
+  // Build a flat list of { stem, jsonName, sourcePath, getText } tasks.
+  // .milk files → one task each.
+  // .milk2 files → extract embedded presets at read time (may be 1 or 2).
+  const tasks = []
+
+  for (const entry of milkFiles) {
+    const sourcePath = path.join(SOURCE_DIR, entry.name)
+    const stem       = entry.name.replace(/\.milk$/, '')
+    tasks.push({ stem, sourcePath, getText: async () => fs.readFile(sourcePath, 'utf8') })
+  }
+
+  for (const entry of milk2Files) {
+    const sourcePath = path.join(SOURCE_DIR, entry.name)
+    const raw = await fs.readFile(sourcePath, 'utf8')
+    const embedded = extractMilk2Presets(raw)
+    if (embedded.length === 0) {
+      console.warn(`[convert-milk] No preset blocks in ${entry.name} — skipping`)
+      continue
+    }
+    for (const { name, text } of embedded) {
+      const getStem = name  // closure capture
+      tasks.push({ stem: getStem, sourcePath, getText: async () => text })
+    }
+  }
+
+  for (const { stem, sourcePath, getText } of tasks) {
+    const jsonName   = `${stem}.json`
+    const targetPath = path.join(TARGET_DIR, jsonName)
+    expectedJsonNames.add(jsonName)
+    manifest.push({ name: stem, file: jsonName })
+
+    // Check mtime — skip if destination is up-to-date (only meaningful for .milk;
+    // .milk2 embedded presets always check against the container file mtime).
+    const srcStat = await fs.stat(sourcePath)
+    let needsConvert = true
+    try {
+      const dstStat = await fs.stat(targetPath)
+      if (dstStat.mtimeMs >= srcStat.mtimeMs) { needsConvert = false; skipped++ }
+    } catch { /* target missing → convert */ }
+
+    if (!needsConvert) continue
+
+    try {
+      const text   = await getText()
+      const preset = convertMilkFile(text)
+      await fs.writeFile(targetPath, JSON.stringify(preset), 'utf8')
+      converted++
+    } catch (err) {
+      console.error(`[convert-milk] Error converting ${stem}: ${err.message}`)
+      errors++
+    }
+  }
 
   // Delete stale destination files (no matching source)
   const dstEntries = await fs.readdir(TARGET_DIR, { withFileTypes: true })
@@ -293,50 +377,10 @@ async function main() {
     }
   }
 
-  if (milkFiles.length === 0) {
-    console.log('[convert-milk] No .milk files found in src/milkdrop-presets/')
+  if (tasks.length === 0) {
+    console.log('[convert-milk] No .milk/.milk2 files found in', SOURCE_DIR)
     await fs.writeFile(path.join(TARGET_DIR, 'index.json'), '[]', 'utf8')
     return
-  }
-
-  let converted = 0
-  let skipped = 0
-  let errors = 0
-  const manifest = []
-
-  for (const entry of milkFiles) {
-    const filename = entry.name
-    const stem = filename.replace(/\.milk$/, '')
-    const jsonName = `${stem}.json`
-    const sourcePath = path.join(SOURCE_DIR, filename)
-    const targetPath = path.join(TARGET_DIR, jsonName)
-
-    manifest.push({ name: stem, file: jsonName })
-
-    // Check mtime — skip if destination is up-to-date
-    const srcStat = await fs.stat(sourcePath)
-    let needsConvert = true
-    try {
-      const dstStat = await fs.stat(targetPath)
-      if (dstStat.mtimeMs >= srcStat.mtimeMs) {
-        needsConvert = false
-        skipped++
-      }
-    } catch {
-      // target doesn't exist → needs convert
-    }
-
-    if (!needsConvert) continue
-
-    const text = await fs.readFile(sourcePath, 'utf8')
-    try {
-      const preset = convertMilkFile(text)
-      await fs.writeFile(targetPath, JSON.stringify(preset), 'utf8')
-      converted++
-    } catch (err) {
-      console.error(`[convert-milk] Error converting ${filename}: ${err.message}`)
-      errors++
-    }
   }
 
   // Sort manifest alphabetically
