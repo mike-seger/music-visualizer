@@ -183,14 +183,19 @@ export default class App {
     } catch { /* */ }
   }
 
+  // _shadertoyPresetsBase stores/returns the root directory only (e.g. 'shadertoy-presets').
+  // Callers append '/default' to get the actual group path.
   static get _shadertoyPresetsBase() {
-    try { return localStorage.getItem(App._SHADERTOY_PRESETS_STORAGE_KEY)?.trim() || 'shadertoy-presets/default' }
-    catch { return 'shadertoy-presets/default' }
+    try {
+      const v = localStorage.getItem(App._SHADERTOY_PRESETS_STORAGE_KEY)?.trim() || 'shadertoy-presets'
+      return v.replace(/\/default$/, '') || 'shadertoy-presets'
+    }
+    catch { return 'shadertoy-presets' }
   }
   static set _shadertoyPresetsBase(val) {
     try {
       const v = (val || '').trim()
-      if (!v || v === 'shadertoy-presets/default') localStorage.removeItem(App._SHADERTOY_PRESETS_STORAGE_KEY)
+      if (!v || v === 'shadertoy-presets') localStorage.removeItem(App._SHADERTOY_PRESETS_STORAGE_KEY)
       else localStorage.setItem(App._SHADERTOY_PRESETS_STORAGE_KEY, v)
     } catch { /* */ }
   }
@@ -530,7 +535,7 @@ export default class App {
       audioSources: AudioManager.SOURCES,
       currentAudioUrl: App.audioManager?.song?.url ?? AudioManager.SOURCES[0].url,
       bcPresetsBase: App._bcPresetsBase,
-      shadertoyPresetsBase: App._shadertoyPresetsBase,
+      shadertoyPresetsBase: App._shadertoyPresetsBase,  // root only (no /default)
     })
     // Also send current visualizer details
     this._broadcastVisualizerChanged()
@@ -3766,7 +3771,7 @@ export default class App {
       )
       const { missing } = await this.previewBatch.loadShaderPreviews(
         group, list, shaderMeta,
-        { presetBase: `${import.meta.env.BASE_URL}${App._shadertoyPresetsBase}`, onStatus, onCaptured }
+        { presetBase: `${import.meta.env.BASE_URL}${App._shadertoyPresetsBase}/default`, onStatus, onCaptured }
       )
       // Phase 2: offscreen-canvas render for any without pre-built images
       if (missing.length > 0) {
@@ -3774,7 +3779,7 @@ export default class App {
           list: missing,
           group,
           shaderMeta: new Map(SHADER_VISUALIZERS.map((e) => [e.name, e.fileName])),
-          presetBase: `${import.meta.env.BASE_URL}${App._shadertoyPresetsBase}`,
+          presetBase: `${import.meta.env.BASE_URL}${App._shadertoyPresetsBase}/default`,
           settleDelay: Math.max(cfg.settleDelay, 500),
           resolution: cfg.resolution,
           width: cfg.width,
@@ -3871,7 +3876,7 @@ export default class App {
         list: names,
         group,
         shaderMeta: new Map(SHADER_VISUALIZERS.map((e) => [e.name, e.fileName])),
-        presetBase: `${import.meta.env.BASE_URL}${App._shadertoyPresetsBase}`,
+        presetBase: `${import.meta.env.BASE_URL}${App._shadertoyPresetsBase}/default`,
         settleDelay: Math.max(cfg.settleDelay, 500),
         resolution: cfg.resolution,
         width: cfg.width,

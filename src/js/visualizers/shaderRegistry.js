@@ -6,10 +6,16 @@ import { loadShaderConfig, injectUniforms } from '../shaderCustomization'
 // Reads the same localStorage key as App._shadertoyPresetsBase so a custom location
 // set via the GUI takes effect on the next page reload.
 const _SHADERTOY_STORAGE_KEY = 'visualizer.shadertoyPresetsBase'
-export const PRESETS_BASE = (() => {
-  try { return localStorage.getItem(_SHADERTOY_STORAGE_KEY)?.trim() || 'shadertoy-presets/default' }
-  catch { return 'shadertoy-presets/default' }
+// Storage holds only the root directory (e.g. 'shadertoy-presets' or '../other/shadertoy-presets').
+// 'default' is always the group subfolder appended here.
+const _shadertoyRoot = (() => {
+  try {
+    const v = localStorage.getItem(_SHADERTOY_STORAGE_KEY)?.trim() || 'shadertoy-presets'
+    return v.replace(/\/default$/, '') || 'shadertoy-presets'
+  }
+  catch { return 'shadertoy-presets' }
 })()
+export const PRESETS_BASE = `${_shadertoyRoot}/default`
 
 /** Mutable arrays populated once `shadertoyReady` resolves. */
 export const SHADER_VISUALIZERS = []       // { name, fileName, filePath, create }[]

@@ -419,7 +419,7 @@ export default class ControlsApp {
         this._send({ type: 'set-shadertoy-presets-base', base: (value || '').trim() })
       })
     const _stInput = _stCtrl.domElement.querySelector('input')
-    if (_stInput) _stInput.setAttribute('placeholder', 'shadertoy-presets/default')
+    if (_stInput) _stInput.setAttribute('placeholder', 'shadertoy-presets')
   }
 
   /**
