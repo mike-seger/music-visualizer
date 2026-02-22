@@ -114,8 +114,26 @@ function hlslToGlsl(shaderText) {
   s = s.replace(/\bfloat4\b/g, 'vec4')
   s = s.replace(/\bfloat3\b/g, 'vec3')
   s = s.replace(/\bfloat2\b/g, 'vec2')
+  s = s.replace(/\bfloat1\b/g, 'float')  // float1 is HLSL-only
+  s = s.replace(/\bhalf4\b/g,  'vec4')
+  s = s.replace(/\bhalf3\b/g,  'vec3')
+  s = s.replace(/\bhalf2\b/g,  'vec2')
+  s = s.replace(/\bhalf\b/g,   'float')
+  s = s.replace(/\bint4\b/g,   'ivec4')
+  s = s.replace(/\bint3\b/g,   'ivec3')
+  s = s.replace(/\bint2\b/g,   'ivec2')
+  s = s.replace(/\buint4\b/g,  'uvec4')
+  s = s.replace(/\buint3\b/g,  'uvec3')
+  s = s.replace(/\buint2\b/g,  'uvec2')
+
+  // ── Remove HLSL-only storage qualifiers ──
+  // 'static const X' → 'const X',  'static X' → 'X'
+  s = s.replace(/\bstatic\s+const\b/g, 'const')
+  s = s.replace(/\bstatic\s+/g, '')
 
   // ── Ensure sampler/texsize declarations have 'uniform' prefix ──
+  // Bare 'sampler sampler_XXX' (HLSL) → 'uniform sampler2D sampler_XXX'
+  s = s.replace(/\bsampler\s+(sampler_\w+)/g, 'uniform sampler2D $1')
   // MilkDrop .milk files write: sampler2D sampler_XXX;
   // Butterchurn expects:        uniform sampler2D sampler_XXX;
   // (must run AFTER type replacements so float4→vec4 is done)
