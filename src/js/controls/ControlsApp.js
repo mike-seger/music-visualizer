@@ -1092,10 +1092,10 @@ export default class ControlsApp {
       .add({ regen: () => this._send({ type: 'preview-start-regen', config: { ...cfg } }) }, 'regen')
       .name('Re-Generate')
 
-    // Snapshot — capture main visualizer canvas at preview dimensions → clipboard
+    // Snapshot → Current — capture live canvas and update the current preset's preview tile
     folder
-      .add({ snap: () => this._send({ type: 'preview-snapshot', config: { width: cfg.width, height: cfg.height } }) }, 'snap')
-      .name('Snapshot → Clipboard')
+      .add({ snap: () => this._send({ type: 'preview-snapshot-current', config: { width: cfg.width, height: cfg.height } }) }, 'snap')
+      .name('Snapshot → Current')
   }
 
   // -------------------------------------------------------------------

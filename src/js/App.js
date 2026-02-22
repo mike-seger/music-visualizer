@@ -452,6 +452,12 @@ export default class App {
         break
       }
 
+      case 'preview-snapshot-current': {
+        const { width: snapW = 160, height: snapH = 90 } = msg.config || {}
+        this._doSnapshotCurrent(snapW, snapH)
+        break
+      }
+
       case 'preview-zip':
         this._downloadPreviewZip(msg.hashes)
         break
@@ -3510,11 +3516,11 @@ export default class App {
       return
     }
 
-    // S key — snapshot the visualizer canvas to clipboard
+    // S key — snapshot the visualizer canvas into the current preview tile
     if (event.key === 's' || event.key === 'S') {
       event.preventDefault()
       const cfg = this._previewConfig
-      this._doSnapshot(cfg?.width ?? 160, cfg?.height ?? 90)
+      this._doSnapshotCurrent(cfg?.width ?? 160, cfg?.height ?? 90)
       return
     }
 
@@ -3538,40 +3544,64 @@ export default class App {
   // -------------------------------------------------------------------
 
   /**
-   * Capture the live visualizer canvas as a PNG and broadcast it back to the
-   * controls popup as a `snapshot-ready` message so the popup (which holds
-   * focus) can write it to the clipboard.
-   *
-   * Deferred into the next rAF so we read the canvas AFTER butterchurn's
-   * WebGL→2D copy is complete (mid-frame reads arrive after clearRect but
-   * before drawImage, producing an all-black image).
+   * Shared helper: capture the live visualizer canvas into an OffscreenCanvas
+   * at the given dimensions and return a Promise<Blob>.
+   * Deferred one rAF so butterchurn's WebGL→2D copy finishes first.
+   */
+  _captureCanvasBlob(snapW, snapH) {
+    return new Promise((resolve, reject) => {
+      requestAnimationFrame(() => {
+        const snapSrc = (App.currentVisualizer?.isButterchurn && App.currentVisualizer?._canvas)
+          ? App.currentVisualizer._canvas
+          : this.renderer?.domElement
+        if (!snapSrc) { reject(new Error('No canvas source')); return }
+        try {
+          const off = new OffscreenCanvas(snapW, snapH)
+          const ctx2 = off.getContext('2d')
+          ctx2.fillStyle = '#000'
+          ctx2.fillRect(0, 0, snapW, snapH)
+          ctx2.drawImage(snapSrc, 0, 0, snapW, snapH)
+          off.convertToBlob({ type: 'image/png' }).then(resolve).catch(reject)
+        } catch (e) { reject(e) }
+      })
+    })
+  }
+
+  /**
+   * Capture the live canvas and send the PNG blob to the controls popup so it
+   * can write it to the clipboard (popup holds focus; main window does not).
    */
   _doSnapshot(snapW = 160, snapH = 90) {
-    const doCapture = () => {
-      const snapSrc = (App.currentVisualizer?.isButterchurn && App.currentVisualizer?._canvas)
-        ? App.currentVisualizer._canvas
-        : this.renderer?.domElement
-      if (!snapSrc) return
-      try {
-        const off = new OffscreenCanvas(snapW, snapH)
-        const ctx2 = off.getContext('2d')
-        // Fill black first — ensures opaque PNG even if source has alpha
-        ctx2.fillStyle = '#000'
-        ctx2.fillRect(0, 0, snapW, snapH)
-        ctx2.drawImage(snapSrc, 0, 0, snapW, snapH)
-        off.convertToBlob({ type: 'image/png' }).then((blob) => {
-          this._broadcastToControls({ type: 'snapshot-ready', blob, width: snapW, height: snapH })
-        }).catch((e) => {
-          console.warn('[Snapshot] canvas capture failed:', e)
-          this._broadcastToControls({ type: 'preview-status', text: `Snapshot failed: ${e?.message ?? e}` })
+    this._captureCanvasBlob(snapW, snapH)
+      .then((blob) => {
+        this._broadcastToControls({ type: 'snapshot-ready', blob, width: snapW, height: snapH })
+      })
+      .catch((e) => {
+        console.warn('[Snapshot] capture failed:', e)
+        this._broadcastToControls({ type: 'preview-status', text: `Snapshot failed: ${e?.message ?? e}` })
+      })
+  }
+
+  /**
+   * Capture the live canvas and update the current preset's tile in the
+   * preview panel — equivalent to Re-Generate but using the live frame.
+   */
+  _doSnapshotCurrent(snapW = 160, snapH = 90) {
+    const name  = App.visualizerType
+    const group = App.currentGroup
+    this._captureCanvasBlob(snapW, snapH)
+      .then((blob) => {
+        const { hash, blobUrl } = this.previewBatch.storeEntry(group, name, this._currentPresetHash, blob)
+        this._broadcastToControls({
+          type: 'preview-tile-update',
+          item: { hash, blobUrl, presetName: name, group, jsonPath: '', missing: false },
         })
-      } catch (e) {
-        console.warn('[Snapshot] error:', e)
-      }
-    }
-    // One rAF delay: butterchurn's clearRect+drawImage finish within the
-    // current rAF; our callback runs in the next one with a complete frame.
-    requestAnimationFrame(doCapture)
+        this._broadcastToControls({ type: 'preview-status', text: `Snapshot saved: ${name}` })
+      })
+      .catch((e) => {
+        console.warn('[Snapshot] capture failed:', e)
+        this._broadcastToControls({ type: 'preview-status', text: `Snapshot failed: ${e?.message ?? e}` })
+      })
   }
 
   /**

@@ -53,6 +53,30 @@ export default class PreviewBatch {
     return null
   }
 
+  /**
+   * Store a live-captured blob for a preset, replacing any existing entry.
+   * Used by the "Snapshot → Current" button to inject a live-canvas image
+   * without running a full batch capture.
+   *
+   * @param {string}      group       Group name
+   * @param {string}      presetName  Preset name
+   * @param {string|null} hash        SHA hash (null → synthetic key)
+   * @param {Blob}        blob        The image blob
+   * @returns {{ hash: string, blobUrl: string }}
+   */
+  storeEntry(group, presetName, hash, blob) {
+    const key = hash ?? `snapshot:${group}/${presetName}`
+    // Revoke any existing URL for this key
+    if (_previewUrls.has(key)) {
+      URL.revokeObjectURL(_previewUrls.get(key))
+      _previewUrls.delete(key)
+    }
+    const blobUrl = URL.createObjectURL(blob)
+    _store.set(key, { filename: presetName + '.png', blob, presetName, group, jsonPath: '' })
+    _previewUrls.set(key, blobUrl)
+    return { hash: key, blobUrl }
+  }
+
   /** Revoke all preview blob URLs (call when the panel popup closes). */
   closePreview() {
     for (const url of _previewUrls.values()) URL.revokeObjectURL(url)
