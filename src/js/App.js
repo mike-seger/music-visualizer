@@ -3951,6 +3951,8 @@ export default class App {
 
   /** Trigger ZIP download of captured previews, optionally filtered to a hash set. */
   _downloadPreviewZip(hashes) {
+    // Don't trigger downloads from bridge/iframe App instances — only the top-level app owns the store.
+    if (window.self !== window.top) return
     const group = App.currentGroup
     const filterSet = hashes && hashes.length > 0 ? new Set(hashes) : null
     this.previewBatch.downloadZip(group, filterSet).then((ok) => {
