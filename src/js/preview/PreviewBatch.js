@@ -1,6 +1,10 @@
 import { zipSync } from 'fflate'
 import butterchurn from 'butterchurn'
 
+/** Unique 6-hex-char ID for this page load — included in ZIP filenames to prevent
+ * collisions (and to disambiguate which tab triggered a download). */
+const _SESSION_ID = Math.floor(Math.random() * 0xffffff).toString(16).padStart(6, '0')
+
 /** Reads the overridden butterchurn base path from localStorage (same key as App). */
 const _getBcPresetsBase = () => {
   try { return localStorage.getItem('visualizer.bcPresetsBase')?.trim() || 'butterchurn-presets' }
@@ -385,18 +389,6 @@ export default class PreviewBatch {
    * @param {string} groupName  Used only in the downloaded ZIP filename
    */
   async downloadZip(groupName, filterHashes = null) {
-    // Guard against duplicate downloads when multiple tabs are open on the same
-    // BroadcastChannel — use localStorage as a cross-tab lock (3 s window).
-    const LOCK_MS = 3000
-    const lockKey = 'preview-zip-last-download'
-    const now = Date.now()
-    const last = parseInt(localStorage.getItem(lockKey) || '0', 10)
-    if (now - last < LOCK_MS) {
-      console.info('[PreviewBatch] Skipping duplicate ZIP download (another tab already triggered one).')
-      return true
-    }
-    localStorage.setItem(lockKey, String(now))
-
     // Only ZIP entries for the currently active group; optionally restricted to selected hashes
     const groupEntries = [..._store.entries()].filter(([hash, e]) =>
       e.group === groupName && (!filterHashes || filterHashes.has(hash))
@@ -409,7 +401,7 @@ export default class PreviewBatch {
     const dt = new Date().toISOString()
       .replace('T', '_').replace(/[:.]/g, '-').slice(0, 19)
     const selSuffix = filterHashes ? `-${filterHashes.size}sel` : ''
-    const zipName = `previews-${_sanitize(groupName)}${selSuffix}-${dt}.zip`
+    const zipName = `previews-${_sanitize(groupName)}${selSuffix}-${dt}-${_SESSION_ID}.zip`
 
     const files = {}
 
