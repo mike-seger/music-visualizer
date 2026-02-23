@@ -2,7 +2,7 @@ import { zipSync } from 'fflate'
 import butterchurn from 'butterchurn'
 
 /** Unique 6-hex-char ID for this page load — included in ZIP filenames to prevent
- * collisions (and to disambiguate which tab triggered a download). */
+ * collisions when multiple tabs download simultaneously. */
 const _SESSION_ID = Math.floor(Math.random() * 0xffffff).toString(16).padStart(6, '0')
 
 /** Reads the overridden butterchurn base path from localStorage (same key as App). */
@@ -447,9 +447,7 @@ export default class PreviewBatch {
     const a = document.createElement('a')
     a.href = url
     a.download = zipName
-    document.body.appendChild(a)
-    a.click()
-    document.body.removeChild(a)
+    a.dispatchEvent(new MouseEvent('click', { bubbles: false, cancelable: true, view: window }))
     setTimeout(() => URL.revokeObjectURL(url), 5000)
     return true
   }
