@@ -1157,9 +1157,10 @@ async function _loadPreviewIndex(group) {
       const relPath = dir ? `${dir}/${sanitizedFile}` : sanitizedFile
       const imageUrl = base + relPath.split('/').map(encodeURIComponent).join('/')
       byHash.set(hash, { imageUrl, imgExt: ext })
-      // byName key is lowercased so it matches e.name from index.json regardless
-      // of whether the jsonPath in index.js uses original case or lowercase
-      byName.set(fileBase.toLowerCase(), hash)
+      // Store under original case; also store a lowercase alias so lookups work
+      // even if index.js and index.json happen to differ in casing.
+      byName.set(fileBase, hash)
+      if (fileBase !== fileBase.toLowerCase()) byName.set(fileBase.toLowerCase(), hash)
     }
     console.log(`[PreviewBatch] pre-built index for "${group}": ${byHash.size} entries`)
     return { byHash, byName }
