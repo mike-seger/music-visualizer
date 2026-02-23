@@ -4,9 +4,9 @@ export default class AudioManager {
   static _STORAGE_KEY = 'visualizer.audioSource'
 
   static SOURCES = [
-    { label: 'Preview Loop',                                                   url: 'audio/preview-loop.flac' },
     { label: 'California Sunshine - The Gate To The Past (Remix)',             url: 'audio/California Sunshine%20-%20The%20Gate%20To%20The%20Past%20(Remix).mp3' },
     { label: 'Dhamsuta - Lucent Venture',                                      url: 'audio/Dhamsuta%20-%20Lucent%20Venture.mp3' },
+    { label: 'Preview Loop',                                                   url: 'audio/preview-loop.flac' },
     { label: '2025-12-31: "End Of Year Bonus Mix 2025" by DJ Johan Lecander',  url: '../player/video/user__eoy_bonus_mix_2025/vid_TKWp_ND-B1U.mp4' },
     { label: '2025-11-28: "Golden Weekdays" by DJ Johan Lecander',             url: '../player/video/pl_2025-2_golden_weekdays/vid_87TRyySHou8.mp4' }
   ]
