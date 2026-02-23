@@ -3953,6 +3953,18 @@ export default class App {
   _downloadPreviewZip(hashes) {
     // Don't trigger downloads from bridge/iframe App instances — only the top-level app owns the store.
     if (window.self !== window.top) return
+    // Cross-tab dedup: if another tab/instance already started a download within
+    // the last 5 s, skip. Uses localStorage so it works across different code versions.
+    try {
+      const key = 'preview-zip-last-ts'
+      const last = parseInt(localStorage.getItem(key) || '0', 10)
+      const now = Date.now()
+      if (now - last < 5000) {
+        console.info('[PreviewBatch] Skipping duplicate ZIP trigger from a secondary instance.')
+        return
+      }
+      localStorage.setItem(key, String(now))
+    } catch { /* storage unavailable — proceed anyway */ }
     const group = App.currentGroup
     const filterSet = hashes && hashes.length > 0 ? new Set(hashes) : null
     this.previewBatch.downloadZip(group, filterSet).then((ok) => {
