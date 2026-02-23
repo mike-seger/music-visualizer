@@ -162,6 +162,7 @@ export default class App {
   static _groupDisplayMap = {}                    // { internalName: displayName } for the dropdown
   static _allBcSourceGroup = new Map()            // presetName → actual groupName (for "all butterchurn")
   static _failedPresets = new Set()                // presets that threw during init (skipped by cycleVisualizer)
+  static _zipDownloadPending = false               // in-process dedup: prevents double ZIP downloads
   // Liked presets stored as SHA-256 hashes (first 12 hex chars) and persisted to localStorage
   static _likedPresets = (() => {
     try { return new Set(JSON.parse(localStorage.getItem('visualizer-liked') ?? '[]')) }
@@ -3953,6 +3954,13 @@ export default class App {
   _downloadPreviewZip(hashes) {
     // Don't trigger downloads from bridge/iframe App instances — only the top-level app owns the store.
     if (window.self !== window.top) return
+    // In-process dedup: prevents two synchronous or near-simultaneous calls (e.g.
+    // BroadcastChannel message + keyboard shortcut firing at the same time).
+    if (App._zipDownloadPending) {
+      console.info('[Previews] ZIP download already in flight — ignoring duplicate trigger.')
+      return
+    }
+    App._zipDownloadPending = true
     // Cross-tab dedup: if another tab/instance already started a download within
     // the last 5 s, skip. Uses localStorage so it works across different code versions.
     try {
@@ -3960,7 +3968,8 @@ export default class App {
       const last = parseInt(localStorage.getItem(key) || '0', 10)
       const now = Date.now()
       if (now - last < 5000) {
-        console.info('[PreviewBatch] Skipping duplicate ZIP trigger from a secondary instance.')
+        console.info('[Previews] Skipping duplicate ZIP trigger from a secondary instance.')
+        App._zipDownloadPending = false
         return
       }
       localStorage.setItem(key, String(now))
@@ -3968,12 +3977,13 @@ export default class App {
     const group = App.currentGroup
     const filterSet = hashes && hashes.length > 0 ? new Set(hashes) : null
     this.previewBatch.downloadZip(group, filterSet).then((ok) => {
+      App._zipDownloadPending = false
       if (!ok) {
         const msg = 'No previews yet — press X to capture first.'
         this._broadcastToControls({ type: 'preview-status', text: msg })
         console.info('[Previews]', msg)
       }
-    })
+    }).catch(() => { App._zipDownloadPending = false })
   }
 
   /**
