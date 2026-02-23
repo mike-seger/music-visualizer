@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Previews</title>
+<script src="index.js"></script>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  background: #111; color: #ccc;
+  font-family: system-ui, -apple-system, sans-serif;
+  font-size: 12px;
+  padding: 52px 10px 40px;
+}
+#toolbar {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+  background: rgba(17,17,17,.92); backdrop-filter: blur(6px);
+  border-bottom: 1px solid #2a2a2a;
+  display: flex; align-items: center;
+  padding: 8px 12px; gap: 8px;
+}
+#title { color: #888; flex: 1; }
+.tbtn {
+  background: #222; border: 1px solid #444; color: #ddd;
+  padding: 5px 12px; border-radius: 4px; font-size: 12px; cursor: pointer;
+  white-space: nowrap;
+}
+.tbtn:hover { background: #2e2e2e; }
+#copy-count { color: #fa4; }
+.grid { display: flex; flex-wrap: wrap; gap: 5px; }
+.tile {
+  position: relative; width: var(--tile-w, 160px); height: var(--tile-h, 160px);
+  cursor: pointer; flex-shrink: 0; border-radius: 2px; overflow: hidden;
+  background: #111; outline: 2px solid transparent; outline-offset: 0;
+}
+.tile img { width: 100%; height: 100%; object-fit: contain; display: block; }
+.tile:hover { outline-color: #48c; }
+.tile.selected { outline-color: #fa4; }
+.tile-cb {
+  position: absolute; bottom: 5px; right: 5px;
+  width: 15px; height: 15px; cursor: pointer;
+  -webkit-appearance: none; appearance: none;
+  background: transparent; border: 1px solid transparent; border-radius: 2px;
+  opacity: 0; transition: opacity 0.1s;
+}
+.tile-cb:checked {
+  background: transparent;
+  background-image: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'><polyline points='2,6 5,9 10,3' stroke='%2344ff9a' stroke-width='2.5' fill='none' stroke-linecap='round' stroke-linejoin='round'/></svg>");
+  background-repeat: no-repeat; background-position: center; background-size: 10px;
+}
+.tile:hover .tile-cb { opacity: 1; border-color: rgba(255,255,255,.9); }
+.tile:hover .tile-cb:checked { border-color: #44ff9a; }
+.tile.selected .tile-cb { opacity: 1; }
+#overlay {
+  display: none; position: fixed; inset: 0; z-index: 200;
+  background: rgba(0,0,0,.88); justify-content: center; align-items: center; cursor: pointer;
+}
+#overlay.open { display: flex; }
+#overlay-img { max-width: 94vw; max-height: 94vh; object-fit: contain; border-radius: 3px; cursor: default; }
+#overlay-label {
+  position: absolute; bottom: 12px; left: 50%; transform: translateX(-50%);
+  background: rgba(0,0,0,.75); color: #eee; padding: 4px 12px;
+  border-radius: 3px; font-size: 12px; pointer-events: none;
+}
+</style>
+</head>
+<body>
+<div id="toolbar">
+  <span id="title">Previews</span>
+  <button class="tbtn" id="select-all-btn">Select All</button>
+  <button class="tbtn" id="toggle-btn">Toggle</button>
+  <button class="tbtn" id="copy-btn">Copy IDs (<span id="copy-count">all</span>)</button>
+</div>
+<div id="root"></div>
+<div id="overlay">
+  <img id="overlay-img" src="" alt="">
+  <div id="overlay-label"></div>
+</div>
+<script>
+(function () {
+  // previewMeta is injected by previews/index.js (Map<hash, presetName>)
+  function sanitize(s) { return s.replace(/[/\*?"<>|]/g, '_').trim() }
+
+  const root = document.getElementById('root')
+  const overlay = document.getElementById('overlay')
+  const overlayImg = document.getElementById('overlay-img')
+  const overlayLabel = document.getElementById('overlay-label')
+  const copyBtn = document.getElementById('copy-btn')
+  const copyCountEl = document.getElementById('copy-count')
+  const titleEl = document.getElementById('title')
+
+  const entries = [...previewMeta.entries()].map(([hash, name]) => ({
+    hash,
+    name,
+    filename: 'previews/' + sanitize(name) + '.' + previewExt,
+  }))
+  titleEl.textContent = entries.length + ' previews'
+
+  if (entries.length > 0) {
+    const probe = new Image()
+    probe.onload = function () {
+      const scale = Math.min(160 / probe.naturalWidth, 160 / probe.naturalHeight)
+      document.documentElement.style.setProperty('--tile-w', Math.round(probe.naturalWidth  * scale) + 'px')
+      document.documentElement.style.setProperty('--tile-h', Math.round(probe.naturalHeight * scale) + 'px')
+    }
+    probe.src = entries[0].filename
+  }
+
+  const selected = new Set()
+  function updateCount() { copyCountEl.textContent = selected.size > 0 ? selected.size : 'all' }
+
+  const grid = document.createElement('div')
+  grid.className = 'grid'
+  for (const { hash, filename, name } of entries) {
+    const tile = document.createElement('div')
+    tile.className = 'tile'; tile.title = name
+    const img = document.createElement('img')
+    img.src = filename; img.alt = name; img.loading = 'lazy'
+    const cb = document.createElement('input')
+    cb.type = 'checkbox'; cb.className = 'tile-cb'
+    cb.addEventListener('change', (e) => {
+      e.stopPropagation()
+      if (cb.checked) { selected.add(hash); tile.classList.add('selected') }
+      else            { selected.delete(hash); tile.classList.remove('selected') }
+      updateCount()
+    })
+    cb.addEventListener('click', (e) => e.stopPropagation())
+    tile.addEventListener('click', () => {
+      overlayImg.src = filename; overlayLabel.textContent = name
+      overlay.classList.add('open')
+    })
+    tile.appendChild(img); tile.appendChild(cb); grid.appendChild(tile)
+  }
+  root.appendChild(grid)
+
+  document.getElementById('select-all-btn').addEventListener('click', () => {
+    entries.forEach(({ hash }) => selected.add(hash))
+    root.querySelectorAll('.tile').forEach((t) => {
+      t.classList.add('selected')
+      const cb = t.querySelector('.tile-cb'); if (cb) cb.checked = true
+    })
+    updateCount()
+  })
+
+  document.getElementById('toggle-btn').addEventListener('click', () => {
+    const tiles = [...root.querySelectorAll('.tile')]
+    entries.forEach(({ hash }, i) => {
+      const tile = tiles[i]; const cb = tile?.querySelector('.tile-cb')
+      if (selected.has(hash)) {
+        selected.delete(hash); tile?.classList.remove('selected'); if (cb) cb.checked = false
+      } else {
+        selected.add(hash); tile?.classList.add('selected'); if (cb) cb.checked = true
+      }
+    })
+    updateCount()
+  })
+
+  overlay.addEventListener('click', (e) => { if (e.target !== overlayImg) overlay.classList.remove('open') })
+  document.addEventListener('keydown', (e) => { if (e.key === 'Escape') overlay.classList.remove('open') })
+
+  copyBtn.addEventListener('click', () => {
+    const ids = selected.size > 0 ? [...selected] : entries.map((e) => e.hash)
+    const text = ids.sort().join('\n')
+    if (navigator.clipboard?.writeText) {
+      navigator.clipboard.writeText(text).catch(() => fallback(text))
+    } else { fallback(text) }
+  })
+  function fallback(text) {
+    const ta = document.createElement('textarea')
+    ta.value = text; ta.style.cssText = 'position:fixed;left:-9999px;top:-9999px'
+    document.body.appendChild(ta); ta.select()
+    try { document.execCommand('copy') } catch {}
+    document.body.removeChild(ta)
+  }
+})()
+</script>
+</body>
+</html>
