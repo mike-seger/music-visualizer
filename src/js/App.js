@@ -1495,7 +1495,7 @@ export default class App {
       if (!App.audioManager?.audio) return
       const audio = App.audioManager.audio
       if (audio.paused) {
-        audio.play()
+        audio.play().catch((e) => { if (e.name !== 'AbortError') console.warn('[App] play() failed:', e) })
       } else {
         audio.pause()
       }

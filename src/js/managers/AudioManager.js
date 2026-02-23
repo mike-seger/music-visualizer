@@ -185,7 +185,7 @@ export default class AudioManager {
   }
 
   play() {
-    this.audio.play()
+    this.audio.play().catch((e) => { if (e.name !== 'AbortError') console.warn('[AudioManager] play() failed:', e) })
     this.isPlaying = true
   }
 
@@ -291,7 +291,7 @@ export default class AudioManager {
     
     // Resume file playback
     if (this.audio) {
-      this.audio.play()
+      this.audio.play().catch((e) => { if (e.name !== 'AbortError') console.warn('[AudioManager] play() failed:', e) })
       this.isPlaying = true
     }
     
