@@ -36,7 +36,7 @@ async function _loadFromBase(base) {
       create: async () => {
         const baseUrl2 = import.meta.env?.BASE_URL ?? '/'
         // Read PRESETS_BASE at call time so a reloaded registry uses the right path
-        const srcResp = await fetch(`${baseUrl2}${PRESETS_BASE}/presets/${encodeURIComponent(file)}`)
+        const srcResp = await fetch(`${baseUrl2}${PRESETS_BASE}/presets/${encodeURIComponent(file).replace(/%2B/gi, '+')}`)
         const source = srcResp.ok ? await srcResp.text() : ''
         const config = await loadShaderConfig(file)
         const processedSource = config ? injectUniforms(source, config) : source

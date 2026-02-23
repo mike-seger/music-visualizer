@@ -249,7 +249,7 @@ export default class PreviewBatch {
     const groupFolder = _sanitize(group)
 
     const urlFor = getPresetUrl ??
-      ((g, n) => `${_getBcPresetsBase()}/${encodeURIComponent(g)}/presets/${encodeURIComponent(n)}.json`)
+      ((g, n) => `${_getBcPresetsBase()}/${encodeURIComponent(g)}/presets/${_encodePathSeg(n)}.json`)
 
     // ── Load pre-built previews for this group (if any) ──
     // Returns { byHash: Map<hash,{imageUrl,imgExt}>, byName: Map<presetName,hash> }
@@ -582,7 +582,7 @@ export default class PreviewBatch {
     const th = height
 
     const urlFor = getPresetUrl ??
-      ((g, n) => `${_getBcPresetsBase()}/${encodeURIComponent(g)}/presets/${encodeURIComponent(n)}.json`)
+      ((g, n) => `${_getBcPresetsBase()}/${encodeURIComponent(g)}/presets/${_encodePathSeg(n)}.json`)
 
     // ── Phase 1: load pre-built images ────────────────────────────────────────
     const prebuilt = await _loadPreviewIndex(group)
@@ -871,7 +871,7 @@ export default class PreviewBatch {
 
       let source = ''
       try {
-        const resp = await fetch(`${presetBase}/presets/${encodeURIComponent(file)}`)
+        const resp = await fetch(`${presetBase}/presets/${_encodePathSeg(file)}`)
         if (resp.ok) source = await resp.text()
       } catch { /* skip */ }
       if (!source) { console.warn(`[PreviewBatch] skip (no source) "${name}"`); continue }
@@ -1115,6 +1115,16 @@ function _sleep(ms) {
 
 function _sanitize(str) {
   return String(str ?? '').replace(/[/\\*?"<>|]/g, '_').trim()
+}
+
+/**
+ * Encode a filename for use in a URL path segment.
+ * Like encodeURIComponent but preserves '+' as a literal character,
+ * since '+' in a URL path is a literal '+' (not a space), and static file
+ * servers match it against the actual '+' character in the filename.
+ */
+function _encodePathSeg(str) {
+  return encodeURIComponent(str).replace(/%2B/gi, '+')
 }
 
 function _enc(str) {

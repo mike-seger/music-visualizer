@@ -628,6 +628,20 @@ body.has-status { padding-top: 68px; }
   document.addEventListener('keydown', function (e) {
     if (e.key === 'Escape') { overlay.classList.remove('open'); return }
 
+    // S key — snapshot current preset, works regardless of tile state
+    if (e.key === 's' || e.key === 'S') {
+      if (ch) {
+        var cfg = {}
+        try { cfg = JSON.parse(localStorage.getItem('visualizer.preview.config') || '{}') } catch (err) {}
+        var w = cfg.width || 160
+        var h = cfg.height || 90
+        console.log('[Snapshot] S key (preview): requesting snapshot → current at ' + w + 'x' + h)
+        ch.postMessage({ type: 'preview-snapshot-current', config: { width: w, height: h } })
+      }
+      e.preventDefault()
+      return
+    }
+
     // Arrow-key navigation only when the overlay is closed and there are tiles
     if (overlay.classList.contains('open')) return
     if (!filteredItems.length) return

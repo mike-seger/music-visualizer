@@ -3234,8 +3234,8 @@ export default class App {
       const entry = index?.find((e) => e.name === name)
       const file = entry?.file ?? (name + '.json')
       const baseUrl = import.meta.env.BASE_URL
-      let resp = await fetch(`${baseUrl}${App._bcPresetsBase}/${encodeURIComponent(resolvedGroup)}/presets/${encodeURIComponent(file)}`)
-      if (!resp.ok) resp = await fetch(`${baseUrl}${App._bcPresetsBase}/${encodeURIComponent(resolvedGroup)}/${encodeURIComponent(file)}`)
+      let resp = await fetch(`${baseUrl}${App._bcPresetsBase}/${encodeURIComponent(resolvedGroup)}/presets/${encodeURIComponent(file).replace(/%2B/gi, '+')}`)
+      if (!resp.ok) resp = await fetch(`${baseUrl}${App._bcPresetsBase}/${encodeURIComponent(resolvedGroup)}/${encodeURIComponent(file).replace(/%2B/gi, '+')}`)
       if (!resp.ok) return
       const hash = await App._hashText(await resp.text())
       if (App.currentGroup === group && App.visualizerType === name) {
@@ -3533,6 +3533,18 @@ export default class App {
       return
     }
 
+    // S key — snapshot the visualizer canvas into the current preview tile
+    // (handled before isFormElement check so it works regardless of focus)
+    if (event.key === 's' || event.key === 'S') {
+      event.preventDefault()
+      const cfg = this._previewConfig
+      const name  = App.visualizerType
+      const group = App.currentGroup
+      console.log(`[Snapshot] S key: capturing "${name}" in group "${group}" at ${cfg?.width ?? 160}x${cfg?.height ?? 90}`)
+      this._doSnapshotCurrent(cfg?.width ?? 160, cfg?.height ?? 90)
+      return
+    }
+
     // Ignore remaining keys when a form element is focused
     if (isFormElement) return
 
@@ -3564,13 +3576,7 @@ export default class App {
       return
     }
 
-    // S key — snapshot the visualizer canvas into the current preview tile
-    if (event.key === 's' || event.key === 'S') {
-      event.preventDefault()
-      const cfg = this._previewConfig
-      this._doSnapshotCurrent(cfg?.width ?? 160, cfg?.height ?? 90)
-      return
-    }
+
 
     // X key — start/restart preview batch capture
     if (event.key === 'x' || event.key === 'X') {
@@ -3640,6 +3646,7 @@ export default class App {
     this._captureCanvasBlob(snapW, snapH)
       .then((blob) => {
         const { hash, blobUrl } = this.previewBatch.storeEntry(group, name, this._currentPresetHash, blob)
+        console.log(`[Snapshot] saved "${name}" (group: "${group}", hash: ${hash})`)
         this._broadcastToControls({
           type: 'preview-tile-update',
           item: { hash, blobUrl, presetName: name, group, jsonPath: '', missing: false },
@@ -3835,7 +3842,7 @@ export default class App {
         getPresetUrl: _entryByName.size > 0
           ? (g, name) => {
               const file = (_getEntry(name)?.file) ?? (name + '.json')
-              return `${import.meta.env.BASE_URL}${App._bcPresetsBase}/${encodeURIComponent(g)}/presets/${encodeURIComponent(file)}`
+              return `${import.meta.env.BASE_URL}${App._bcPresetsBase}/${encodeURIComponent(g)}/presets/${encodeURIComponent(file).replace(/%2B/gi, '+')}`
             }
           : undefined,
         getFileStem: _entryByName.size > 0
@@ -3933,7 +3940,7 @@ export default class App {
         getPresetUrl: _entryByName.size > 0
           ? (g, name) => {
               const file = (_getEntry(name)?.file) ?? (name + '.json')
-              return `${import.meta.env.BASE_URL}${App._bcPresetsBase}/${encodeURIComponent(g)}/presets/${encodeURIComponent(file)}`
+              return `${import.meta.env.BASE_URL}${App._bcPresetsBase}/${encodeURIComponent(g)}/presets/${encodeURIComponent(file).replace(/%2B/gi, '+')}`
             }
           : undefined,
         getFileStem: _entryByName.size > 0
@@ -5241,9 +5248,9 @@ export default class App {
     const baseUrl = import.meta.env.BASE_URL
     try {
       // Try new presets/ subfolder first, fall back to old top-level layout
-      let resp = await fetch(`${baseUrl}${App._bcPresetsBase}/${encodeURIComponent(groupName)}/presets/${encodeURIComponent(entry.file)}`)
+      let resp = await fetch(`${baseUrl}${App._bcPresetsBase}/${encodeURIComponent(groupName)}/presets/${encodeURIComponent(entry.file).replace(/%2B/gi, '+')}`)
       if (!resp.ok) {
-        resp = await fetch(`${baseUrl}${App._bcPresetsBase}/${encodeURIComponent(groupName)}/${encodeURIComponent(entry.file)}`)
+        resp = await fetch(`${baseUrl}${App._bcPresetsBase}/${encodeURIComponent(groupName)}/${encodeURIComponent(entry.file).replace(/%2B/gi, '+')}`)
       }
       if (!resp.ok) return null
       const data = await resp.json()

@@ -109,6 +109,18 @@ export default class ControlsApp {
       this._send({ type: 'controls-closed' })
       this.channel.close()
     })
+
+    // S key — snapshot current preset (same as Snapshot → Current button)
+    document.addEventListener('keydown', (e) => {
+      if (e.key !== 's' && e.key !== 'S') return
+      const target = e.target
+      const isFormElement = target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.tagName === 'SELECT' || target.isContentEditable)
+      if (isFormElement) return
+      e.preventDefault()
+      const cfg = this._previewConfig ?? {}
+      console.log(`[Snapshot] S key (controls): requesting snapshot at ${cfg.width ?? 160}x${cfg.height ?? 90}`)
+      this._send({ type: 'preview-snapshot-current', config: { width: cfg.width ?? 160, height: cfg.height ?? 90 } })
+    })
   }
 
   // -------------------------------------------------------------------
