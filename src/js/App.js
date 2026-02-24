@@ -2,6 +2,7 @@ import * as THREE from 'three'
 import { ENTITY_VISUALIZER_NAMES, createEntityVisualizerByName } from './visualizers/entityRegistry'
 import { SHADER_VISUALIZERS, SHADER_VISUALIZER_NAMES, shadertoyReady, createShaderVisualizerByName, reloadShaderRegistry } from './visualizers/shaderRegistry'
 import PreviewBatch from './preview/PreviewBatch'
+import { visualizerVersion } from './Version'
 
 // MilkDrop (Butterchurn) presets are lazy-loaded to keep the initial bundle small.
 // The module and its heavy dependencies (~800 kB) are fetched on first use.
@@ -156,7 +157,7 @@ export default class App {
   static presetGroupNames = [...DEFAULT_GROUPS]  // populated with user groups after init
   static currentGroup = DEFAULT_GROUPS[0]         // active group
   static _userGroupNames = []                     // from preset-groups.json (raw folder names)
-  static _userGroupIndex = new Map()              // groupName → [{name, file}, ...] from index.json
+  static _userGroupIndex = new Map()              // groupName → { imageExt, srcMap, nameToHash } from meta.json
   static _userGroupLoadPromise = new Map()        // groupName → Promise (for lazy loading)
   static _userGroupPresetCache = new Map()        // "group/presetName" → preset JSON data
   static _groupDisplayMap = {}                    // { internalName: displayName } for the dropdown
@@ -3174,11 +3175,11 @@ export default class App {
       if (!resolvedGroup) return null
     }
 
-    const index = App._userGroupIndex.get(resolvedGroup)
-    if (!index) return null
-    const entry = index.find((e) => e.name === App.visualizerType)
-    if (!entry) return null
-    return `${resolvedGroup}/${entry.file}`
+    const meta = App._userGroupIndex.get(resolvedGroup)
+    if (!meta?.nameToHash) return null
+    const hash = meta.nameToHash.get(App.visualizerType)
+    if (!hash) return null
+    return `${resolvedGroup}/${hash}.json`
   }
 
   _isCurrentPresetLiked() {
@@ -3208,11 +3209,11 @@ export default class App {
   }
 
   /**
-   * Compute and cache the SHA-256 hash for the given preset, then refresh the like button.
-   * Checks the preview store synchronously first; falls back to fetching the JSON.
+   * Look up and cache the SHA-256 hash for the given preset, then refresh the like button.
+   * With meta.json the hash is already known — no fetch needed.
    */
   async _refreshCurrentPresetHash(group, name) {
-    // Shadertoy and Custom WebGL don't have JSON files — nothing to hash
+    // Shadertoy and Custom WebGL don't participate in hash-based tracking
     if (DEFAULT_GROUPS.includes(group)) return
 
     const cached = this.previewBatch?.findHash(group, name)
@@ -3223,32 +3224,27 @@ export default class App {
       }
       return
     }
-    try {
-      // Resolve the correct filename via index (entry.file has proper casing)
-      let resolvedGroup = group
-      if (group === ALL_BC_GROUP) {
-        resolvedGroup = App._allBcSourceGroup.get(name)
-        if (!resolvedGroup) return
-      }
-      const index = App._userGroupIndex.get(resolvedGroup)
-      const entry = index?.find((e) => e.name === name)
-      const file = entry?.file ?? (name + '.json')
-      const baseUrl = import.meta.env.BASE_URL
-      let resp = await fetch(`${baseUrl}${App._bcPresetsBase}/${encodeURIComponent(resolvedGroup)}/presets/${encodeURIComponent(file).replace(/%2B/gi, '+')}`)
-      if (!resp.ok) resp = await fetch(`${baseUrl}${App._bcPresetsBase}/${encodeURIComponent(resolvedGroup)}/${encodeURIComponent(file).replace(/%2B/gi, '+')}`)
-      if (!resp.ok) return
-      const hash = await App._hashText(await resp.text())
-      if (App.currentGroup === group && App.visualizerType === name) {
-        this._currentPresetHash = hash
-        this._updateLikeButtonState()
-      }
-    } catch { /* ignore — like button stays unset */ }
+
+    // Lookup hash directly from meta.json srcMap
+    let resolvedGroup = group
+    if (group === ALL_BC_GROUP) {
+      resolvedGroup = App._allBcSourceGroup.get(name)
+      if (!resolvedGroup) return
+    }
+    const meta = App._userGroupIndex.get(resolvedGroup)
+    const hash = meta?.nameToHash?.get(name)
+    if (!hash) return
+
+    if (App.currentGroup === group && App.visualizerType === name) {
+      this._currentPresetHash = hash
+      this._updateLikeButtonState()
+    }
   }
 
   /** SHA-256 of text, first 12 hex chars — matches PreviewBatch._sha256short. */
   static async _hashText(text) {
     const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(text))
-    return [...new Uint8Array(buf)].map(b => b.toString(16).padStart(2, '0')).join('').slice(0, 12)
+    return [...new Uint8Array(buf)].map(b => b.toString(16).padStart(2, '0')).join('').slice(0, 20)
   }
 
   _flashCenteredHeart() {
@@ -3713,9 +3709,9 @@ export default class App {
       )
     } else if (!DEFAULT_GROUPS.includes(group)) {
       // Butterchurn groups only — Custom WebGL has no static pre-built previews
-      const _groupIndex = App._userGroupIndex.get(group) ?? []
-      const _entryByName = new Map(_groupIndex.map((e) => [e.name, e]))
-      const getFileStem = (name) => (_entryByName.get(name)?.file ?? (name + '.json')).replace(/\.json$/i, '')
+      const meta = App._userGroupIndex.get(group)
+      const nameToHash = meta?.nameToHash ?? new Map()
+      const getFileStem = (name) => nameToHash.get(name) ?? name
       await this.previewBatch.loadPrebuilt(group, list, { getFileStem })
     }
     // Only broadcast if the popup is still open and still on the same group
@@ -3774,9 +3770,8 @@ export default class App {
 
     onStatus(`Capturing group "${group}"…`)
 
-    const _groupIndex = App._userGroupIndex.get(group) ?? []
-    const _entryByName = new Map(_groupIndex.map((e) => [e.name, e]))
-    const _getEntry = (name) => _entryByName.get(name)
+    const meta = App._userGroupIndex.get(group)
+    const nameToHash = meta?.nameToHash ?? new Map()
 
     const onCaptured = ({ name, hash, blobUrl, group: g, jsonPath }) => {
       if (this._controlsPopup && !this._controlsPopup.closed) {
@@ -3839,14 +3834,16 @@ export default class App {
         width: cfg.width,
         height: cfg.height,
         format: cfg.format,
-        getPresetUrl: _entryByName.size > 0
+        getPresetUrl: nameToHash.size > 0
           ? (g, name) => {
-              const file = (_getEntry(name)?.file) ?? (name + '.json')
-              return `${import.meta.env.BASE_URL}${App._bcPresetsBase}/${encodeURIComponent(g)}/presets/${encodeURIComponent(file).replace(/%2B/gi, '+')}`
+              const hash = nameToHash.get(name)
+              return hash
+                ? `${import.meta.env.BASE_URL}${App._bcPresetsBase}/${encodeURIComponent(g)}/presets/${hash}.json`
+                : undefined
             }
           : undefined,
-        getFileStem: _entryByName.size > 0
-          ? (name) => (_getEntry(name)?.file ?? (name + '.json')).replace(/\.json$/i, '')
+        getFileStem: nameToHash.size > 0
+          ? (name) => nameToHash.get(name) ?? name
           : undefined,
         onStatus,
         onCaptured,
@@ -3881,9 +3878,8 @@ export default class App {
 
     onStatus(`Re-generating ${names.length} selected preset(s)…`)
 
-    const _groupIndex = App._userGroupIndex.get(group) ?? []
-    const _entryByName = new Map(_groupIndex.map((e) => [e.name, e]))
-    const _getEntry = (name) => _entryByName.get(name)
+    const meta = App._userGroupIndex.get(group)
+    const nameToHash = meta?.nameToHash ?? new Map()
 
     const onCaptured = ({ name, hash, blobUrl, group: g, jsonPath }) => {
       if (this._controlsPopup && !this._controlsPopup.closed) {
@@ -3937,14 +3933,16 @@ export default class App {
         width: cfg.width,
         height: cfg.height,
         format: cfg.format,
-        getPresetUrl: _entryByName.size > 0
+        getPresetUrl: nameToHash.size > 0
           ? (g, name) => {
-              const file = (_getEntry(name)?.file) ?? (name + '.json')
-              return `${import.meta.env.BASE_URL}${App._bcPresetsBase}/${encodeURIComponent(g)}/presets/${encodeURIComponent(file).replace(/%2B/gi, '+')}`
+              const hash = nameToHash.get(name)
+              return hash
+                ? `${import.meta.env.BASE_URL}${App._bcPresetsBase}/${encodeURIComponent(g)}/presets/${hash}.json`
+                : undefined
             }
           : undefined,
-        getFileStem: _entryByName.size > 0
-          ? (name) => (_getEntry(name)?.file ?? (name + '.json')).replace(/\.json$/i, '')
+        getFileStem: nameToHash.size > 0
+          ? (name) => nameToHash.get(name) ?? name
           : undefined,
         onStatus,
         onCaptured,
@@ -5109,7 +5107,7 @@ export default class App {
   /**
    * Get the preset names for a given group.
    * For default groups, returns names from the corresponding registry.
-   * For user groups, lazy-loads the index.json and returns preset names.
+   * For user groups, lazy-loads the meta.json and returns preset names.
    */
   async _getPresetsForGroup(groupName) {
     if (groupName === 'Custom WebGL') {
@@ -5125,7 +5123,7 @@ export default class App {
       return this._getAllButterchurnPresets()
     }
 
-    // butterchurn user groups — lazy-load index.json
+    // butterchurn user groups — lazy-load meta.json
     if (!App._userGroupIndex.has(groupName)) {
       if (!App._userGroupLoadPromise.has(groupName)) {
         const promise = this._loadUserGroupIndex(groupName)
@@ -5134,10 +5132,9 @@ export default class App {
       await App._userGroupLoadPromise.get(groupName)
     }
 
-    const index = App._userGroupIndex.get(groupName)
-    if (!index) return []
-    let names = index
-      .map((e) => e.name)
+    const meta = App._userGroupIndex.get(groupName)
+    if (!meta?.nameToHash) return []
+    let names = [...meta.nameToHash.keys()]
       .sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' }))
 
     return names
@@ -5173,13 +5170,13 @@ export default class App {
     const ordered  = [...priority, ...regular]
 
     for (const g of ordered) {
-      const index = App._userGroupIndex.get(g)
-      if (!index) continue
-      for (const entry of index) {
-        const key = this._normalisePresetName(entry.name)
+      const meta = App._userGroupIndex.get(g)
+      if (!meta?.nameToHash) continue
+      for (const [name] of meta.nameToHash) {
+        const key = this._normalisePresetName(name)
         if (seen.has(key)) continue        // duplicate — skip
-        seen.set(key, entry.name)
-        App._allBcSourceGroup.set(entry.name, g)
+        seen.set(key, name)
+        App._allBcSourceGroup.set(name, g)
       }
     }
 
@@ -5201,24 +5198,30 @@ export default class App {
   }
 
   /**
-   * Fetch index.json for a user butterchurn preset group.
+   * Fetch meta.json for a user butterchurn preset group.
+   * Stores { imageExt, srcMap, nameToHash } in _userGroupIndex.
    */
   async _loadUserGroupIndex(groupName) {
     const baseUrl = import.meta.env.BASE_URL
     try {
-      const resp = await fetch(`${baseUrl}${App._bcPresetsBase}/${encodeURIComponent(groupName)}/index.json`, { cache: 'no-store' })
-      if (!resp.ok) { App._userGroupIndex.set(groupName, []); return }
-      const index = await resp.json()
-      if (Array.isArray(index)) {
-        App._userGroupIndex.set(groupName, index)
-        console.log(`[butterchurn] group "${groupName}": ${index.length} preset(s)`)
+      const resp = await fetch(`${baseUrl}${App._bcPresetsBase}/${encodeURIComponent(groupName)}/meta.json?version=${visualizerVersion}`, { cache: 'no-store' })
+      if (!resp.ok) { App._userGroupIndex.set(groupName, null); return }
+      const meta = await resp.json()
+      if (meta && typeof meta.srcMap === 'object') {
+        // Build reverse map: displayName → hash
+        const nameToHash = new Map()
+        for (const [hash, filename] of Object.entries(meta.srcMap)) {
+          nameToHash.set(filename.replace(/\.json$/i, ''), hash)
+        }
+        App._userGroupIndex.set(groupName, { ...meta, nameToHash })
+        console.log(`[butterchurn] group "${groupName}": ${nameToHash.size} preset(s)`)
       } else {
-        App._userGroupIndex.set(groupName, [])
-        console.log(`[butterchurn] group "${groupName}": 0 presets (invalid index)`)
+        App._userGroupIndex.set(groupName, null)
+        console.log(`[butterchurn] group "${groupName}": 0 presets (invalid meta.json)`)
       }
     } catch {
-      App._userGroupIndex.set(groupName, [])
-      console.log(`[butterchurn] group "${groupName}": failed to load index`)
+      App._userGroupIndex.set(groupName, null)
+      console.log(`[butterchurn] group "${groupName}": failed to load meta.json`)
     }
   }
 
@@ -5240,18 +5243,14 @@ export default class App {
       return App._userGroupPresetCache.get(cacheKey)
     }
 
-    const index = App._userGroupIndex.get(groupName)
-    if (!index) return null
-    const entry = index.find((e) => e.name === presetName)
-    if (!entry) return null
+    const meta = App._userGroupIndex.get(groupName)
+    if (!meta?.nameToHash) return null
+    const hash = meta.nameToHash.get(presetName)
+    if (!hash) return null
 
     const baseUrl = import.meta.env.BASE_URL
     try {
-      // Try new presets/ subfolder first, fall back to old top-level layout
-      let resp = await fetch(`${baseUrl}${App._bcPresetsBase}/${encodeURIComponent(groupName)}/presets/${encodeURIComponent(entry.file).replace(/%2B/gi, '+')}`)
-      if (!resp.ok) {
-        resp = await fetch(`${baseUrl}${App._bcPresetsBase}/${encodeURIComponent(groupName)}/${encodeURIComponent(entry.file).replace(/%2B/gi, '+')}`)
-      }
+      const resp = await fetch(`${baseUrl}${App._bcPresetsBase}/${encodeURIComponent(groupName)}/presets/${hash}.json?version=${visualizerVersion}`)
       if (!resp.ok) return null
       const data = await resp.json()
       App._userGroupPresetCache.set(cacheKey, data)
@@ -5276,7 +5275,7 @@ export default class App {
     }
     this.groupController?.updateDisplay?.()
 
-    // Invalidate the in-memory index cache so index.json is always re-fetched on
+    // Invalidate the in-memory index cache so meta.json is always re-fetched on
     // group switch (prevents stale preset counts after the preset list changes).
     App._userGroupIndex.delete(groupName)
     App._userGroupLoadPromise.delete(groupName)

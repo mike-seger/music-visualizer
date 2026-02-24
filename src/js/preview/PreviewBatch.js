@@ -1,5 +1,6 @@
 import { zipSync } from 'fflate'
 import butterchurn from 'butterchurn'
+import { visualizerVersion } from '../Version'
 
 /** Unique 6-hex-char ID for this page load — included in ZIP filenames to prevent
  * collisions when multiple tabs download simultaneously. */
@@ -82,7 +83,7 @@ export default class PreviewBatch {
     // export uses the correct subdirectory (previews/) and file stem casing.
     const existing = hash ? _store.get(hash) : null
     const jsonPath = existing?.jsonPath || presetName
-    const filename = existing?.filename || `previews/${_sanitize(presetName)}.png`
+    const filename = existing?.filename || `previews/${hash || _sanitize(key)}.png`
     // Revoke any existing URL for this key
     if (_previewUrls.has(key)) {
       URL.revokeObjectURL(_previewUrls.get(key))
@@ -103,9 +104,9 @@ export default class PreviewBatch {
   /**
    * Load pre-built preview images for a Shadertoy group.
    *
-   * Reads `{presetBase}/previews/index.js` (same format as butterchurn groups)
-   * to discover the image extension, then fetches each image in parallel from
-   * `{presetBase}/previews/<stem>.<ext>`.
+   * Reads `{presetBase}/meta.json` to discover the image extension and
+   * hash-to-filename mapping, then fetches each image in parallel from
+   * `{presetBase}/previews/<hash>.<ext>`.
    *
    * Clears any existing store entries for `group` before loading.
    *
@@ -130,22 +131,22 @@ export default class PreviewBatch {
       }
     }
 
-    // Read image extension and hash index from previews/index.js.
+    // Read image extension and hash index from meta.json.
     // Falls back to 'png' if the file is absent (no pre-built images yet).
     const base = (presetBase || 'shadertoy-presets/default').replace(/\/$/, '')
     let imgExt = 'png'
-    /** stem → 12-char sha256 hash (from the on-disk index.js) */
+    /** stem → hash (from meta.json srcMap inverted: filename.replace(.glsl,'') → hash) */
     const hashByStem = new Map()
     try {
-      const resp = await fetch(`${base}/previews/index.js`)
+      const resp = await fetch(`${base}/meta.json?version=${visualizerVersion}`)
       if (resp.ok) {
-        const code = await resp.text()
-        // eslint-disable-next-line no-new-func
-        const { previewExt, previewMeta } = new Function(`${code}\nreturn { previewExt, previewMeta }`)() 
-        if (typeof previewExt === 'string' && previewExt) imgExt = previewExt
-        // index.js maps hash → stem; invert to stem → hash for O(1) lookup
-        if (previewMeta instanceof Map) {
-          for (const [hash, stem] of previewMeta) hashByStem.set(stem, hash)
+        const meta = await resp.json()
+        if (typeof meta.imageExt === 'string' && meta.imageExt) imgExt = meta.imageExt
+        if (meta.srcMap) {
+          for (const [hash, filename] of Object.entries(meta.srcMap)) {
+            const stem = filename.replace(/\.glsl$/i, '')
+            hashByStem.set(stem, hash)
+          }
         }
       }
     } catch { /* use defaults */ }
@@ -164,13 +165,14 @@ export default class PreviewBatch {
     for (let i = 0; i < toFetch.length; i += CONCURRENCY) {
       const batch = toFetch.slice(i, i + CONCURRENCY)
       await Promise.all(batch.map(async ({ name, stem }) => {
-        const imageUrl = `${base}/previews/${encodeURIComponent(_sanitize(stem))}.${imgExt}`
-        const hash = hashByStem.get(stem) ?? `prebuilt:${_sanitize(group)}/${_sanitize(name)}`
+        const hash = hashByStem.get(stem)
+        if (!hash) { missing.push(name); return }
+        const imageUrl = `${base}/previews/${hash}.${imgExt}?version=${visualizerVersion}`
         try {
           const resp = await fetch(imageUrl)
           if (resp.ok) {
             const blob = await resp.blob()
-            const filename = `previews/${stem}.${imgExt}`
+            const filename = `previews/${hash}.${imgExt}`
             _store.set(hash, { filename, blob, presetName: name, group, jsonPath: stem, glsl: true, prebuilt: true })
             const blobUrl = URL.createObjectURL(blob)
             _previewUrls.set(hash, blobUrl)
@@ -249,11 +251,15 @@ export default class PreviewBatch {
     const groupFolder = _sanitize(group)
 
     const urlFor = getPresetUrl ??
-      ((g, n) => `${_getBcPresetsBase()}/${encodeURIComponent(g)}/presets/${_encodePathSeg(n)}.json`)
+      ((g, n) => {
+        const id = prebuilt.byName.get(n)
+        if (id) return `${_getBcPresetsBase()}/${encodeURIComponent(g)}/presets/${id}.json`
+        return `${_getBcPresetsBase()}/${encodeURIComponent(g)}/presets/${encodeURIComponent(n)}.json`
+      })
 
     // ── Load pre-built previews for this group (if any) ──
-    // Returns { byHash: Map<hash,{imageUrl,imgExt}>, byName: Map<presetName,hash> }
-    const prebuilt = await _loadPreviewIndex(group)
+    // Returns { byHash, byName, idMap, imageExt }
+    const prebuilt = await _loadMeta(group)
     onStatus?.(`Starting…`)
 
     let captured = 0
@@ -289,7 +295,7 @@ export default class PreviewBatch {
             if (imgResp.ok) {
               const blob = await imgResp.blob()
               const fileStem = getFileStem ? getFileStem(name) : name
-              const filename = `previews/${_sanitize(fileStem)}.${pb.imgExt}`
+              const filename = `previews/${hash}.${pb.imgExt}`
               const jsonPath = fileStem
               _store.set(hash, { filename, blob, presetName: name, group, jsonPath })
               fromDisk++
@@ -361,7 +367,7 @@ export default class PreviewBatch {
 
       if (blob) {
         const fileStem = getFileStem ? getFileStem(name) : name
-        const filename = `previews/${_sanitize(fileStem)}.${ext}`
+        const filename = `previews/${hash}.${ext}`
         const jsonPath = fileStem
         _store.set(hash, { filename, blob, presetName: name, group, jsonPath })
         const blobUrl = URL.createObjectURL(blob)
@@ -384,7 +390,7 @@ export default class PreviewBatch {
 
   /**
    * Zip all captured previews and trigger a browser download.
-   * ZIP contains: image files, index.js (defining `previewMeta` as a Map), index.html viewer.
+   * ZIP contains: image files, meta.json (srcMap + imageExt), index.html viewer.
    *
    * @param {string} groupName  Used only in the downloaded ZIP filename
    */
@@ -405,38 +411,29 @@ export default class PreviewBatch {
 
     const files = {}
 
-    // Image files — at previews/<sanitized>.<ext> within the ZIP
+    // Image files — at previews/<hash>.<ext> within the ZIP
     for (const [, { filename, blob }] of groupEntries) {
       files[filename] = new Uint8Array(await blob.arrayBuffer())
     }
 
-    // index.js — defines previewMeta Map (hash → presetName), at the group root
+    // meta.json — { imageExt, srcMap: { hash: originalFileName } }
     const ext = groupEntries[0][1].filename.match(/\.(png|jpg)$/i)?.[1] ?? 'png'
-    const mapEntries = groupEntries
-      .sort(([, a], [, b]) => a.presetName.localeCompare(b.presetName))
-      .map(([hash, { jsonPath }]) =>
-        `  [${JSON.stringify(hash)}, ${JSON.stringify(jsonPath)}]`
-      )
-    files['index.js'] = _enc(
-      `const previewExt = ${JSON.stringify(ext)};\nconst previewMeta = new Map([\n${mapEntries.join(',\n')}\n]);\n`
-    )
+    const srcMap = {}
+    for (const [hash, { presetName, glsl }] of groupEntries.sort(([, a], [, b]) => a.presetName.localeCompare(b.presetName))) {
+      srcMap[hash] = presetName + (glsl ? '.glsl' : '.json')
+    }
+    files['meta.json'] = _enc(JSON.stringify({ imageExt: ext, srcMap }, null, 2) + '\n')
 
-    // presets/ — raw preset files for each captured preview:
-    //   • butterchurn groups: <name>.json fetched from butterchurn-presets/<group>/presets/
-    //   • GLSL shader groups: <stem>.glsl fetched from shadertoy-presets/default/presets/
-    await Promise.all(groupEntries.map(async ([, entry]) => {
-      if (entry.glsl) {
-        const base = `${_getShadertoyPresetsBase()}/default`
-        const stem = entry.jsonPath  // already the file stem, e.g. 'audio-eclipse'
-        const resp = await fetch(`${base}/presets/${encodeURIComponent(stem)}.glsl`).catch(() => null)
-        if (resp?.ok) files[`presets/${stem}.glsl`] = new Uint8Array(await resp.arrayBuffer())
-        return
-      }
-      const g = encodeURIComponent(entry.group)
-      const n = encodeURIComponent(entry.jsonPath)
-      let resp = await fetch(`${_getBcPresetsBase()}/${g}/presets/${n}.json`).catch(() => null)
-      if (!resp?.ok) resp = await fetch(`${_getBcPresetsBase()}/${g}/${n}.json`).catch(() => null)
-      if (resp?.ok) files[`presets/${entry.jsonPath}.json`] = new Uint8Array(await resp.arrayBuffer())
+    // presets/ — raw preset files fetched by ID
+    //   • butterchurn groups: <hash>.json fetched from butterchurn-presets/<group>/presets/
+    //   • GLSL shader groups: <hash>.glsl fetched from shadertoy-presets/default/presets/
+    await Promise.all(groupEntries.map(async ([hash, entry]) => {
+      const presetExt = entry.glsl ? 'glsl' : 'json'
+      const base = entry.glsl
+        ? `${_getShadertoyPresetsBase()}/default`
+        : `${_getBcPresetsBase()}/${encodeURIComponent(entry.group)}`
+      const resp = await fetch(`${base}/presets/${hash}.${presetExt}?version=${visualizerVersion}`).catch(() => null)
+      if (resp?.ok) files[`presets/${hash}.${presetExt}`] = new Uint8Array(await resp.arrayBuffer())
     }))
 
     // index.html — static viewer
@@ -454,7 +451,7 @@ export default class PreviewBatch {
 
   /**
    * Load pre-built preview images for a group without any canvas capture.
-   * Fetches `butterchurn-presets/<group>/previews/index.js` to discover
+   * Fetches `butterchurn-presets/<group>/meta.json` to discover
    * which presets have pre-built images, then fetches those images in
    * parallel (64 at a time) and stores them in `_store`.
    *
@@ -477,7 +474,7 @@ export default class PreviewBatch {
       }
     }
 
-    const prebuilt = await _loadPreviewIndex(group)
+    const prebuilt = await _loadMeta(group)
 
     if (prebuilt.byName.size === 0) {
       // No pre-built index — everything would need canvas capture
@@ -506,7 +503,7 @@ export default class PreviewBatch {
             const blob = await resp.blob()
             const fileStem = getFileStem ? getFileStem(name) : name
             _store.set(hash, {
-              filename: `previews/${_sanitize(fileStem)}.${pb.imgExt}`,
+              filename: `previews/${hash}.${pb.imgExt}`,
               blob,
               presetName: name,
               group,
@@ -582,10 +579,14 @@ export default class PreviewBatch {
     const th = height
 
     const urlFor = getPresetUrl ??
-      ((g, n) => `${_getBcPresetsBase()}/${encodeURIComponent(g)}/presets/${_encodePathSeg(n)}.json`)
+      ((g, n) => {
+        const id = prebuilt.byName.get(n)
+        if (id) return `${_getBcPresetsBase()}/${encodeURIComponent(g)}/presets/${id}.json`
+        return `${_getBcPresetsBase()}/${encodeURIComponent(g)}/presets/${encodeURIComponent(n)}.json`
+      })
 
     // ── Phase 1: load pre-built images ────────────────────────────────────────
-    const prebuilt = await _loadPreviewIndex(group)
+    const prebuilt = await _loadMeta(group)
     const CONCURRENCY = 64
 
     if (prebuilt.byName.size > 0) {
@@ -610,7 +611,7 @@ export default class PreviewBatch {
               const blob = await resp.blob()
               const stem = getFileStem ? getFileStem(name) : name
               _store.set(hash, {
-                filename: `previews/${_sanitize(stem)}.${pb.imgExt}`,
+                filename: `previews/${hash}.${pb.imgExt}`,
                 blob, presetName: name, group, jsonPath: stem,
               })
               loaded++
@@ -747,7 +748,7 @@ export default class PreviewBatch {
       if (blob) {
         const stem = getFileStem ? getFileStem(name) : name
         _store.set(hash, {
-          filename: `previews/${_sanitize(stem)}.${ext}`,
+          filename: `previews/${hash}.${ext}`,
           blob, presetName: name, group, jsonPath: stem,
         })
         // Create blob URL and fire progressive callback immediately
@@ -871,7 +872,7 @@ export default class PreviewBatch {
 
       let source = ''
       try {
-        const resp = await fetch(`${presetBase}/presets/${_encodePathSeg(file)}`)
+        const resp = await fetch(`${presetBase}/presets/${encodeURIComponent(file)}`)
         if (resp.ok) source = await resp.text()
       } catch { /* skip */ }
       if (!source) { console.warn(`[PreviewBatch] skip (no source) "${name}"`); continue }
@@ -919,7 +920,7 @@ export default class PreviewBatch {
       if (blob) {
         const stem = file.replace(/\.glsl$/i, '')
         _store.set(hash, {
-          filename: `previews/${stem}.${ext}`,
+          filename: `previews/${hash}.${ext}`,
           blob, presetName: name, group, jsonPath: stem, glsl: true,
         })
         const blobUrl = URL.createObjectURL(blob)
@@ -1117,68 +1118,59 @@ function _sanitize(str) {
   return String(str ?? '').replace(/[/\\*?"<>|]/g, '_').trim()
 }
 
-/**
- * Encode a filename for use in a URL path segment.
- * Like encodeURIComponent but preserves '+' as a literal character,
- * since '+' in a URL path is a literal '+' (not a space), and static file
- * servers match it against the actual '+' character in the filename.
- */
-function _encodePathSeg(str) {
-  return encodeURIComponent(str).replace(/%2B/gi, '+')
-}
+
 
 function _enc(str) {
   return new TextEncoder().encode(str)
 }
 
 /**
- * Fetch and parse the pre-built previews index for a group.
+ * Fetch and parse meta.json for a preset group.
  *
- * The file at `butterchurn-presets/<group>/previews/index.js` is a plain JS
- * file that defines `previewMeta` (Map<hash, jsonPath>) and `previewExt`.
- * We execute it with `new Function` to extract those values.
+ * meta.json format:
+ * {
+ *   "imageExt": "png",
+ *   "srcMap": { "<20-char-sha256>": "Original Name.json", … }
+ * }
  *
-* Returns a Map<hash, { imageUrl, imgExt }> so the capture loop can look up
- * pre-built images by the preset JSON's SHA-256 hash instead of by filename.
+ * Returns:
+ *   byHash  — Map<id, { imageUrl, imgExt }>  (for loading pre-built previews)
+ *   byName  — Map<presetDisplayName, id>      (name → ID lookup)
+ *   idMap   — Map<id, filename>               (for fetching preset data by ID)
  */
-async function _loadPreviewIndex(group) {
-  const url = `${_getBcPresetsBase()}/${encodeURIComponent(group)}/index.js?t=${Date.now()}`
+async function _loadMeta(group) {
+  const url = `${_getBcPresetsBase()}/${encodeURIComponent(group)}/meta.json?version=${visualizerVersion}`
   try {
     const resp = await fetch(url, { cache: 'no-store' })
-    if (!resp.ok) return { byHash: new Map(), byName: new Map() }
-    const code = await resp.text()
-    // Execute the script to extract its exported values
-    // eslint-disable-next-line no-new-func
-    const { previewMeta, previewExt: ext } = new Function(`${code}\nreturn { previewMeta, previewExt }`)() 
-    if (!(previewMeta instanceof Map) || !ext) return { byHash: new Map(), byName: new Map() }
+    if (!resp.ok) return { byHash: new Map(), byName: new Map(), idMap: new Map(), imageExt: 'png' }
+    const meta = await resp.json()
+    const ext = meta.imageExt || 'png'
+    const srcMap = meta.srcMap || {}
 
     const base = `${_getBcPresetsBase()}/${encodeURIComponent(group)}/previews/`
-    const byHash = new Map()  // hash → { imageUrl, imgExt }
-    const byName = new Map()  // presetName → hash  (inverse index for O(1) name lookup)
-    for (const [hash, jsonPath] of previewMeta) {
-      if (!hash || hash.startsWith('nohash')) continue
-      // Reconstruct the on-disk filename using the same _sanitize() logic the
-      // capture loop uses when saving images.  The raw jsonPath may contain ':'
-      // and other chars that _sanitize replaces with '_', so we must not
-      // URL-encode the original path directly — that would produce %3A instead
-      // of the underscore that's actually in the filename.
-      const slash = jsonPath.lastIndexOf('/')
-      const dir = slash >= 0 ? jsonPath.slice(0, slash) : ''
-      const fileBase = jsonPath.slice(slash + 1).replace(/\.json$/i, '')
-      const sanitizedFile = _sanitize(fileBase) + '.' + ext
-      const relPath = dir ? `${dir}/${sanitizedFile}` : sanitizedFile
-      const imageUrl = base + relPath.split('/').map(encodeURIComponent).join('/')
-      byHash.set(hash, { imageUrl, imgExt: ext })
-      // Store under original case; also store a lowercase alias so lookups work
-      // even if index.js and index.json happen to differ in casing.
-      byName.set(fileBase, hash)
-      if (fileBase !== fileBase.toLowerCase()) byName.set(fileBase.toLowerCase(), hash)
+    const byHash = new Map()  // id → { imageUrl, imgExt }
+    const byName = new Map()  // displayName → id
+    const idMap  = new Map()  // id → original filename
+
+    for (const [id, filename] of Object.entries(srcMap)) {
+      if (!id) continue
+      idMap.set(id, filename)
+      // Preview image is at previews/<id>.<ext>
+      const imageUrl = `${base}${id}.${ext}?version=${visualizerVersion}`
+      byHash.set(id, { imageUrl, imgExt: ext })
+      // Display name = filename without extension
+      const dotIdx = filename.lastIndexOf('.')
+      const displayName = dotIdx > 0 ? filename.slice(0, dotIdx) : filename
+      byName.set(displayName, id)
+      if (displayName !== displayName.toLowerCase()) {
+        byName.set(displayName.toLowerCase(), id)
+      }
     }
-    console.log(`[PreviewBatch] pre-built index for "${group}": ${byHash.size} entries`)
-    return { byHash, byName }
+    console.log(`[PreviewBatch] meta.json for "${group}": ${byHash.size} entries`)
+    return { byHash, byName, idMap, imageExt: ext }
   } catch (err) {
-    console.warn('[PreviewBatch] could not load preview index:', err)
-    return { byHash: new Map(), byName: new Map() }
+    console.warn('[PreviewBatch] could not load meta.json:', err)
+    return { byHash: new Map(), byName: new Map(), idMap: new Map(), imageExt: 'png' }
   }
 }
 
@@ -1223,13 +1215,21 @@ function _captureFixedInRAF(canvas, w, h, mimeType, quality) {
 // ─── ZIP viewer ───────────────────────────────────────────────────────────────
 
 function _buildIndexHtml() {
+  // Gather meta from the current store so the HTML is self-contained
+  const groupEntries = [..._store.entries()].filter(([, e]) => e.blob)
+  const ext = groupEntries[0]?.[1]?.filename.match(/\.(png|jpg)$/i)?.[1] ?? 'png'
+  const srcMap = {}
+  for (const [hash, { presetName }] of groupEntries.sort(([, a], [, b]) => a.presetName.localeCompare(b.presetName))) {
+    srcMap[hash] = presetName
+  }
+  const metaInline = JSON.stringify({ imageExt: ext, srcMap })
+
   return `<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Previews</title>
-<script src="index.js"><\/script>
 <style>
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 body {
@@ -1304,98 +1304,100 @@ body {
 </div>
 <script>
 (function () {
-  // previewMeta is injected by previews/index.js (Map<hash, presetName>)
-  function sanitize(s) { return s.replace(/[\/\\*?"<>|]/g, '_').trim() }
+  var meta = ${metaInline};
+  var imgExt = meta.imageExt || 'png';
 
-  const root = document.getElementById('root')
-  const overlay = document.getElementById('overlay')
-  const overlayImg = document.getElementById('overlay-img')
-  const overlayLabel = document.getElementById('overlay-label')
-  const copyBtn = document.getElementById('copy-btn')
-  const copyCountEl = document.getElementById('copy-count')
-  const titleEl = document.getElementById('title')
+  var root = document.getElementById('root')
+  var overlay = document.getElementById('overlay')
+  var overlayImg = document.getElementById('overlay-img')
+  var overlayLabel = document.getElementById('overlay-label')
+  var copyBtn = document.getElementById('copy-btn')
+  var copyCountEl = document.getElementById('copy-count')
+  var titleEl = document.getElementById('title')
 
-  const entries = [...previewMeta.entries()].map(([hash, name]) => ({
-    hash,
-    name,
-    filename: 'previews/' + sanitize(name) + '.' + previewExt,
-  }))
+  var entries = Object.keys(meta.srcMap).sort(function (a, b) {
+    return meta.srcMap[a].localeCompare(meta.srcMap[b])
+  }).map(function (hash) {
+    return { hash: hash, name: meta.srcMap[hash], filename: 'previews/' + hash + '.' + imgExt }
+  })
   titleEl.textContent = entries.length + ' previews'
 
   if (entries.length > 0) {
-    const probe = new Image()
+    var probe = new Image()
     probe.onload = function () {
-      const scale = Math.min(160 / probe.naturalWidth, 160 / probe.naturalHeight)
+      var scale = Math.min(160 / probe.naturalWidth, 160 / probe.naturalHeight)
       document.documentElement.style.setProperty('--tile-w', Math.round(probe.naturalWidth  * scale) + 'px')
       document.documentElement.style.setProperty('--tile-h', Math.round(probe.naturalHeight * scale) + 'px')
     }
     probe.src = entries[0].filename
   }
 
-  const selected = new Set()
+  var selected = new Set()
   function updateCount() { copyCountEl.textContent = selected.size > 0 ? selected.size : 'all' }
 
-  const grid = document.createElement('div')
+  var grid = document.createElement('div')
   grid.className = 'grid'
-  for (const { hash, filename, name } of entries) {
-    const tile = document.createElement('div')
-    tile.className = 'tile'; tile.title = name
-    const img = document.createElement('img')
-    img.src = filename; img.alt = name; img.loading = 'lazy'
-    const cb = document.createElement('input')
-    cb.type = 'checkbox'; cb.className = 'tile-cb'
-    cb.addEventListener('change', (e) => {
-      e.stopPropagation()
-      if (cb.checked) { selected.add(hash); tile.classList.add('selected') }
-      else            { selected.delete(hash); tile.classList.remove('selected') }
-      updateCount()
-    })
-    cb.addEventListener('click', (e) => e.stopPropagation())
-    tile.addEventListener('click', () => {
-      overlayImg.src = filename; overlayLabel.textContent = name
-      overlay.classList.add('open')
-    })
-    tile.appendChild(img); tile.appendChild(cb); grid.appendChild(tile)
+  for (var i = 0; i < entries.length; i++) {
+    (function (hash, filename, name) {
+      var tile = document.createElement('div')
+      tile.className = 'tile'; tile.title = name
+      var img = document.createElement('img')
+      img.src = filename; img.alt = name; img.loading = 'lazy'
+      var cb = document.createElement('input')
+      cb.type = 'checkbox'; cb.className = 'tile-cb'
+      cb.addEventListener('change', function (e) {
+        e.stopPropagation()
+        if (cb.checked) { selected.add(hash); tile.classList.add('selected') }
+        else            { selected.delete(hash); tile.classList.remove('selected') }
+        updateCount()
+      })
+      cb.addEventListener('click', function (e) { e.stopPropagation() })
+      tile.addEventListener('click', function () {
+        overlayImg.src = filename; overlayLabel.textContent = name
+        overlay.classList.add('open')
+      })
+      tile.appendChild(img); tile.appendChild(cb); grid.appendChild(tile)
+    })(entries[i].hash, entries[i].filename, entries[i].name)
   }
   root.appendChild(grid)
 
-  document.getElementById('select-all-btn').addEventListener('click', () => {
-    entries.forEach(({ hash }) => selected.add(hash))
-    root.querySelectorAll('.tile').forEach((t) => {
+  document.getElementById('select-all-btn').addEventListener('click', function () {
+    entries.forEach(function (e) { selected.add(e.hash) })
+    root.querySelectorAll('.tile').forEach(function (t) {
       t.classList.add('selected')
-      const cb = t.querySelector('.tile-cb'); if (cb) cb.checked = true
+      var cb = t.querySelector('.tile-cb'); if (cb) cb.checked = true
     })
     updateCount()
   })
 
-  document.getElementById('toggle-btn').addEventListener('click', () => {
-    const tiles = [...root.querySelectorAll('.tile')]
-    entries.forEach(({ hash }, i) => {
-      const tile = tiles[i]; const cb = tile?.querySelector('.tile-cb')
-      if (selected.has(hash)) {
-        selected.delete(hash); tile?.classList.remove('selected'); if (cb) cb.checked = false
+  document.getElementById('toggle-btn').addEventListener('click', function () {
+    var tiles = root.querySelectorAll('.tile')
+    entries.forEach(function (e, i) {
+      var tile = tiles[i]; var cb = tile ? tile.querySelector('.tile-cb') : null
+      if (selected.has(e.hash)) {
+        selected.delete(e.hash); if (tile) tile.classList.remove('selected'); if (cb) cb.checked = false
       } else {
-        selected.add(hash); tile?.classList.add('selected'); if (cb) cb.checked = true
+        selected.add(e.hash); if (tile) tile.classList.add('selected'); if (cb) cb.checked = true
       }
     })
     updateCount()
   })
 
-  overlay.addEventListener('click', (e) => { if (e.target !== overlayImg) overlay.classList.remove('open') })
-  document.addEventListener('keydown', (e) => { if (e.key === 'Escape') overlay.classList.remove('open') })
+  overlay.addEventListener('click', function (e) { if (e.target !== overlayImg) overlay.classList.remove('open') })
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape') overlay.classList.remove('open') })
 
-  copyBtn.addEventListener('click', () => {
-    const ids = selected.size > 0 ? [...selected] : entries.map((e) => e.hash)
-    const text = ids.sort().join('\\n')
-    if (navigator.clipboard?.writeText) {
-      navigator.clipboard.writeText(text).catch(() => fallback(text))
+  copyBtn.addEventListener('click', function () {
+    var ids = selected.size > 0 ? Array.from(selected) : entries.map(function (e) { return e.hash })
+    var text = ids.sort().join('\\n')
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).catch(function () { fallback(text) })
     } else { fallback(text) }
   })
   function fallback(text) {
-    const ta = document.createElement('textarea')
+    var ta = document.createElement('textarea')
     ta.value = text; ta.style.cssText = 'position:fixed;left:-9999px;top:-9999px'
     document.body.appendChild(ta); ta.select()
-    try { document.execCommand('copy') } catch {}
+    try { document.execCommand('copy') } catch (e) {}
     document.body.removeChild(ta)
   }
 })()

@@ -4,7 +4,6 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Previews</title>
-<script src="index.js"></script>
 <style>
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 body {
@@ -64,10 +63,11 @@ body {
   border-radius: 3px; font-size: 12px; pointer-events: none;
 }
 </style>
+<script src="meta.js"></script>
 </head>
 <body>
 <div id="toolbar">
-  <span id="title">Previews</span>
+  <span id="title">Loading&#x2026;</span>
   <button class="tbtn" id="select-all-btn">Select All</button>
   <button class="tbtn" id="toggle-btn">Toggle</button>
   <button class="tbtn" id="copy-btn">Copy IDs (<span id="copy-count">all</span>)</button>
@@ -78,99 +78,108 @@ body {
   <div id="overlay-label"></div>
 </div>
 <script>
-(function () {
-  // previewMeta is injected by previews/index.js (Map<hash, presetName>)
-  function sanitize(s) { return s.replace(/[/\*?"<>|]/g, '_').trim() }
+(async function () {
+  var root = document.getElementById('root')
+  var overlay = document.getElementById('overlay')
+  var overlayImg = document.getElementById('overlay-img')
+  var overlayLabel = document.getElementById('overlay-label')
+  var copyBtn = document.getElementById('copy-btn')
+  var copyCountEl = document.getElementById('copy-count')
+  var titleEl = document.getElementById('title')
 
-  const root = document.getElementById('root')
-  const overlay = document.getElementById('overlay')
-  const overlayImg = document.getElementById('overlay-img')
-  const overlayLabel = document.getElementById('overlay-label')
-  const copyBtn = document.getElementById('copy-btn')
-  const copyCountEl = document.getElementById('copy-count')
-  const titleEl = document.getElementById('title')
+  var meta = window.__META__
+  if (!meta) {
+    titleEl.textContent = 'Error: meta.js not loaded'
+    return
+  }
+  var imgExt = meta.imageExt || 'png'
+  var srcMap = meta.srcMap || {}
 
-  const entries = [...previewMeta.entries()].map(([hash, name]) => ({
-    hash,
-    name,
-    filename: 'previews/' + sanitize(name) + '.' + previewExt,
-  }))
+  var entries = Object.keys(srcMap).sort(function (a, b) {
+    return srcMap[a].localeCompare(srcMap[b])
+  }).map(function (hash) {
+    var rawName = srcMap[hash]
+    var name = rawName.replace(/\.(json|glsl)$/i, '')
+    return { hash: hash, name: name, filename: 'previews/' + hash + '.' + imgExt }
+  })
   titleEl.textContent = entries.length + ' previews'
 
   if (entries.length > 0) {
-    const probe = new Image()
+    var probe = new Image()
     probe.onload = function () {
-      const scale = Math.min(160 / probe.naturalWidth, 160 / probe.naturalHeight)
+      var scale = Math.min(160 / probe.naturalWidth, 160 / probe.naturalHeight)
       document.documentElement.style.setProperty('--tile-w', Math.round(probe.naturalWidth  * scale) + 'px')
       document.documentElement.style.setProperty('--tile-h', Math.round(probe.naturalHeight * scale) + 'px')
     }
     probe.src = entries[0].filename
   }
 
-  const selected = new Set()
+  var selected = new Set()
   function updateCount() { copyCountEl.textContent = selected.size > 0 ? selected.size : 'all' }
 
-  const grid = document.createElement('div')
+  var grid = document.createElement('div')
   grid.className = 'grid'
-  for (const { hash, filename, name } of entries) {
-    const tile = document.createElement('div')
-    tile.className = 'tile'; tile.title = name
-    const img = document.createElement('img')
-    img.src = filename; img.alt = name; img.loading = 'lazy'
-    const cb = document.createElement('input')
-    cb.type = 'checkbox'; cb.className = 'tile-cb'
-    cb.addEventListener('change', (e) => {
-      e.stopPropagation()
-      if (cb.checked) { selected.add(hash); tile.classList.add('selected') }
-      else            { selected.delete(hash); tile.classList.remove('selected') }
-      updateCount()
-    })
-    cb.addEventListener('click', (e) => e.stopPropagation())
-    tile.addEventListener('click', () => {
-      overlayImg.src = filename; overlayLabel.textContent = name
-      overlay.classList.add('open')
-    })
-    tile.appendChild(img); tile.appendChild(cb); grid.appendChild(tile)
+  for (var i = 0; i < entries.length; i++) {
+    (function (hash, filename, name) {
+      var tile = document.createElement('div')
+      tile.className = 'tile'; tile.title = name
+      var img = document.createElement('img')
+      img.src = filename; img.alt = name; img.loading = 'lazy'
+      var cb = document.createElement('input')
+      cb.type = 'checkbox'; cb.className = 'tile-cb'
+      cb.addEventListener('change', function (e) {
+        e.stopPropagation()
+        if (cb.checked) { selected.add(hash); tile.classList.add('selected') }
+        else            { selected.delete(hash); tile.classList.remove('selected') }
+        updateCount()
+      })
+      cb.addEventListener('click', function (e) { e.stopPropagation() })
+      tile.addEventListener('click', function () {
+        overlayImg.src = filename; overlayLabel.textContent = name
+        overlay.classList.add('open')
+      })
+      tile.appendChild(img); tile.appendChild(cb); grid.appendChild(tile)
+    })(entries[i].hash, entries[i].filename, entries[i].name)
   }
   root.appendChild(grid)
 
-  document.getElementById('select-all-btn').addEventListener('click', () => {
-    entries.forEach(({ hash }) => selected.add(hash))
-    root.querySelectorAll('.tile').forEach((t) => {
+  document.getElementById('select-all-btn').addEventListener('click', function () {
+    entries.forEach(function (e) { selected.add(e.hash) })
+    root.querySelectorAll('.tile').forEach(function (t) {
       t.classList.add('selected')
-      const cb = t.querySelector('.tile-cb'); if (cb) cb.checked = true
+      var cb = t.querySelector('.tile-cb'); if (cb) cb.checked = true
     })
     updateCount()
   })
 
-  document.getElementById('toggle-btn').addEventListener('click', () => {
-    const tiles = [...root.querySelectorAll('.tile')]
-    entries.forEach(({ hash }, i) => {
-      const tile = tiles[i]; const cb = tile?.querySelector('.tile-cb')
-      if (selected.has(hash)) {
-        selected.delete(hash); tile?.classList.remove('selected'); if (cb) cb.checked = false
+  document.getElementById('toggle-btn').addEventListener('click', function () {
+    var tiles = root.querySelectorAll('.tile')
+    entries.forEach(function (e, i) {
+      var tile = tiles[i]; var cb = tile ? tile.querySelector('.tile-cb') : null
+      if (selected.has(e.hash)) {
+        selected.delete(e.hash); if (tile) tile.classList.remove('selected'); if (cb) cb.checked = false
       } else {
-        selected.add(hash); tile?.classList.add('selected'); if (cb) cb.checked = true
+        selected.add(e.hash); if (tile) tile.classList.add('selected'); if (cb) cb.checked = true
       }
     })
     updateCount()
   })
 
-  overlay.addEventListener('click', (e) => { if (e.target !== overlayImg) overlay.classList.remove('open') })
-  document.addEventListener('keydown', (e) => { if (e.key === 'Escape') overlay.classList.remove('open') })
+  overlay.addEventListener('click', function (e) { if (e.target !== overlayImg) overlay.classList.remove('open') })
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape') overlay.classList.remove('open') })
 
-  copyBtn.addEventListener('click', () => {
-    const ids = selected.size > 0 ? [...selected] : entries.map((e) => e.hash)
-    const text = ids.sort().join('\n')
-    if (navigator.clipboard?.writeText) {
-      navigator.clipboard.writeText(text).catch(() => fallback(text))
+  copyBtn.addEventListener('click', function () {
+    var ids = selected.size > 0 ? Array.from(selected) : entries.map(function (e) { return e.hash })
+    var text = ids.sort().join('\n')
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).catch(function () { fallback(text) })
     } else { fallback(text) }
   })
   function fallback(text) {
-    const ta = document.createElement('textarea')
+    var ta = document.createElement('textarea')
     ta.value = text; ta.style.cssText = 'position:fixed;left:-9999px;top:-9999px'
     document.body.appendChild(ta); ta.select()
-    try { document.execCommand('copy') } catch {}
+    try { document.execCommand('copy') } catch (e) {}
     document.body.removeChild(ta)
   }
 })()
