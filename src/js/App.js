@@ -487,6 +487,10 @@ export default class App {
         this._downloadPreviewZip(msg.hashes)
         break
 
+      case 'preview-zip-new':
+        this._downloadPreviewZip(null, true)
+        break
+
       case 'set-fv3-param':
         if (App.currentVisualizer && typeof App.currentVisualizer.setControlParams === 'function') {
           App.currentVisualizer.setControlParams({ [msg.key]: msg.value })
@@ -3955,8 +3959,12 @@ export default class App {
     }
   }
 
-  /** Trigger ZIP download of captured previews, optionally filtered to a hash set. */
-  _downloadPreviewZip(hashes) {
+  /**
+   * Trigger ZIP download of captured previews.
+   * @param {string[]|null} hashes   Restrict to these hashes (null = all in group).
+   * @param {boolean}       newOnly  When true, exclude pre-built/preloaded images.
+   */
+  _downloadPreviewZip(hashes, newOnly = false) {
     // Don't trigger downloads from bridge/iframe App instances — only the top-level app owns the store.
     if (window.self !== window.top) return
     // In-process dedup: prevents two synchronous or near-simultaneous calls (e.g.
@@ -3981,7 +3989,7 @@ export default class App {
     } catch { /* storage unavailable — proceed anyway */ }
     const group = App.currentGroup
     const filterSet = hashes && hashes.length > 0 ? new Set(hashes) : null
-    this.previewBatch.downloadZip(group, filterSet).then((ok) => {
+    this.previewBatch.downloadZip(group, filterSet, newOnly).then((ok) => {
       App._zipDownloadPending = false
       if (!ok) {
         const msg = 'No previews yet — press X to capture first.'

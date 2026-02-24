@@ -217,7 +217,8 @@ body.has-status { padding-top: 68px; }
   <button class="btn-capture" id="capture-btn">Capture previews</button>
   <button class="toolbar-btn" id="select-all-btn">Select All</button>
   <button class="toolbar-btn" id="toggle-btn">Toggle</button>
-  <button class="toolbar-btn" id="zip-btn">Download ZIP</button>
+  <button class="toolbar-btn" id="zip-btn">Download</button>
+  <button class="toolbar-btn" id="download-new-btn">Download New</button>
   <button class="toolbar-btn" id="copy-btn">Copy IDs (<span id="copy-count">all</span>)</button>
   <label class="toolbar-follow" id="follow-label"><input type="checkbox" id="follow-cb"> Follow</label>
 </div>
@@ -467,6 +468,11 @@ body.has-status { padding-top: 68px; }
   document.getElementById('zip-btn').addEventListener('click', function () {
     var hashes = selected.size > 0 ? Array.from(selected) : null
     if (ch) ch.postMessage({ type: 'preview-zip', hashes: hashes })
+  })
+
+  // ── Download New button (only newly captured, not pre-built) ──
+  document.getElementById('download-new-btn').addEventListener('click', function () {
+    if (ch) ch.postMessage({ type: 'preview-zip-new' })
   })
 
   // ── Filter + render ──

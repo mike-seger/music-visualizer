@@ -392,21 +392,26 @@ export default class PreviewBatch {
    * Zip all captured previews and trigger a browser download.
    * ZIP contains: image files, meta.json (srcMap + imageExt), index.html viewer.
    *
-   * @param {string} groupName  Used only in the downloaded ZIP filename
+   * @param {string}  groupName    Used only in the downloaded ZIP filename
+   * @param {Set|null} filterHashes  Restrict to these hashes (null = all in group)
+   * @param {boolean}  newOnly      When true, exclude pre-built/preloaded images
    */
-  async downloadZip(groupName, filterHashes = null) {
+  async downloadZip(groupName, filterHashes = null, newOnly = false) {
     // Only ZIP entries for the currently active group; optionally restricted to selected hashes
     const groupEntries = [..._store.entries()].filter(([hash, e]) =>
-      e.group === groupName && (!filterHashes || filterHashes.has(hash))
+      e.group === groupName &&
+      (!filterHashes || filterHashes.has(hash)) &&
+      (!newOnly || !e.prebuilt)
     )
     if (groupEntries.length === 0) {
-      console.warn('[PreviewBatch] Nothing to ZIP for group', groupName, '— capture previews first (X key).')
+      console.warn('[PreviewBatch] Nothing to ZIP for group', groupName,
+        newOnly ? '— no newly captured previews (pre-built only).' : '— capture previews first (X key).')
       return false
     }
 
     const dt = new Date().toISOString()
       .replace('T', '_').replace(/[:.]/g, '-').slice(0, 19)
-    const selSuffix = filterHashes ? `-${filterHashes.size}sel` : ''
+    const selSuffix = newOnly ? '-new' : filterHashes ? `-${filterHashes.size}sel` : ''
     const zipName = `previews-${_sanitize(groupName)}${selSuffix}-${dt}-${_SESSION_ID}.zip`
 
     const files = {}
@@ -423,18 +428,6 @@ export default class PreviewBatch {
       srcMap[hash] = presetName + (glsl ? '.glsl' : '.json')
     }
     files['meta.json'] = _enc(JSON.stringify({ imageExt: ext, srcMap }, null, 2) + '\n')
-
-    // presets/ — raw preset files fetched by ID
-    //   • butterchurn groups: <hash>.json fetched from butterchurn-presets/<group>/presets/
-    //   • GLSL shader groups: <hash>.glsl fetched from shadertoy-presets/default/presets/
-    await Promise.all(groupEntries.map(async ([hash, entry]) => {
-      const presetExt = entry.glsl ? 'glsl' : 'json'
-      const base = entry.glsl
-        ? `${_getShadertoyPresetsBase()}/default`
-        : `${_getBcPresetsBase()}/${encodeURIComponent(entry.group)}`
-      const resp = await fetch(`${base}/presets/${hash}.${presetExt}?version=${visualizerVersion}`).catch(() => null)
-      if (resp?.ok) files[`presets/${hash}.${presetExt}`] = new Uint8Array(await resp.arrayBuffer())
-    }))
 
     // index.html — static viewer
     files['index.html'] = _enc(_buildIndexHtml())
