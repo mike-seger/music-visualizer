@@ -297,7 +297,7 @@ export default class PreviewBatch {
               const fileStem = getFileStem ? getFileStem(name) : name
               const filename = `previews/${hash}.${pb.imgExt}`
               const jsonPath = fileStem
-              _store.set(hash, { filename, blob, presetName: name, group, jsonPath })
+              _store.set(hash, { filename, blob, presetName: name, group, jsonPath, prebuilt: true })
               fromDisk++
             }
           } catch { /* image unavailable -- will fall through to canvas capture */ }
@@ -501,6 +501,7 @@ export default class PreviewBatch {
               presetName: name,
               group,
               jsonPath: fileStem,
+              prebuilt: true,
             })
             loaded++
           }
@@ -605,7 +606,7 @@ export default class PreviewBatch {
               const stem = getFileStem ? getFileStem(name) : name
               _store.set(hash, {
                 filename: `previews/${hash}.${pb.imgExt}`,
-                blob, presetName: name, group, jsonPath: stem,
+                blob, presetName: name, group, jsonPath: stem, prebuilt: true,
               })
               loaded++
             }
