@@ -108,6 +108,10 @@ html:not(.icons-ready) #player-controls button {
   font-family: system-ui, -apple-system, sans-serif;
 }
 
+#pc-next-btn.pc-viz-btn, #pc-prev-btn.pc-viz-btn {
+  padding-bottom: 11px;
+}
+
 .pc-viz-btn:hover {
   background: rgba(255, 255, 255, 0.2);
   border-color: rgba(255, 255, 255, 0.5);
