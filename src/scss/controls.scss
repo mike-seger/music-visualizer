@@ -1,6 +1,7 @@
 @use 'includes/reset';
 @use 'includes/lil-gui';
 @use 'includes/fv3-controls';
+@use 'includes/player-controls';
 
 html, body {
   margin: 0;
@@ -207,5 +208,94 @@ html, body {
       background: linear-gradient(#2e2e2e, #222);
       border-color: #000;
     }
+  }
+}
+
+/* PlayerControlsWidget inside lil-GUI folder — override lil-gui defaults.
+   lil-gui sets blanket styles on `button` (width:100%, font-family, font-size)
+   and `input` (background, height, border-radius) that wreck the widget.
+   We counteract those specific properties here so _player-controls.scss wins. */
+.lil-gui .player-controls-widget {
+  padding: 8px 10px 10px;
+
+  /* undo lil-gui's `.lil-gui button` rule */
+  button {
+    width: auto !important;
+    font-family: inherit !important;
+    font-size: inherit !important;
+    background: none !important;
+    border: none !important;
+    outline: none !important;
+    color: inherit !important;
+  }
+
+  /* re-apply pcw-icon-btn styles at this specificity */
+  .pcw-icon-btn {
+    font-family: 'Material Symbols Rounded', 'Local Material Symbols Rounded',
+                 'Inter', system-ui, -apple-system, sans-serif !important;
+    font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+    font-size: 19px !important;
+    width: 35px !important;
+    height: 35px !important;
+    background: rgba(255, 255, 255, 0.1) !important;
+    border: 1px solid rgba(255, 255, 255, 0.3) !important;
+    color: white !important;
+    border-radius: 50% !important;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 !important;
+
+    &:hover:not(:disabled) {
+      background: rgba(255, 255, 255, 0.2) !important;
+      border-color: rgba(255, 255, 255, 0.5) !important;
+    }
+
+    &:disabled {
+      opacity: 0.4;
+      cursor: default;
+    }
+  }
+
+  /* re-apply pcw-viz-btn styles at this specificity */
+  .pcw-viz-btn {
+    font-size: 19px !important;
+    width: 35px !important;
+    height: 35px !important;
+    background: rgba(255, 255, 255, 0.1) !important;
+    border: 1px solid rgba(255, 255, 255, 0.3) !important;
+    color: white !important;
+    border-radius: 50% !important;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-sizing: border-box;
+
+    &:hover {
+      background: rgba(255, 255, 255, 0.2) !important;
+      border-color: rgba(255, 255, 255, 0.5) !important;
+    }
+
+    &.liked {
+      color: #ff4d6a !important;
+    }
+  }
+
+  /* undo lil-gui's `.lil-gui input` rule */
+  input[type="range"] {
+    -webkit-appearance: none !important;
+    appearance: none !important;
+    background: rgba(255, 255, 255, 0.2) !important;
+    border: none !important;
+    border-radius: 2px !important;
+    height: 4px !important;
+    outline: none !important;
+    cursor: pointer;
+  }
+
+  .pcw-position-slider {
+    width: 100%;
   }
 }

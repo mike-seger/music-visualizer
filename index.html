@@ -524,27 +524,8 @@
   <main>
     <div class="content"></div>
 
-    <!-- Player Controls -->
-    <div id="player-controls">
-      <div style="display: flex; gap: 8px; align-items: center;">
-        <button id="play-pause-btn">pause_circle</button>
-        <button id="mute-btn">volume_up</button>
-        <button id="mic-btn" disabled="" title="Microphone input not available in this build">mic_off</button>
-        <div id="syncButton" title="Sync"></div>
-        <button id="fullscreen-btn" title="Enter fullscreen">fullscreen</button>
-        <button id="lock-btn" title="Unlock controls (allow auto-hide)">lock</button>
-        <button id="open-controls-btn" title="Open controls">settings</button>
-        <button id="copy-liked-btn" title="Copy liked presets to clipboard">content_copy</button>
-        <button id="pc-like-btn" class="pc-viz-btn" title="Like this preset">♡</button>
-        <button id="pc-prev-btn" class="pc-viz-btn" title="Previous visualizer">−</button>
-        <button id="pc-next-btn" class="pc-viz-btn" title="Next visualizer">+</button>
-      </div>
-      <input type="range" id="position-slider" min="0" max="100" value="0" step="0.1">
-      <div id="player-metrics">
-        <div id="time-display">23:00 / 63:40</div>
-        <div id="fps-display" aria-label="FPS">FPS: 34.0 (16.7ms)</div>
-      </div>
-    </div>
+    <!-- Player Controls (built dynamically by PlayerControlsWidget) -->
+    <div id="player-controls"></div>
 
     <div class="user_interaction">
       <p>Click to Start</p>

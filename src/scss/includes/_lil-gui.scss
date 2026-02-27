@@ -169,8 +169,8 @@
   white-space: nowrap;
 }
 
-/* Global lil-gui button style (exclude folder titles) */
-.lil-gui button:not(.lil-title) {
+/* Global lil-gui button style (exclude folder titles AND player-controls-widget) */
+.lil-gui button:not(.lil-title):not(.pcw-icon-btn):not(.pcw-viz-btn) {
   background: #1a73e8 !important;
   color: #fff !important;
   border: none !important;
@@ -180,10 +180,10 @@
   font-size: inherit;
   transition: background 0.15s ease;
 }
-.lil-gui button:not(.lil-title):hover {
+.lil-gui button:not(.lil-title):not(.pcw-icon-btn):not(.pcw-viz-btn):hover {
   background: #1b66cc !important;
 }
-.lil-gui button:not(.lil-title):active {
+.lil-gui button:not(.lil-title):not(.pcw-icon-btn):not(.pcw-viz-btn):active {
   background: #155ab2 !important;
 }
 

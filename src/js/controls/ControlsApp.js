@@ -33,6 +33,7 @@
 
 import GUI from 'lil-gui'
 import { loadSpectrumFilters } from '../spectrumFilters'
+import PlayerControlsWidget from './PlayerControlsWidget'
 
 const CHANNEL_NAME = 'visualizer-controls'
 
@@ -87,6 +88,10 @@ export default class ControlsApp {
       fv3Presets: 'visualizer.fv3.presets',
       fv3SelectedPreset: 'visualizer.fv3.selectedPreset',
     }
+
+    // Player controls state
+    this.playerControlsFolder = null
+    this._playerWidget = null
 
     // Preview controls state
     this.previewFolder = null
@@ -209,6 +214,16 @@ export default class ControlsApp {
       case 'fv3-params':
         this.syncFV3Controls(msg.params)
         break
+      case 'player-state':
+        if (this._playerWidget) {
+          if (typeof msg.isPlaying === 'boolean') this._playerWidget.setPlayState(msg.isPlaying)
+          if (typeof msg.isMuted === 'boolean') this._playerWidget.setMuteState(msg.isMuted)
+          if (typeof msg.isLiked === 'boolean') this._playerWidget.setLikeState(msg.isLiked)
+          if (Number.isFinite(msg.currentTime) && Number.isFinite(msg.duration)) {
+            this._playerWidget.setTime(msg.currentTime, msg.duration)
+          }
+        }
+        break
       case 'preview-status':
         if (this._previewConfig) {
           this._previewConfig.status = msg.text || ''
@@ -251,6 +266,7 @@ export default class ControlsApp {
     this.setupGuiCloseButton()
     this.addVisualizerSwitcher()
     this.addAudioControls()
+    this.addPlayerControls()
     this.addPerformanceQualityControls()
     this.addPreviewControls()
     // Apply initial perf folder visibility
@@ -1073,6 +1089,35 @@ export default class ControlsApp {
         if (cfg.source === CUSTOM_LABEL && url) this._send({ type: 'set-audio-source', url })
       })
     customUrlCtrl.show(activeIsCustom)
+  }
+
+  // -------------------------------------------------------------------
+  // Player controls (embedded widget inside a lil-GUI folder)
+  // -------------------------------------------------------------------
+
+  addPlayerControls() {
+    if (this.playerControlsFolder) return
+
+    const folder = this.gui.addFolder('PLAYER CONTROLS')
+    folder.open()
+    this.playerControlsFolder = folder
+
+    // Create the reusable widget, forwarding actions over BroadcastChannel
+    this._playerWidget = new PlayerControlsWidget({
+      onAction: (action, payload) => this._send({ type: action, ...(payload || {}) }),
+      hiddenButtons: ['fullscreen-btn', 'lock-btn', 'open-controls-btn'],
+    })
+
+    // Inject the widget DOM into the folder's children container
+    const children = folder.domElement.querySelector('.lil-children')
+    if (children) {
+      children.appendChild(this._playerWidget.el)
+    } else {
+      folder.domElement.appendChild(this._playerWidget.el)
+    }
+
+    // Request initial player state from main page
+    this._send({ type: 'request-player-state' })
   }
 
   // -------------------------------------------------------------------

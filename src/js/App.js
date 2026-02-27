@@ -22,6 +22,7 @@ import BPMManager from './managers/BPMManager'
 import { VideoSyncClient } from './sync-client/SyncClient.mjs'
 import AudioManager from './managers/AudioManager'
 import { createShaderControls } from './shaderCustomization'
+import PlayerControlsWidget from './controls/PlayerControlsWidget'
 
 class WebGLGpuTimer {
   constructor(gl) {
@@ -519,6 +520,53 @@ export default class App {
         }
         break
 
+      // ----- Player controls from popup -----
+      case 'toggle-play-pause':
+        if (App.audioManager?.audio) {
+          const audio = App.audioManager.audio
+          if (audio.paused) {
+            audio.play().catch(e => { if (e.name !== 'AbortError') console.warn('[App] play() failed:', e) })
+          } else {
+            audio.pause()
+          }
+          this._broadcastPlayerState()
+        }
+        break
+
+      case 'toggle-mute':
+        if (App.audioManager) {
+          App.audioManager.setMuted(!App.audioManager.isMuted)
+          this._broadcastPlayerState()
+        }
+        break
+
+      case 'toggle-like':
+        this._toggleLikeCurrentPreset()
+        this._broadcastPlayerState()
+        break
+
+      case 'cycle-prev':
+        this.cycleVisualizer(-1)
+        break
+
+      case 'cycle-next':
+        this.cycleVisualizer(1)
+        break
+
+      case 'seek-position':
+        if (App.audioManager?.audio && Number.isFinite(msg.percent)) {
+          const duration = App.audioManager.audio.duration || 0
+          const seekTime = (msg.percent / 100) * duration
+          App.audioManager.seek(seekTime)
+          this.savePlaybackPosition(seekTime)
+          this._broadcastPlayerState()
+        }
+        break
+
+      case 'request-player-state':
+        this._broadcastPlayerState()
+        break
+
       default:
         break
     }
@@ -548,6 +596,32 @@ export default class App {
     this._broadcastGlobalState()
     // And quality state
     this._broadcastQualityState()
+    // And player state
+    this._broadcastPlayerState()
+    // Start periodic player state updates so the popup slider/time stays in sync
+    this._startPlayerStateBroadcast()
+  }
+
+  _broadcastPlayerState() {
+    if (!this._controlsChannel) return
+    const audio = App.audioManager?.audio
+    this._broadcastToControls({
+      type: 'player-state',
+      isPlaying: audio ? !audio.paused : false,
+      isMuted: !!App.audioManager?.isMuted,
+      isLiked: this._isCurrentPresetLiked(),
+      currentTime: audio?.currentTime || 0,
+      duration: audio?.duration || 0,
+    })
+  }
+
+  /** Periodically broadcast player state so the popup time/slider stays synced. */
+  _startPlayerStateBroadcast() {
+    if (this._playerStateInterval) return
+    this._playerStateInterval = setInterval(() => {
+      if (!this._controlsChannel) return
+      this._broadcastPlayerState()
+    }, 1000)
   }
 
   _broadcastGlobalState() {
@@ -710,6 +784,10 @@ export default class App {
     if (this._controlsPopupPollTimer) {
       clearInterval(this._controlsPopupPollTimer)
       this._controlsPopupPollTimer = null
+    }
+    if (this._playerStateInterval) {
+      clearInterval(this._playerStateInterval)
+      this._playerStateInterval = null
     }
     this._controlsPopup = null
     // Don't clear the flag if the page itself is unloading — the popup was
@@ -1289,16 +1367,22 @@ export default class App {
     const controls = document.getElementById('player-controls')
     if (!controls) return
 
-    const playPauseBtn = document.getElementById('play-pause-btn')
-    const muteBtn = document.getElementById('mute-btn')
-    const micBtn = document.getElementById('mic-btn')
-    const fullscreenBtn = document.getElementById('fullscreen-btn')
-    const lockBtn = document.getElementById('lock-btn')
-    const openControlsBtn = document.getElementById('open-controls-btn')
-    const syncButton = document.getElementById('syncButton')
-    const positionSlider = document.getElementById('position-slider')
-    const timeDisplay = document.getElementById('time-display')
-    const fpsDisplay = document.getElementById('fps-display')
+    // Build controls dynamically via the shared PlayerControlsWidget
+    this._playerWidget = new PlayerControlsWidget({ showFps: true })
+    controls.appendChild(this._playerWidget.el)
+
+    // Alias widget elements — the rest of this method (and the codebase)
+    // keeps working via these local references.
+    const playPauseBtn   = this._playerWidget.playPauseBtn
+    const muteBtn        = this._playerWidget.muteBtn
+    const micBtn         = this._playerWidget.micBtn
+    const fullscreenBtn  = this._playerWidget.fullscreenBtn
+    const lockBtn        = this._playerWidget.lockBtn
+    const openControlsBtn = this._playerWidget.openControlsBtn
+    const syncButton     = this._playerWidget.syncContainer
+    const positionSlider = this._playerWidget.positionSlider
+    const timeDisplay    = this._playerWidget.timeDisplay
+    const fpsDisplay     = this._playerWidget.fpsDisplay
 
     this.timeDisplay = timeDisplay || null
 
@@ -1596,7 +1680,7 @@ export default class App {
     })
 
     // Copy liked presets button
-    const copyLikedBtn = document.getElementById('copy-liked-btn')
+    const copyLikedBtn = this._playerWidget.copyLikedBtn
     copyLikedBtn?.addEventListener('click', () => {
       this._copyLikedPresets()
     })
@@ -1666,6 +1750,25 @@ export default class App {
     window.addEventListener('beforeunload', () => {
       if (!App.audioManager || !App.audioManager.audio || App.audioManager.isUsingMicrophone) return
       this.savePlaybackPosition(App.audioManager.getCurrentTime())
+    })
+
+    // Player-controls like / prev / next buttons
+    const pcLikeBtn = this._playerWidget.likeBtn
+    if (pcLikeBtn) {
+      this._vizLikeBtn = pcLikeBtn
+      pcLikeBtn.addEventListener('click', (e) => {
+        e.stopPropagation()
+        this._toggleLikeCurrentPreset()
+      })
+    }
+
+    this._playerWidget.prevBtn?.addEventListener('click', (e) => {
+      e.stopPropagation()
+      this.cycleVisualizer(-1)
+    })
+    this._playerWidget.nextBtn?.addEventListener('click', (e) => {
+      e.stopPropagation()
+      this.cycleVisualizer(1)
     })
   }
 
@@ -3196,6 +3299,8 @@ export default class App {
     this._vizLikeBtn.textContent = liked ? '♥' : '♡'
     this._vizLikeBtn.title = liked ? 'Unlike this preset' : 'Like this preset'
     this._vizLikeBtn.classList.toggle('liked', liked)
+    // Keep popup in sync
+    this._broadcastPlayerState()
   }
 
   _toggleLikeCurrentPreset() {
@@ -4327,32 +4432,6 @@ export default class App {
     vizNavContainer.appendChild(prevBtn)
     vizNavContainer.appendChild(nextBtn)
     document.body.appendChild(vizNavContainer)
-
-    // Player-controls like button (static HTML element)
-    const pcLikeBtn = document.getElementById('pc-like-btn')
-    if (pcLikeBtn) {
-      this._vizLikeBtn = pcLikeBtn
-      pcLikeBtn.addEventListener('click', (e) => {
-        e.stopPropagation()
-        this._toggleLikeCurrentPreset()
-      })
-    }
-
-    // Player-controls prev/next buttons
-    const pcPrevBtn = document.getElementById('pc-prev-btn')
-    const pcNextBtn = document.getElementById('pc-next-btn')
-    pcPrevBtn?.addEventListener('click', (e) => {
-      e.stopPropagation()
-      this.cycleVisualizer(-1)
-      setVizNavButtonsVisible(true)
-      scheduleVizNavHide()
-    })
-    pcNextBtn?.addEventListener('click', (e) => {
-      e.stopPropagation()
-      this.cycleVisualizer(1)
-      setVizNavButtonsVisible(true)
-      scheduleVizNavHide()
-    })
   }
 
   teardownFrequencyViz3Controls() {

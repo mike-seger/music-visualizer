@@ -1,0 +1,197 @@
+/* ================================================================
+   PlayerControlsWidget — shared styles used on both the main page
+   overlay and the pop-out lil-GUI panel.
+   ================================================================ */
+
+.player-controls-widget {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.pcw-button-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+/* — Material-icon round buttons — */
+.pcw-icon-btn {
+  font-family: 'Material Symbols Rounded', 'Local Material Symbols Rounded',
+               'Inter', system-ui, -apple-system, sans-serif;
+  font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+  font-variant-ligatures: normal;
+  font-feature-settings: 'liga' 1;
+  font-size: 19px;
+  line-height: 1;
+  letter-spacing: normal;
+  text-transform: none;
+
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  color: white;
+  width: 35px;
+  height: 35px;
+  border-radius: 50%;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+
+  &:hover:not(:disabled) {
+    background: rgba(255, 255, 255, 0.2);
+    border-color: rgba(255, 255, 255, 0.5);
+    transform: scale(1.05);
+  }
+
+  &:disabled {
+    opacity: 0.4;
+    cursor: default;
+  }
+}
+
+/* — Like / Prev / Next buttons — */
+.pcw-viz-btn {
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  color: white;
+  font-size: 19px;
+  width: 35px;
+  height: 35px;
+  border-radius: 50%;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  padding-bottom: 7px;
+  box-sizing: border-box;
+  line-height: 1;
+  font-family: system-ui, -apple-system, sans-serif;
+
+  &:hover {
+    background: rgba(255, 255, 255, 0.2);
+    border-color: rgba(255, 255, 255, 0.5);
+    transform: scale(1.05);
+  }
+}
+
+.pcw-viz-btn[data-pcw-key="pc-prev-btn"],
+.pcw-viz-btn[data-pcw-key="pc-next-btn"] {
+  padding-bottom: 4px;
+}
+
+.pcw-viz-btn[data-pcw-key="pc-like-btn"] {
+  margin-left: 14px;
+  margin-right: 14px;
+  padding-bottom: 0;
+}
+
+.pcw-viz-btn.liked {
+  color: #ff4d6a;
+  text-shadow: 0 0 12px rgba(255, 77, 106, 0.6);
+}
+
+/* — Sync slot (SyncClient mounts into this) — */
+.pcw-sync-slot {
+  width: 35px;
+  height: 35px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  label {
+    width: 35px !important;
+    height: 35px !important;
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    border-radius: 50%;
+    transition: all 0.2s ease;
+    display: flex !important;
+    align-items: center;
+    justify-content: center;
+  }
+
+  label:hover {
+    background: rgba(255, 255, 255, 0.2);
+    border-color: rgba(255, 255, 255, 0.5);
+    transform: scale(1.05);
+  }
+}
+
+/* — Position slider — */
+.pcw-position-slider {
+  width: 350px;
+  height: 4px;
+  -webkit-appearance: none;
+  appearance: none;
+  background: rgba(255, 255, 255, 0.2);
+  outline: none;
+  border-radius: 2px;
+  cursor: pointer;
+
+  &::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 12px;
+    height: 12px;
+    background: white;
+    border-radius: 50%;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+
+  &::-webkit-slider-thumb:hover {
+    transform: scale(1.2);
+    background: rgba(255, 255, 255, 0.9);
+  }
+
+  &::-moz-range-thumb {
+    width: 12px;
+    height: 12px;
+    background: white;
+    border: none;
+    border-radius: 50%;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+
+  &::-moz-range-thumb:hover {
+    transform: scale(1.2);
+    background: rgba(255, 255, 255, 0.9);
+  }
+}
+
+/* — Metrics row (time + optional FPS) — */
+.pcw-metrics {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.pcw-time-display {
+  font-family: 'Courier New', monospace;
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.8);
+  text-align: center;
+}
+
+.pcw-fps-display {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
+               'Liberation Mono', 'Courier New', monospace;
+  font-size: 12px;
+  line-height: 1.2;
+  color: rgba(255, 255, 255, 0.75);
+  user-select: none;
+}
+
+/* — Hide icon-font ligature text before font loads (main page only) — */
+html:not(.icons-ready) #player-controls .pcw-icon-btn {
+  visibility: hidden;
+}
