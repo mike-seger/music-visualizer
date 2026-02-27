@@ -91,6 +91,15 @@ export default class AudioManager {
       this.audio = audioElement
       this.analyserNode = analyser
       this.bufferLength = analyser.frequencyBinCount
+
+      // Keep isPlaying in sync with the actual audio element state.
+      // Many code paths (play button, BroadcastChannel, SyncClient, restore-
+      // paused-state) call audio.play()/pause() directly without going through
+      // AudioManager.play()/pause(), so the flag would otherwise drift out of
+      // sync and cause entities that gate on isPlaying to stop reacting.
+      audioElement.addEventListener('play',  () => { this.isPlaying = true })
+      audioElement.addEventListener('pause', () => { this.isPlaying = false })
+      audioElement.addEventListener('ended', () => { this.isPlaying = false })
       
       // Wrap analyser to match THREE.AudioAnalyser interface
       this.audioAnalyser = {

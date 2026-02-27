@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Previews</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  background: #111; color: #ccc;
+  font-family: system-ui, -apple-system, sans-serif;
+  font-size: 12px;
+  padding: 52px 10px 40px;
+}
+#toolbar {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+  background: rgba(17,17,17,.92); backdrop-filter: blur(6px);
+  border-bottom: 1px solid #2a2a2a;
+  display: flex; align-items: center;
+  padding: 8px 12px; gap: 8px;
+}
+#title { color: #888; flex: 1; }
+.tbtn {
+  background: #222; border: 1px solid #444; color: #ddd;
+  padding: 5px 12px; border-radius: 4px; font-size: 12px; cursor: pointer;
+  white-space: nowrap;
+}
+.tbtn:hover { background: #2e2e2e; }
+#copy-count { color: #fa4; }
+.grid { display: flex; flex-wrap: wrap; gap: 5px; }
+.tile {
+  position: relative; width: var(--tile-w, 160px); height: var(--tile-h, 160px);
+  cursor: pointer; flex-shrink: 0; border-radius: 2px; overflow: hidden;
+  background: #111; outline: 2px solid transparent; outline-offset: 0;
+}
+.tile img { width: 100%; height: 100%; object-fit: contain; display: block; }
+.tile:hover { outline-color: #48c; }
+.tile.selected { outline-color: #fa4; }
+.tile-cb {
+  position: absolute; bottom: 5px; right: 5px;
+  width: 15px; height: 15px; cursor: pointer;
+  -webkit-appearance: none; appearance: none;
+  background: transparent; border: 1px solid transparent; border-radius: 2px;
+  opacity: 0; transition: opacity 0.1s;
+}
+.tile-cb:checked {
+  background: transparent;
+  background-image: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'><polyline points='2,6 5,9 10,3' stroke='%2344ff9a' stroke-width='2.5' fill='none' stroke-linecap='round' stroke-linejoin='round'/></svg>");
+  background-repeat: no-repeat; background-position: center; background-size: 10px;
+}
+.tile:hover .tile-cb { opacity: 1; border-color: rgba(255,255,255,.9); }
+.tile:hover .tile-cb:checked { border-color: #44ff9a; }
+.tile.selected .tile-cb { opacity: 1; }
+#overlay {
+  display: none; position: fixed; inset: 0; z-index: 200;
+  background: rgba(0,0,0,.88); justify-content: center; align-items: center; cursor: pointer;
+}
+#overlay.open { display: flex; }
+#overlay-img { max-width: 94vw; max-height: 94vh; object-fit: contain; border-radius: 3px; cursor: default; }
+#overlay-label {
+  position: absolute; bottom: 12px; left: 50%; transform: translateX(-50%);
+  background: rgba(0,0,0,.75); color: #eee; padding: 4px 12px;
+  border-radius: 3px; font-size: 12px; pointer-events: none;
+}
+</style>
+</head>
+<body>
+<div id="toolbar">
+  <span id="title">Previews</span>
+  <button class="tbtn" id="select-all-btn">Select All</button>
+  <button class="tbtn" id="toggle-btn">Toggle</button>
+  <button class="tbtn" id="copy-btn">Copy IDs (<span id="copy-count">all</span>)</button>
+</div>
+<div id="root"></div>
+<div id="overlay">
+  <img id="overlay-img" src="" alt="">
+  <div id="overlay-label"></div>
+</div>
+<script>
+(function () {
+  var meta = {"imageExt":"png","srcMap":{"synthetic:Custom WebGL/3D Audio Visualizer":"3D Audio Visualizer","synthetic:Custom WebGL/Animated Blob":"Animated Blob","synthetic:Custom WebGL/Audible 3d Spiral Lines":"Audible 3d Spiral Lines","synthetic:Custom WebGL/Audible Spiral":"Audible Spiral","synthetic:Custom WebGL/Audio Fabric":"Audio Fabric","synthetic:Custom WebGL/Audio Mesh":"Audio Mesh","synthetic:Custom WebGL/Audio Particles":"Audio Particles","synthetic:Custom WebGL/Audio Sphere":"Audio Sphere","synthetic:Custom WebGL/Circular Audio Wave":"Circular Audio Wave","synthetic:Custom WebGL/Circular Spectrum":"Circular Spectrum","synthetic:Custom WebGL/Circular Wave":"Circular Wave","synthetic:Custom WebGL/Deep Lights":"Deep Lights","synthetic:Custom WebGL/Deep Particles":"Deep Particles","synthetic:Custom WebGL/Fireworks":"Fireworks","synthetic:Custom WebGL/Fireworks Night":"Fireworks Night","synthetic:Custom WebGL/Fireworks Shader":"Fireworks Shader","synthetic:Custom WebGL/Fluid":"Fluid","synthetic:Custom WebGL/Frequency Bars":"Frequency Bars","synthetic:Custom WebGL/Frequency Rings":"Frequency Rings","synthetic:Custom WebGL/Frequency Visualization 3":"Frequency Visualization 3","synthetic:Custom WebGL/Iris":"Iris","synthetic:Custom WebGL/Kevs Plasma":"Kevs Plasma","synthetic:Custom WebGL/Oscilloscope":"Oscilloscope","synthetic:Custom WebGL/Pulse Waves":"Pulse Waves","synthetic:Custom WebGL/Random Flowers":"Random Flowers","synthetic:Custom WebGL/Reactive Particles":"Reactive Particles","synthetic:Custom WebGL/Simple Particles":"Simple Particles","synthetic:Custom WebGL/Simple Plasma":"Simple Plasma","synthetic:Custom WebGL/Waveform Visualizer":"Waveform Visualizer"}};
+  var imgExt = meta.imageExt || 'png';
+
+  var root = document.getElementById('root')
+  var overlay = document.getElementById('overlay')
+  var overlayImg = document.getElementById('overlay-img')
+  var overlayLabel = document.getElementById('overlay-label')
+  var copyBtn = document.getElementById('copy-btn')
+  var copyCountEl = document.getElementById('copy-count')
+  var titleEl = document.getElementById('title')
+
+  var entries = Object.keys(meta.srcMap).sort(function (a, b) {
+    return meta.srcMap[a].localeCompare(meta.srcMap[b])
+  }).map(function (hash) {
+    return { hash: hash, name: meta.srcMap[hash], filename: 'previews/' + hash + '.' + imgExt }
+  })
+  titleEl.textContent = entries.length + ' previews'
+
+  if (entries.length > 0) {
+    var probe = new Image()
+    probe.onload = function () {
+      var scale = Math.min(160 / probe.naturalWidth, 160 / probe.naturalHeight)
+      document.documentElement.style.setProperty('--tile-w', Math.round(probe.naturalWidth  * scale) + 'px')
+      document.documentElement.style.setProperty('--tile-h', Math.round(probe.naturalHeight * scale) + 'px')
+    }
+    probe.src = entries[0].filename
+  }
+
+  var selected = new Set()
+  function updateCount() { copyCountEl.textContent = selected.size > 0 ? selected.size : 'all' }
+
+  var grid = document.createElement('div')
+  grid.className = 'grid'
+  for (var i = 0; i < entries.length; i++) {
+    (function (hash, filename, name) {
+      var tile = document.createElement('div')
+      tile.className = 'tile'; tile.title = name
+      var img = document.createElement('img')
+      img.src = filename; img.alt = name; img.loading = 'lazy'
+      var cb = document.createElement('input')
+      cb.type = 'checkbox'; cb.className = 'tile-cb'
+      cb.addEventListener('change', function (e) {
+        e.stopPropagation()
+        if (cb.checked) { selected.add(hash); tile.classList.add('selected') }
+        else            { selected.delete(hash); tile.classList.remove('selected') }
+        updateCount()
+      })
+      cb.addEventListener('click', function (e) { e.stopPropagation() })
+      tile.addEventListener('click', function () {
+        overlayImg.src = filename; overlayLabel.textContent = name
+        overlay.classList.add('open')
+      })
+      tile.appendChild(img); tile.appendChild(cb); grid.appendChild(tile)
+    })(entries[i].hash, entries[i].filename, entries[i].name)
+  }
+  root.appendChild(grid)
+
+  document.getElementById('select-all-btn').addEventListener('click', function () {
+    entries.forEach(function (e) { selected.add(e.hash) })
+    root.querySelectorAll('.tile').forEach(function (t) {
+      t.classList.add('selected')
+      var cb = t.querySelector('.tile-cb'); if (cb) cb.checked = true
+    })
+    updateCount()
+  })
+
+  document.getElementById('toggle-btn').addEventListener('click', function () {
+    var tiles = root.querySelectorAll('.tile')
+    entries.forEach(function (e, i) {
+      var tile = tiles[i]; var cb = tile ? tile.querySelector('.tile-cb') : null
+      if (selected.has(e.hash)) {
+        selected.delete(e.hash); if (tile) tile.classList.remove('selected'); if (cb) cb.checked = false
+      } else {
+        selected.add(e.hash); if (tile) tile.classList.add('selected'); if (cb) cb.checked = true
+      }
+    })
+    updateCount()
+  })
+
+  overlay.addEventListener('click', function (e) { if (e.target !== overlayImg) overlay.classList.remove('open') })
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape') overlay.classList.remove('open') })
+
+  copyBtn.addEventListener('click', function () {
+    var ids = selected.size > 0 ? Array.from(selected) : entries.map(function (e) { return e.hash })
+    var text = ids.sort().join('\n')
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).catch(function () { fallback(text) })
+    } else { fallback(text) }
+  })
+  function fallback(text) {
+    var ta = document.createElement('textarea')
+    ta.value = text; ta.style.cssText = 'position:fixed;left:-9999px;top:-9999px'
+    document.body.appendChild(ta); ta.select()
+    try { document.execCommand('copy') } catch (e) {}
+    document.body.removeChild(ta)
+  }
+})()
+</script>
+</body>
+</html>

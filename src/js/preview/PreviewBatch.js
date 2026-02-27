@@ -219,6 +219,8 @@ export default class PreviewBatch {
     group,
     switchTo,
     getCanvas,
+    getOverlayCanvas,
+    captureFrame,     // preferred: async (w, h, mimeType, quality) => Blob, fired by App post-render
     getPresetUrl,
     getFileStem,
     settleDelay = 300,
@@ -352,17 +354,26 @@ export default class PreviewBatch {
       await _sleep(settleDelay)
       if (this._cancelled) break
 
-      const canvas = getCanvas()
-      if (!canvas) {
-        console.warn('[PreviewBatch] No canvas available for', name)
-        continue
-      }
-
       let blob
-      if (resolution === 'fixed') {
-        blob = await _captureFixedInRAF(canvas, width, height, mimeType, quality)
+      if (captureFrame) {
+        // Preferred path: App fires this hook immediately after renderer.render()
+        // in the same rAF tick, so WebGL buffers are still valid.
+        blob = await captureFrame(width, height, mimeType, quality)
       } else {
-        blob = await _captureInRAF(canvas, mimeType, quality)
+        const canvas = getCanvas?.()
+        if (!canvas) {
+          console.warn('[PreviewBatch] No canvas available for', name)
+          continue
+        }
+        const overlayCanvas = getOverlayCanvas?.() ?? null
+        if (overlayCanvas && overlayCanvas !== canvas) {
+          // Composite: THREE scene base + entity overlay canvas
+          blob = await _captureCompositeFixedInRAF(canvas, overlayCanvas, width, height, mimeType, quality)
+        } else if (resolution === 'fixed') {
+          blob = await _captureFixedInRAF(canvas, width, height, mimeType, quality)
+        } else {
+          blob = await _captureInRAF(canvas, mimeType, quality)
+        }
       }
 
       if (blob) {
@@ -515,6 +526,110 @@ export default class PreviewBatch {
       if (!name) return false
       const hash = prebuilt.byName.get(name)
       if (!hash) return true  // not in index at all
+      return !(_store.has(hash) && _store.get(hash).group === group)
+    })
+
+    return { missingNames }
+  }
+
+  /**
+   * Load pre-built preview images for Custom WebGL presets from the static
+   * `custom-webgl-previews/` folder (populated by the "Create Preview" button).
+   *
+   * @param {string}   group    - e.g. 'Custom WebGL'
+   * @param {string[]} list     - preset display names
+   * @param {Object}   opts
+   * @param {string}   opts.baseUrl      - URL prefix of the custom-webgl-previews folder
+   * @param {Function} [opts.getFileStem]
+   * @param {Function} [opts.onStatus]
+   * @returns {{ missingNames: string[] }}
+   */
+  async loadCustomWebGLPreviews(group, list, { baseUrl, getFileStem, onStatus, onCaptured } = {}) {
+    // Clear stale store entries for this group
+    for (const [hash, entry] of _store) {
+      if (entry.group === group) {
+        if (_previewUrls.has(hash)) { URL.revokeObjectURL(_previewUrls.get(hash)); _previewUrls.delete(hash) }
+        _store.delete(hash)
+      }
+    }
+
+    if (!baseUrl) return { missingNames: list.filter(Boolean) }
+
+    // Fetch meta.json from the custom-webgl-previews folder
+    let meta
+    try {
+      const resp = await fetch(`${baseUrl}/meta.json`, { cache: 'no-store' })
+      if (!resp.ok) return { missingNames: list.filter(Boolean) }
+      meta = await resp.json()
+    } catch {
+      return { missingNames: list.filter(Boolean) }
+    }
+
+    const ext    = meta.imageExt || 'png'
+    const srcMap = meta.srcMap   || {}
+
+    // Build name→hash and hash→imageUrl maps
+    const byName = new Map()   // displayName → hash
+    const byHash = new Map()   // hash → { imageUrl, imgExt }
+    for (const [hash, filename] of Object.entries(srcMap)) {
+      if (!hash) continue
+      const dotIdx      = filename.lastIndexOf('.')
+      const displayName = dotIdx > 0 ? filename.slice(0, dotIdx) : filename
+      byName.set(displayName, hash)
+      if (displayName !== displayName.toLowerCase()) {
+        byName.set(displayName.toLowerCase(), hash)
+      }
+      // Encode each path segment so spaces become %20 but slashes stay as separators
+      const urlHash  = hash.split('/').map((s) => encodeURIComponent(s)).join('/')
+      const imageUrl = `${baseUrl}/previews/${urlHash}.${ext}`
+      byHash.set(hash, { imageUrl, imgExt: ext })
+    }
+
+    if (byName.size === 0) return { missingNames: list.filter(Boolean) }
+
+    const CONCURRENCY = 64
+    const toFetch = []
+    for (const name of list) {
+      if (!name) continue
+      const hash = byName.get(name) ?? byName.get(name.toLowerCase())
+      if (!hash) continue
+      if (_store.has(hash) && _store.get(hash).group === group) continue
+      toFetch.push({ name, hash })
+    }
+
+    let loaded = 0
+    for (let i = 0; i < toFetch.length && !this._cancelled; i += CONCURRENCY) {
+      const batch = toFetch.slice(i, i + CONCURRENCY)
+      await Promise.all(batch.map(async ({ name, hash }) => {
+        const pb = byHash.get(hash)
+        if (!pb) return
+        try {
+          const resp = await fetch(pb.imageUrl)
+          if (resp.ok) {
+            const blob = await resp.blob()
+            const fileStem = getFileStem ? getFileStem(name) : name
+            _store.set(hash, {
+              filename: `previews/${hash}.${pb.imgExt}`,
+              blob,
+              presetName: name,
+              group,
+              jsonPath: fileStem,
+              prebuilt: true,
+            })
+            const blobUrl = URL.createObjectURL(blob)
+            _previewUrls.set(hash, blobUrl)
+            onCaptured?.({ name, hash, blobUrl, group, jsonPath: fileStem })
+            loaded++
+          }
+        } catch { /* unavailable */ }
+      }))
+      onStatus?.(`Loading previews… ${loaded} / ${toFetch.length}`)
+    }
+
+    const missingNames = list.filter((name) => {
+      if (!name) return false
+      const hash = byName.get(name) ?? byName.get(name.toLowerCase())
+      if (!hash) return true
       return !(_store.has(hash) && _store.get(hash).group === group)
     })
 
@@ -1202,6 +1317,29 @@ function _captureFixedInRAF(canvas, w, h, mimeType, quality) {
       if (!ctx) { resolve(null); return }
       try { ctx.drawImage(canvas, 0, 0, w, h); off.toBlob(resolve, mimeType, quality) }
       catch (err) { console.warn('[PreviewBatch] fixed capture failed (tainted canvas?):', err); resolve(null) }
+    })
+  })
+}
+
+/**
+ * Composite two canvases (base + overlay) into a fixed-size thumbnail.
+ * Used for overlay entities (FrequencyBars, Oscilloscope, Fluid, etc.) that
+ * render on a separate canvas stacked over the THREE.js scene canvas.
+ */
+function _captureCompositeFixedInRAF(baseCanvas, overlayCanvas, w, h, mimeType, quality) {
+  return new Promise((resolve) => {
+    requestAnimationFrame(() => {
+      const off = document.createElement('canvas')
+      off.width = w; off.height = h
+      const ctx = off.getContext('2d')
+      if (!ctx) { resolve(null); return }
+      try {
+        ctx.fillStyle = '#000'
+        ctx.fillRect(0, 0, w, h)
+        ctx.drawImage(baseCanvas, 0, 0, w, h)
+        ctx.drawImage(overlayCanvas, 0, 0, w, h)
+        off.toBlob(resolve, mimeType, quality)
+      } catch (err) { console.warn('[PreviewBatch] composite capture failed:', err); resolve(null) }
     })
   })
 }

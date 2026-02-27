@@ -2762,6 +2762,15 @@ export default class App {
       }
     }
 
+    // Flush any pending post-render frame capture.  Must run while WebGL drawing
+    // buffers still hold the current frame — before the browser composites and
+    // clears them.  This way preserveDrawingBuffer: false works fine for captures.
+    if (this._pendingFrameCapture) {
+      const fn = this._pendingFrameCapture
+      this._pendingFrameCapture = null
+      try { fn() } catch (e) { console.warn('[App] frame capture error:', e) }
+    }
+
     // Dynamic auto-quality adjustment (pixelRatio) to track target refresh.
     this.maybeAdjustQuality(frameNow)
   }
@@ -3707,23 +3716,39 @@ export default class App {
    * at the given dimensions and return a Promise<Blob>.
    * Deferred one rAF so butterchurn's WebGL→2D copy finishes first.
    */
-  _captureCanvasBlob(snapW, snapH) {
-    return new Promise((resolve, reject) => {
-      requestAnimationFrame(() => {
-        const snapSrc = (App.currentVisualizer?.isButterchurn && App.currentVisualizer?._canvas)
-          ? App.currentVisualizer._canvas
+  /**
+   * Schedule a canvas capture to run in the next App.update() tick, immediately
+   * after rendering — while WebGL drawing buffers are still populated.
+   * Composites base canvas + any overlay entity canvas into a single Blob.
+   */
+  _captureFrameNow(w, h, mimeType = 'image/png', quality = undefined) {
+    return new Promise((resolve) => {
+      this._pendingFrameCapture = () => {
+        const vis = App.currentVisualizer
+        const base = (vis?.isButterchurn && vis?._canvas)
+          ? vis._canvas
           : this.renderer?.domElement
-        if (!snapSrc) { reject(new Error('No canvas source')); return }
+        // Overlay entities (FrequencyBars, Oscilloscope, Fluid, etc.) draw on
+        // vis.canvas stacked over renderer.domElement.
+        const overlay = (!vis?.isButterchurn && vis?.canvas instanceof HTMLCanvasElement)
+          ? vis.canvas : null
         try {
-          const off = new OffscreenCanvas(snapW, snapH)
-          const ctx2 = off.getContext('2d')
-          ctx2.fillStyle = '#000'
-          ctx2.fillRect(0, 0, snapW, snapH)
-          ctx2.drawImage(snapSrc, 0, 0, snapW, snapH)
-          off.convertToBlob({ type: 'image/png' }).then(resolve).catch(reject)
-        } catch (e) { reject(e) }
-      })
+          const off = new OffscreenCanvas(w, h)
+          const ctx = off.getContext('2d')
+          ctx.fillStyle = '#000'
+          ctx.fillRect(0, 0, w, h)
+          if (base) ctx.drawImage(base, 0, 0, w, h)
+          if (overlay) ctx.drawImage(overlay, 0, 0, w, h)
+          off.convertToBlob({ type: mimeType, quality }).then(resolve)
+            .catch(() => resolve(null))
+        } catch (e) { console.warn('[App] _captureFrameNow failed:', e); resolve(null) }
+      }
     })
+  }
+
+  _captureCanvasBlob(snapW, snapH) {
+    return this._captureFrameNow(snapW, snapH, 'image/png')
+      .then((blob) => { if (!blob) throw new Error('Capture returned null'); return blob })
   }
 
   /**
@@ -3816,8 +3841,13 @@ export default class App {
         group, list, shaderMeta,
         { presetBase: `${import.meta.env.BASE_URL}${App._shadertoyPresetsBase}/default` }
       )
+    } else if (group === 'Custom WebGL') {
+      await this.previewBatch.loadCustomWebGLPreviews(
+        group, list,
+        { baseUrl: `${import.meta.env.BASE_URL}custom-webgl-previews` },
+      )
     } else if (!DEFAULT_GROUPS.includes(group)) {
-      // Butterchurn groups only — Custom WebGL has no static pre-built previews
+      // Butterchurn groups only
       const meta = App._userGroupIndex.get(group)
       const nameToHash = meta?.nameToHash ?? new Map()
       const getFileStem = (name) => nameToHash.get(name) ?? name
@@ -3918,21 +3948,28 @@ export default class App {
         })
       }
     } else if (DEFAULT_GROUPS.includes(group)) {
-      // Custom WebGL — live-canvas path (no pre-built static images).
-      await this.previewBatch.startCapture({
-        list,
-        startIndex: Math.max(0, list.indexOf(App.visualizerType)),
-        group,
-        switchTo: async (name) => { await this.switchVisualizer(name) },
-        getCanvas: () => this.getActiveCanvas(),
-        settleDelay: Math.max(cfg.settleDelay, 500),
-        resolution: cfg.resolution,
-        width: cfg.width,
-        height: cfg.height,
-        format: cfg.format,
-        onStatus,
-        onCaptured,
-      })
+      // Custom WebGL — Phase 1: load any pre-built images from custom-webgl-previews/
+      const cwBase = `${import.meta.env.BASE_URL}custom-webgl-previews`
+      const { missingNames } = await this.previewBatch.loadCustomWebGLPreviews(
+        group, list, { baseUrl: cwBase, onStatus, onCaptured },
+      )
+      // Phase 2: live-canvas capture for anything still missing
+      if (missingNames.length > 0) {
+        await this.previewBatch.startCapture({
+          list: missingNames,
+          startIndex: Math.max(0, missingNames.indexOf(App.visualizerType)),
+          group,
+          switchTo: async (name) => { await this.switchVisualizer(name) },
+          captureFrame: (w, h, mt, q) => this._captureFrameNow(w, h, mt, q),
+          settleDelay: Math.max(cfg.settleDelay, 500),
+          resolution: cfg.resolution,
+          width: cfg.width,
+          height: cfg.height,
+          format: cfg.format,
+          onStatus,
+          onCaptured,
+        })
+      }
     } else {
       await this.previewBatch.startOffscreenCapture({
         list,
@@ -4021,7 +4058,7 @@ export default class App {
         startIndex: Math.max(0, names.indexOf(App.visualizerType)),
         group,
         switchTo: async (name) => { await this.switchVisualizer(name) },
-        getCanvas: () => this.getActiveCanvas(),
+        captureFrame: (w, h, mt, q) => this._captureFrameNow(w, h, mt, q),
         settleDelay: Math.max(cfg.settleDelay, 500),
         resolution: cfg.resolution,
         width: cfg.width,
