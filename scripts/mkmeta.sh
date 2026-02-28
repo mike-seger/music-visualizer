@@ -53,6 +53,17 @@ if not src_files:
     print(f'  ⚠  {group_dir}: presets-src/ is empty — skipping.', file=sys.stderr)
     sys.exit(0)
 
+# ── Detect preset type from directory path ───────────────────────────────────
+abs_group = os.path.abspath(group_dir)
+if 'butterchurn-presets' in abs_group:
+    preset_type = 'butterchurn'
+elif 'shadertoy-presets' in abs_group:
+    preset_type = 'shadertoy'
+elif 'custom-webgl' in abs_group:
+    preset_type = 'custom_webGL'
+else:
+    preset_type = 'butterchurn'  # safe fallback
+
 # ── Detect preview image extension ──────────────────────────────────────────
 image_ext = 'png'
 if os.path.isdir(prev_dir):
@@ -80,7 +91,7 @@ if os.path.isfile(meta_file):
             os.path.getmtime(os.path.join(src_dir, f)) > meta_mtime
             for f in src_files
         )
-        if not any_newer:
+        if not any_newer and old_meta.get('type') == preset_type:
             needs_regen = False
 
 # ── Compute hashes (only if regenerating) ───────────────────────────────────
@@ -93,6 +104,7 @@ if needs_regen:
 
     # Write meta.json
     meta = {
+        'type': preset_type,
         'imageExt': image_ext,
         'srcMap': dict(sorted(src_map.items(), key=lambda x: x[1].lower()))
     }

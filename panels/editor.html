@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Preset Editor</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body {
+  height: 100%;
+  background: #282c34;
+  color: #abb2bf;
+  font-family: system-ui, -apple-system, sans-serif;
+  font-size: 13px;
+  overflow: hidden;
+}
+
+/* ── Apply button (lives in tabbar) ─────────────────────────────────────── */
+#ed-apply {
+  flex-shrink: 0; align-self: center;
+  background: none; border: 1px solid #3e4452;
+  color: #98c379; font-size: 11px; font-weight: 600;
+  cursor: pointer; padding: 3px 10px; border-radius: 3px; margin-right: 8px;
+  letter-spacing: 0.3px;
+}
+#ed-apply:hover { background: #2c313c; border-color: #98c379; }
+#ed-apply:active { background: rgba(152,195,121,.15); }
+#ed-revert {
+  flex-shrink: 0; align-self: center;
+  background: none; border: 1px solid #3e4452;
+  color: #e06c75; font-size: 11px; font-weight: 600;
+  cursor: pointer; padding: 3px 10px; border-radius: 3px; margin-right: 8px;
+  letter-spacing: 0.3px;
+}
+#ed-revert:hover { background: #2c313c; border-color: #e06c75; }
+#ed-revert:active { background: rgba(224,108,117,.15); }
+#ed-copy {
+  margin-left: auto; flex-shrink: 0; align-self: center;
+  background: none; border: 1px solid #3e4452;
+  color: #7f848e; font-size: 11px; font-weight: 600;
+  cursor: pointer; padding: 3px 10px; border-radius: 3px; margin-right: 4px;
+  letter-spacing: 0.3px;
+}
+#ed-copy:hover { background: #2c313c; color: #abb2bf; border-color: #5c6370; }
+#ed-copy.copied { color: #61afef; border-color: #61afef; }
+#ed-paste {
+  flex-shrink: 0; align-self: center;
+  background: none; border: 1px solid #3e4452;
+  color: #7f848e; font-size: 11px; font-weight: 600;
+  cursor: pointer; padding: 3px 10px; border-radius: 3px; margin-right: 4px;
+  letter-spacing: 0.3px;
+}
+#ed-paste:hover { background: #2c313c; color: #abb2bf; border-color: #5c6370; }
+#ed-paste.pasted { color: #61afef; border-color: #61afef; }
+
+/* ── Tab bar ────────────────────────────────────────────────────────────── */
+#ed-tabbar {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 10;
+  display: flex; align-items: stretch;
+  background: #21252b;
+  border-bottom: 1px solid #181a1f;
+  height: 34px;
+  overflow-x: auto;
+  /* hide scrollbar but keep scrollability */
+  scrollbar-width: none;
+}
+#ed-tabbar::-webkit-scrollbar { display: none; }
+
+.ed-tab {
+  flex-shrink: 0;
+  background: none; border: none;
+  padding: 0 16px;
+  color: #5c6370;
+  font-size: 12px; font-weight: 500;
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  transition: color 0.15s;
+  white-space: nowrap;
+}
+.ed-tab:hover  { color: #abb2bf; }
+.ed-tab.active { color: #e6c07b; border-bottom-color: #e6c07b; }
+
+/* ── Body (panel host) ──────────────────────────────────────────────────── */
+#ed-body {
+  position: fixed;
+  top: 34px; left: 0; right: 0; bottom: 0;
+  overflow: hidden;
+}
+
+/* ── A tab panel ─────────────────────────────────────────────────────────── */
+.ed-panel {
+  position: absolute;
+  inset: 0;
+  /* hide with visibility so CodeMirror still measures layout correctly */
+  visibility: hidden;
+  pointer-events: none;
+}
+.ed-panel.active {
+  visibility: visible;
+  pointer-events: auto;
+  z-index: 1;  /* above ed-empty */
+}
+
+/* Single fill-height editor (fill panel) */
+.ed-panel.panel-fill .cm-editor   { height: 100%; }
+.ed-panel.panel-fill .cm-scroller { overflow: auto; height: 100%; }
+
+/* Stacked sub-sections (shapes/waves) */
+.ed-panel.panel-scroll { overflow-y: auto; }
+.ed-panel.panel-scroll .cm-editor   { height: auto; }
+.ed-panel.panel-scroll .cm-scroller { overflow: visible; }
+
+/* ── Shapes / waves sub-sections ────────────────────────────────────────── */
+.sub-section {
+  border-bottom: 2px solid #181a1f;
+}
+.sub-section-hdr {
+  padding: 8px 14px;
+  background: #1e2227;
+  font-size: 11px; font-weight: 700;
+  color: #61afef;
+  text-transform: uppercase; letter-spacing: 0.7px;
+  border-bottom: 1px solid #181a1f;
+}
+.sub-editor { border-top: 1px solid #2c313c; }
+.sub-editor-label {
+  padding: 5px 14px;
+  background: #21252b;
+  font-size: 10px; font-weight: 700;
+  color: #4b5263;
+  text-transform: uppercase; letter-spacing: 0.6px;
+  border-bottom: 1px solid #181a1f;
+}
+.panel-empty {
+  display: flex; align-items: center; justify-content: center;
+  height: 100%; color: #4b5263; font-size: 14px;
+}
+
+/* ── Shared monospace font ──────────────────────────────────────────────── */
+.cm-content {
+  font-family: 'JetBrains Mono', 'Fira Code', 'Menlo', 'Consolas', monospace !important;
+  font-size: 13px;
+}
+
+/* ── Empty / loading state ──────────────────────────────────────────────── */
+#ed-empty {
+  position: absolute; inset: 0;
+  display: flex; align-items: center; justify-content: center;
+  color: #4b5263; font-size: 14px;
+  pointer-events: none;
+  z-index: 0;  /* below active panel */
+}
+</style>
+<script type="module" defer src="../src/js/editor/EditorApp.js"></script>
+</head>
+<body>
+
+<div id="ed-tabbar">
+  <button id="ed-copy">Copy</button>
+  <button id="ed-paste">Paste</button>
+  <button id="ed-apply">Apply</button>
+  <button id="ed-revert">Revert</button>
+</div>
+
+<div id="ed-body">
+  <div id="ed-empty">Waiting for preset content…</div>
+</div>
+
+</body>
+</html>

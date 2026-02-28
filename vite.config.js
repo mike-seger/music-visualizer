@@ -24,6 +24,7 @@ export default defineConfig({
         'panels/index':        './panels/index.html',
         'panels/viz-controls': './panels/viz-controls.html',
         'panels/preview':      './panels/preview.html',
+        'panels/editor':       './panels/editor.html',
       },
       output: {
         manualChunks(id) {
@@ -51,6 +52,7 @@ export default defineConfig({
           if (id.includes('/web-audio-beat-detector/')) return 'beat-detector'
           if (id.includes('/butterchurn-presets/')) return 'milkdrop-presets'
           if (id.includes('/butterchurn/')) return 'milkdrop-engine'
+          if (id.includes('/@codemirror/') || id.includes('/codemirror/')) return 'codemirror'
 
           return 'vendor'
         },

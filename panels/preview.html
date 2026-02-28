@@ -188,6 +188,53 @@ body.has-status { padding-top: 68px; }
 .tile:hover .tile-heart { opacity: 1; }
 .tile.liked .tile-heart { opacity: 1; color: #e02020; }
 
+/* Edit button — pencil icon, appears on hover next to heart */
+.tile-edit {
+  flex-shrink: 0;
+  width: 15px; height: 15px;
+  cursor: pointer;
+  pointer-events: auto;
+  opacity: 0;
+  transition: opacity 0.1s;
+  display: flex; align-items: center; justify-content: center;
+  background: transparent;
+  color: rgba(255,255,255,0.75);
+  font-size: 12px;
+  line-height: 1;
+  user-select: none;
+  -webkit-user-select: none;
+}
+.tile:hover .tile-edit { opacity: 1; }
+.tile-edit:hover { color: #61afef; }
+
+/* ── Loading overlay ── */
+#loading-overlay {
+  display: none;
+  position: fixed;
+  top: 41px; left: 0; right: 0; bottom: 0;
+  z-index: 90;
+  background: #111;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  pointer-events: none;
+}
+#loading-overlay.visible { display: flex; }
+.loading-spinner {
+  width: 34px; height: 34px;
+  border: 3px solid #2a2a2a;
+  border-top-color: #6699aa;
+  border-radius: 50%;
+  animation: spin 0.75s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+.loading-text {
+  color: #555;
+  font-size: 12px;
+  letter-spacing: 0.04em;
+}
+
 /* ── Overlay (file:// fallback) ── */
 #overlay {
   display: none; position: fixed; inset: 0; z-index: 200;
@@ -224,6 +271,11 @@ body.has-status { padding-top: 68px; }
 </div>
 
 <div id="status-bar"></div>
+
+<div id="loading-overlay">
+  <div class="loading-spinner"></div>
+  <span class="loading-text">Loading presets…</span>
+</div>
 
 <div id="root"><p style="color:#555;padding:20px">Waiting for data…</p></div>
 
@@ -387,6 +439,7 @@ body.has-status { padding-top: 68px; }
     }
     if (e.data.type === 'preview-data') {
       setStatus('')
+      var _isLoading = !!e.data.isLoading
       // Reset selection only when a new group's data arrives (not after regen)
       if (!e.data.keepSelection) {
         selected.clear()
@@ -395,13 +448,20 @@ body.has-status { padding-top: 68px; }
       }
       allItems = e.data.items || []
       var mc = e.data.missingCount != null ? e.data.missingCount : 0
-      if (mc > 0) {
-        captureBtn.textContent = 'Capture ' + mc + ' preview' + (mc === 1 ? '' : 's')
-        captureBtn.classList.add('visible')
+      var loadingOverlay = document.getElementById('loading-overlay')
+      if (_isLoading) {
+        // Show spinner — tiles will render when the final preview-data arrives
+        loadingOverlay.classList.add('visible')
       } else {
-        captureBtn.classList.remove('visible')
+        loadingOverlay.classList.remove('visible')
+        if (mc > 0) {
+          captureBtn.textContent = 'Capture ' + mc + ' preview' + (mc === 1 ? '' : 's')
+          captureBtn.classList.add('visible')
+        } else {
+          captureBtn.classList.remove('visible')
+        }
+        applyFilter(e.data.activePreset || '')
       }
-      applyFilter(e.data.activePreset || '')
       return
     }
     if (e.data.type === 'preview-tile-update') {
@@ -561,6 +621,26 @@ body.has-status { padding-top: 68px; }
     nameText.className = 'tile-name-text'
     nameText.textContent = item.presetName
 
+    // Edit button (pencil) — sends open-preset-editor to main app
+    var editBtn = document.createElement('span')
+    editBtn.className = 'tile-edit'
+    editBtn.textContent = '\u270e'  // ✎ pencil
+    editBtn.title = 'Edit preset source'
+    editBtn.addEventListener('click', function (e) {
+      e.stopPropagation()
+      // Open (or focus) the editor popup HERE, inside the user-gesture context,
+      // so the browser allows it without prompting.  Using a stable window name
+      // means repeated clicks reuse the same popup rather than opening a new one.
+      var _ew = Math.min(980, screen.availWidth  - 30)
+      var _eh = Math.min(700, screen.availHeight - 40)
+      var _el = Math.round((screen.availWidth  - _ew) / 2)
+      var _et = Math.round((screen.availHeight - _eh) / 2)
+      var _ef = 'popup=yes,width=' + _ew + ',height=' + _eh + ',left=' + _el + ',top=' + _et + ',resizable=yes,scrollbars=no,menubar=no'
+      window.open('editor.html', 'visualizer-preset-editor', _ef)
+      // Tell the main app to fetch and deliver the preset source via BroadcastChannel
+      if (ch) ch.postMessage({ type: 'open-preset-editor', presetName: item.presetName, hash: item.hash, group: item.group })
+    })
+
     var heart = document.createElement('span')
     heart.className = 'tile-heart'
     heart.textContent = '\u2661'  // ♡ outline
@@ -604,8 +684,9 @@ body.has-status { padding-top: 68px; }
       }
     })
 
-    // Assemble name bar: text + heart + checkbox
+    // Assemble name bar: text + edit + heart + checkbox
     nameDiv.appendChild(nameText)
+    nameDiv.appendChild(editBtn)
     nameDiv.appendChild(heart)
     nameDiv.appendChild(cb)
 

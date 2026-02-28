@@ -223,8 +223,14 @@ export default class App {
     this._popupGeoApplied = false
     this._popupControlsReady = false
     this._wmPermissionGranted = false
+
+    // BroadcastChannel for preset editor popup
+    this._editorChannel = null
+    this._editorPopup   = null
+    this._pendingEditorLoad = null   // { presetName, content, language, group } buffered until editor-ready
     this._isUnloading = false
     this._setupControlsChannel()
+    this._setupEditorChannel()
 
     // GUI controller references
     this.visualizerSwitcherConfig = null
@@ -316,6 +322,91 @@ export default class App {
     this._currentPresetHash = null  // 12-char SHA-256 hash of the active preset's JSON
     this._previewAutoStart = null  // debounce timer for auto-start
     this._previewConfig = App._loadPreviewConfig()
+  }
+
+  _setupEditorChannel() {
+    try {
+      this._editorChannel = new BroadcastChannel('visualizer-editor')
+      this._editorChannel.onmessage = (e) => {
+        if (e.data?.type === 'editor-ready') {
+          // Editor popup just loaded — deliver any buffered content and clear it
+          if (this._pendingEditorLoad) {
+            this._editorChannel.postMessage(this._pendingEditorLoad)
+            this._pendingEditorLoad = null
+          }
+        } else if (e.data?.type === 'editor-apply-preset') {
+          const presetData = e.data.preset
+          if (App.currentVisualizer?.isButterchurn && presetData) {
+            try {
+              App.currentVisualizer.loadPreset(presetData, 0)
+              console.log('[Editor] Applied edited preset')
+            } catch (err) {
+              console.error('[Editor] Failed to apply preset:', err)
+            }
+          } else {
+            console.warn('[Editor] Cannot apply: no active butterchurn visualizer')
+          }
+        }
+      }
+    } catch { /* BroadcastChannel not supported */ }
+  }
+
+  /**
+   * Fetch the preset source file and open (or reuse) the editor popup.
+   *
+   * @param {string} presetName  Human-readable preset name
+   * @param {string} hash        20-char SHA-256 preset hash
+   * @param {string} [group]     Preset group name (defaults to App.currentGroup)
+   */
+  async _openPresetEditor(presetName, hash, group) {
+    const resolvedGroup = group || App.currentGroup
+
+    // Skip placeholder items that have no real preset file yet
+    if (!hash || hash.startsWith('placeholder:')) {
+      console.warn('[Editor] No hash for', presetName, '— cannot open editor')
+      return
+    }
+
+    // Determine fetch URL and language from group type
+    const base = import.meta.env.BASE_URL
+    let url
+    let language
+    if (resolvedGroup === 'Shadertoy') {
+      url      = `${base}${App._shadertoyPresetsBase}/default/presets/${hash}.glsl`
+      language = 'glsl'
+    } else if (resolvedGroup === 'Custom WebGL') {
+      // Custom WebGL presets are compiled bundles — not editable source files
+      console.info('[Editor] Custom WebGL presets do not have editable source files.')
+      return
+    } else {
+      // Butterchurn preset group
+      url      = `${base}${App._bcPresetsBase}/${encodeURIComponent(resolvedGroup)}/presets/${hash}.json`
+      language = 'json'
+    }
+
+    // NOTE: window.open() is NOT called here.  The popup is opened directly by
+    // panels/preview.html inside its click-event handler (a real user gesture),
+    // which is the only context browsers allow popups in.  This method is only
+    // responsible for fetching the content and delivering it to the editor.
+
+    // Fetch preset source content
+    let content
+    try {
+      const resp = await fetch(url)
+      if (!resp.ok) throw new Error(`HTTP ${resp.status}`)
+      content = await resp.text()
+    } catch (err) {
+      console.error('[Editor] Failed to fetch preset source:', url, err)
+      return
+    }
+
+    const payload = { type: 'editor-load', presetName, content, language, group: resolvedGroup }
+
+    // Buffer for brand-new popup (delivered when editor fires 'editor-ready')
+    this._pendingEditorLoad = payload
+    // Also try a direct post for the already-open case (BroadcastChannel is
+    // live; new popup ignores this because it hasn't subscribed yet)
+    try { this._editorChannel?.postMessage(payload) } catch { /* */ }
   }
 
   // -------------------------------------------------------------------
@@ -416,7 +507,7 @@ export default class App {
         const _prList  = App.visualizerList
         // 1. Immediately show all presets with placeholders for uncaptured ones
         const _prInitial = this._buildAllPreviewItems(_prGroup, _prList)
-        this._broadcastToControls({ type: 'preview-data', items: _prInitial.items, activePreset: App.visualizerType, missingCount: _prInitial.missingCount })
+        this._broadcastToControls({ type: 'preview-data', items: _prInitial.items, activePreset: App.visualizerType, missingCount: _prInitial.missingCount, isLoading: _prInitial.missingCount > 0 })
         // Sync current name filter so the preview panel starts filtered
         const currentFilter = this.visualizerSwitcherConfig?.presetFilter || ''
         if (currentFilter) this._broadcastToControls({ type: 'preview-filter', filter: currentFilter })
@@ -561,6 +652,10 @@ export default class App {
           this.savePlaybackPosition(seekTime)
           this._broadcastPlayerState()
         }
+        break
+
+      case 'open-preset-editor':
+        if (msg.presetName) this._openPresetEditor(msg.presetName, msg.hash, msg.group)
         break
 
       case 'request-player-state':
@@ -2494,16 +2589,36 @@ export default class App {
     // Show loading progress
     const loadingText = document.querySelector('.user_interaction')
     
+    const _loadProgress = (progress) => {
+      loadingText.innerHTML = `<div style="font-family: monospace; font-size: 24px; color: white;">Loading: ${Math.round(progress)}%</div>`
+    }
+
     try {
-      await App.audioManager.loadAudioBuffer((progress, isComplete) => {
-        loadingText.innerHTML = `<div style="font-family: monospace; font-size: 24px; color: white;">Loading: ${Math.round(progress)}%</div>`
-      })
+      await App.audioManager.loadAudioBuffer(_loadProgress)
     } catch (error) {
-      console.error('[Audio] Failed to load media source:', error)
-      if (loadingText) {
-        loadingText.innerHTML = '<div style="font-family: monospace; font-size: 16px; color: #ff8080; text-align: center; max-width: 80vw;">Unable to load audio source.<br>Please make sure the media server is running and reachable.</div>'
+      console.error('[Audio] Failed to load configured audio source:', error)
+      const defaultSrc = AudioManager.SOURCES[0].url
+      if (App.audioManager.song.url !== defaultSrc) {
+        console.info('[Audio] Falling back to default source:', defaultSrc)
+        // Clear the bad stored source so it won't be used on next load
+        try { localStorage.removeItem(AudioManager._STORAGE_KEY) } catch { /* */ }
+        // Fresh instance picks up SOURCES[0] automatically
+        App.audioManager = new AudioManager()
+        try {
+          await App.audioManager.loadAudioBuffer(_loadProgress)
+        } catch (fallbackError) {
+          console.error('[Audio] Default audio source also failed:', fallbackError)
+          if (loadingText) {
+            loadingText.innerHTML = '<div style="font-family: monospace; font-size: 16px; color: #ff8080; text-align: center; max-width: 80vw;">Unable to load audio source.<br>Please make sure the media server is running and reachable.</div>'
+          }
+          return
+        }
+      } else {
+        if (loadingText) {
+          loadingText.innerHTML = '<div style="font-family: monospace; font-size: 16px; color: #ff8080; text-align: center; max-width: 80vw;">Unable to load audio source.<br>Please make sure the media server is running and reachable.</div>'
+        }
+        return
       }
-      return
     }
 
     App.bpmManager = new BPMManager()
@@ -4131,7 +4246,8 @@ export default class App {
     } catch { /* storage unavailable — proceed anyway */ }
     const group = App.currentGroup
     const filterSet = hashes && hashes.length > 0 ? new Set(hashes) : null
-    this.previewBatch.downloadZip(group, filterSet, newOnly).then((ok) => {
+    const presetType = group === 'Shadertoy' ? 'shadertoy' : group === 'Custom WebGL' ? 'custom_webGL' : 'butterchurn'
+    this.previewBatch.downloadZip(group, filterSet, newOnly, presetType).then((ok) => {
       App._zipDownloadPending = false
       if (!ok) {
         const msg = 'No previews yet — press X to capture first.'
@@ -5438,7 +5554,7 @@ export default class App {
     if (this._controlsPopup && !this._controlsPopup.closed) {
       if (this.previewBatch.isRunning()) this.previewBatch.cancel()
       const { items: allItems, missingCount } = this._buildAllPreviewItems(groupName, App.visualizerList)
-      this._broadcastToControls({ type: 'preview-data', items: allItems, activePreset: target, missingCount })
+      this._broadcastToControls({ type: 'preview-data', items: allItems, activePreset: target, missingCount, isLoading: missingCount > 0 })
       this._loadPrebuiltAndBroadcast(groupName, App.visualizerList, target)
     }
 

@@ -401,13 +401,14 @@ export default class PreviewBatch {
 
   /**
    * Zip all captured previews and trigger a browser download.
-   * ZIP contains: image files, meta.json (srcMap + imageExt), index.html viewer.
+   * ZIP contains: image files, meta.json (srcMap + imageExt + type), index.html viewer.
    *
    * @param {string}  groupName    Used only in the downloaded ZIP filename
    * @param {Set|null} filterHashes  Restrict to these hashes (null = all in group)
    * @param {boolean}  newOnly      When true, exclude pre-built/preloaded images
+   * @param {'butterchurn'|'shadertoy'|'custom_webGL'} [presetType]  Preset kind written into meta.json
    */
-  async downloadZip(groupName, filterHashes = null, newOnly = false) {
+  async downloadZip(groupName, filterHashes = null, newOnly = false, presetType = 'butterchurn') {
     // Only ZIP entries for the currently active group; optionally restricted to selected hashes
     const groupEntries = [..._store.entries()].filter(([hash, e]) =>
       e.group === groupName &&
@@ -432,13 +433,13 @@ export default class PreviewBatch {
       files[filename] = new Uint8Array(await blob.arrayBuffer())
     }
 
-    // meta.json — { imageExt, srcMap: { hash: originalFileName } }
+    // meta.json — { type, imageExt, srcMap: { hash: originalFileName } }
     const ext = groupEntries[0][1].filename.match(/\.(png|jpg)$/i)?.[1] ?? 'png'
     const srcMap = {}
     for (const [hash, { presetName, glsl }] of groupEntries.sort(([, a], [, b]) => a.presetName.localeCompare(b.presetName))) {
       srcMap[hash] = presetName + (glsl ? '.glsl' : '.json')
     }
-    files['meta.json'] = _enc(JSON.stringify({ imageExt: ext, srcMap }, null, 2) + '\n')
+    files['meta.json'] = _enc(JSON.stringify({ type: presetType, imageExt: ext, srcMap }, null, 2) + '\n')
 
     // index.html — static viewer
     files['index.html'] = _enc(_buildIndexHtml())

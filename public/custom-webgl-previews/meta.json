@@ -1,4 +1,5 @@
 {
+  "type": "custom_webGL",
   "imageExt": "png",
   "srcMap": {
     "synthetic:Custom WebGL/3D Audio Visualizer": "3D Audio Visualizer.json",
