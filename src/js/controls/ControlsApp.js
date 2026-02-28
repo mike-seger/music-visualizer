@@ -151,7 +151,7 @@ export default class ControlsApp {
         this._send({ type: 'controls-ready' })
         break
 
-      case 'init':
+      case 'init': {
         // Stop retrying ready
         if (this._readyInterval) { clearInterval(this._readyInterval); this._readyInterval = null }
         this.visualizerList = msg.visualizerList || []
@@ -161,7 +161,7 @@ export default class ControlsApp {
         this._cycleEnabled = !!msg.cycleEnabled
         this._cycleTime = Number.isFinite(msg.cycleTime) ? msg.cycleTime : 30
         this._transitionTime = Number.isFinite(msg.transitionTime) ? msg.transitionTime : 2.4
-        this.groupNames = msg.groupNames || []
+        const newGroupNames = msg.groupNames || []
         this.groupDisplayMap = msg.groupDisplayMap || {}
         this.currentGroup = msg.currentGroup || ''
         this._perfHidden = !!msg.perfHidden
@@ -169,8 +169,41 @@ export default class ControlsApp {
         this._currentAudioUrl = msg.currentAudioUrl || ''
         this._bcPresetsBase = msg.bcPresetsBase ?? ''
         this._shadertoyPresetsBase = msg.shadertoyPresetsBase ?? ''
+        // If the GUI was already built with a different (stale) group list,
+        // destroy it so initGui() will rebuild with the fresh data.
+        if (this.gui && this.groupNames.join('\0') !== newGroupNames.join('\0')) {
+          this.gui.destroy()
+          this.gui = null
+          // Null out controller references so initGui() recreates them cleanly
+          this.groupController = null
+          this.visualizerController = null
+          this.visualizerSwitcherConfig = null
+          this._presetFilterController = null
+          this._authorFilterController = null
+          this._debugMainController = null
+          this._debugTransientController = null
+          this._cycleEnabledController = null
+          this._cycleTimeController = null
+          this._transitionTimeController = null
+          this.audioFolder = null
+          this.performanceQualityFolder = null
+          this.performanceQualityConfig = null
+          this.performanceQualityControllers = { antialias: null, pixelRatio: null }
+          this.playerControlsFolder = null
+          this._playerWidget = null
+          this.previewFolder = null
+          this._previewStatusCtrl = null
+          this._previewWidthCtrl = null
+          this._previewHeightCtrl = null
+          this.shaderControlsFolder = null
+          this.variant3Folder = null
+          this.variant3Controllers = {}
+          this.variant3Config = null
+        }
+        this.groupNames = newGroupNames
         this.initGui()
         break
+      }
       case 'visualizer-changed':
         this.activeVisualizer = msg.name || ''
         if (this.gui) {

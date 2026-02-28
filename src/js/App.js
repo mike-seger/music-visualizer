@@ -2594,7 +2594,20 @@ export default class App {
 
   async createManagers() {
     App.audioManager = new AudioManager()
-    
+
+    // Load preset groups early — does not depend on audio being loaded.
+    // This must happen before the audio loading block so that a failed audio
+    // load (which causes an early return) does not leave _groupsInitialised
+    // permanently false and the controls panel stuck on only DEFAULT_GROUPS.
+    await this._initPresetGroups()
+    console.log(`[butterchurn] groups initialised: ${App.presetGroupNames.length} total →`, App.presetGroupNames)
+    const initialGroupPresets = await this._getPresetsForGroup(App.currentGroup)
+    App.visualizerList = initialGroupPresets
+    this._groupsInitialised = true
+    // Notify any persistent panels (preview, controls popup) that the app has
+    // (re)started and they should re-handshake to get fresh data.
+    this._broadcastToControls({ type: 'app-reconnected' })
+
     // Show loading progress
     const loadingText = document.querySelector('.user_interaction')
     
@@ -2665,16 +2678,6 @@ export default class App {
 
       return null
     }
-
-    // Load preset groups and populate initial visualizer list before building GUI
-    await this._initPresetGroups()
-    console.log(`[butterchurn] groups initialised: ${App.presetGroupNames.length} total →`, App.presetGroupNames)
-    this._groupsInitialised = true
-    const initialGroupPresets = await this._getPresetsForGroup(App.currentGroup)
-    App.visualizerList = initialGroupPresets
-    // Notify any persistent panels (preview, controls popup) that the app has
-    // (re)started and they should re-handshake to get fresh data.
-    this._broadcastToControls({ type: 'app-reconnected' })
 
     const urlVisualizer = resolveVisualizerName(urlVisualizerRaw)
     if (urlVisualizerRaw && !urlVisualizer) {

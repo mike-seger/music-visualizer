@@ -469,7 +469,10 @@ body.has-status { padding-top: 68px; }
           captureBtn.classList.remove('visible')
         }
         applyFilter(e.data.activePreset || '')
-        loadingOverlay.classList.remove('visible')
+        // Blob images decode asynchronously. Defer the overlay removal by one
+        // rAF + a 50 ms timeout so the tiles have time to fully paint before the
+        // overlay disappears. Blob URLs load in microseconds so 50 ms is safe.
+        requestAnimationFrame(() => setTimeout(() => loadingOverlay.classList.remove('visible'), 50))
       }
       return
     }
