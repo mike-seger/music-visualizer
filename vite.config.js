@@ -1,6 +1,7 @@
 import { defineConfig } from 'vite'
 import glslify from 'rollup-plugin-glslify'
 import * as path from 'path'
+import { readdirSync, symlinkSync, existsSync, lstatSync, readlinkSync, mkdirSync } from 'fs'
 
 export default defineConfig({
   root: '',
@@ -15,9 +16,21 @@ export default defineConfig({
   build: {
     outDir: 'dist',
     cssCodeSplit: true,
+    // Speed: don't wipe dist/ on every build — compiled JS/CSS chunks are
+    // content-hashed so stale ones are harmless, and this lets us skip
+    // re-copying the 1.6 GB public/butterchurn-presets tree each time.
+    // Run  cp -r public/* dist/  once after a fresh clone to seed dist/.
+    emptyOutDir: false,
+    copyPublicDir: false,
     // milkdrop-presets (~645 kB) and three.js (~477 kB) are the largest chunks.
     // Both are lazy-loaded or cache-stable; suppress the default 500 kB warning.
     chunkSizeWarningLimit: 700,
+    // Speed: skip per-chunk gzip calculation (only affects the size column in output).
+    reportCompressedSize: false,
+    // Speed: target modern browsers to avoid unnecessary JS downleveling.
+    target: 'esnext',
+    // Speed: esbuild minifier is ~10× faster than terser.
+    minify: 'esbuild',
     rollupOptions: {
       input: {
         visualizer:            './index.html',
@@ -70,5 +83,28 @@ export default defineConfig({
       '@': path.resolve(__dirname, './src'),
     },
   },
-  plugins: [glslify()],
+  plugins: [
+    glslify(),
+    // Instead of copying the 1.6 GB public/ tree on every build, create
+    // relative symlinks dist/<name> → ../public/<name> once and leave them.
+    // To force a real copy for deployment: rm dist/<name> && cp -r public/<name> dist/<name>
+    {
+      name: 'symlink-public',
+      closeBundle() {
+        const outDir = path.resolve(__dirname, 'dist')
+        const publicDir = path.resolve(__dirname, 'public')
+        mkdirSync(outDir, { recursive: true })
+        for (const entry of readdirSync(publicDir)) {
+          const dest = path.join(outDir, entry)
+          if (existsSync(dest)) {
+            // Already there (symlink or real copy) — leave it.
+            continue
+          }
+          // Relative target: from dist/<entry> back up to public/<entry>
+          const target = path.join('..', 'public', entry)
+          symlinkSync(target, dest)
+        }
+      },
+    },
+  ],
 })

@@ -15,6 +15,7 @@
     "presets": "node scripts/gen-milkdrop-index.mjs && node scripts/dedup-presets.mjs",
     "prebuild": "echo 'Skipped node: ' scripts/convert-milk.mjs && scripts/butter-index.sh",
     "build": "vite build",
+    "build:deploy": "vite build && echo 'Removing old dist-deploy/...' && rm -rf dist-deploy && echo 'Copying dist/ with symlinks resolved → dist-deploy/ (1.6 GB, may take ~20s)...' && cp -rL dist dist-deploy && echo 'Done.'",
     "preview": "vite preview",
     "lint:glsl": "sh -c 'glslangValidator -S frag ${1:-src/shaders/gpt-5.1-codex-max/*.glsl}' --"
   },

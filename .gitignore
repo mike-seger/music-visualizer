@@ -3,6 +3,7 @@ node_modules
 .parcel-cache
 package-lock.json
 dist
+dist-deploy
 .DS_Store
 /tmp
 .symlink2file
@@ -19,4 +20,3 @@ public/shadertoy-presets/*/meta.js
 public/shadertoy-presets/*/presets/
 public/butterchurn-presets/preset-groups.json
 public/shadertoy-presets/preset-groups.json
-player

@@ -43,6 +43,15 @@ npm run build
 
 Output goes to `dist/`. The build includes two entry points:
 
+### Build for deployment
+
+```bash
+npm run build:deploy
+```
+
+Output goes to `dist-deploy/`. The build includes two entry points:
+
+
 | Entry | File | Purpose |
 |-------|------|---------|
 | Main visualizer | `index.html` | Standalone player with full controls |
