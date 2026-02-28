@@ -21,6 +21,8 @@ export default defineConfig({
     rollupOptions: {
       input: {
         visualizer:            './index.html',
+        bridge:                './bridge.html',
+        'bridge-example':      './bridge-example.html',
         'panels/index':        './panels/index.html',
         'panels/viz-controls': './panels/viz-controls.html',
         'panels/preview':      './panels/preview.html',

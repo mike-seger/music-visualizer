@@ -46,12 +46,16 @@
         if (app) return;
         
         app = new App();
+        // Call App.init() directly — normally gated behind a user click,
+        // but in bridge mode we're already inside a user-gesture handler.
+        app.init();
         
-        // Wait for app to initialize, then notify parent
+        // Wait for app to fully initialize (Three.js + audio setup), then notify parent.
+        // createManagers() is async; 1500ms gives it enough time on slow devices.
         setTimeout(() => {
           isReady = true;
           notifyParent({ type: 'VISUALIZER_READY' });
-        }, 500);
+        }, 1500);
       }
 
       // Send messages to parent (Polaris Player)
@@ -84,26 +88,33 @@
         switch (msg.type) {
           case 'LOAD_TRACK':
             if (msg.url) {
-              // Update the audio URL
-              audioManager.song.url = msg.url;
-              
-              // Stop current playback if any
-              if (audioManager.audio) {
-                audioManager.pause();
-              }
-              
               notifyParent({ type: 'LOADING' });
-              
-              // Load the new track
-              try {
-                await audioManager.loadAudioBuffer((percent, done) => {
-                  if (done) {
-                    notifyParent({ type: 'READY' });
-                  }
-                });
-              } catch (err) {
-                console.error('Failed to load track:', err);
-                notifyParent({ type: 'ERROR', error: err.message });
+
+              const audio = audioManager.audio;
+              if (audio) {
+                // Swap only the src — preserves the existing Web Audio graph
+                // (MediaElementAudioSourceNode → analyserNode → destination)
+                // so the visualizer stays connected and reactive.
+                audioManager.song.url = msg.url;
+                audio.src = msg.url;
+                audio.load();
+                audio.addEventListener('canplay', () => {
+                  notifyParent({ type: 'READY' });
+                }, { once: true });
+                audio.addEventListener('error', () => {
+                  notifyParent({ type: 'ERROR', error: 'Failed to load track' });
+                }, { once: true });
+              } else {
+                // audioManager.audio not yet created (should not happen since
+                // App.createManagers calls loadAudioBuffer before VISUALIZER_READY)
+                audioManager.song.url = msg.url;
+                try {
+                  await audioManager.loadAudioBuffer(() => {});
+                  notifyParent({ type: 'READY' });
+                } catch (err) {
+                  console.error('Failed to load track:', err);
+                  notifyParent({ type: 'ERROR', error: err.message });
+                }
               }
             }
             break;

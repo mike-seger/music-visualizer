@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Bridge Example</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body { width: 100%; height: 100%; overflow: hidden; background: #000; }
+
+    #viz-frame {
+      position: fixed;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      border: none;
+    }
+
+    #controls {
+      position: fixed;
+      bottom: 40px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 10;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+    }
+
+    #playstop {
+      padding: 10px 40px;
+      font-size: 15px;
+      font-family: sans-serif;
+      background: rgba(0, 0, 0, 0.65);
+      color: #fff;
+      border: 1px solid rgba(255, 255, 255, 0.35);
+      border-radius: 6px;
+      cursor: pointer;
+      letter-spacing: 0.5px;
+      transition: background 0.15s, border-color 0.15s;
+    }
+    #playstop:hover  { background: rgba(255,255,255,0.15); border-color: rgba(255,255,255,0.7); }
+    #playstop:active { background: rgba(255,255,255,0.25); }
+    #playstop:disabled { opacity: 0.4; cursor: default; }
+
+    #status {
+      font-size: 12px;
+      font-family: monospace;
+      color: rgba(255,255,255,0.45);
+    }
+  </style>
+</head>
+<body>
+
+  <iframe id="viz-frame" src="bridge.html" allow="autoplay"></iframe>
+
+  <div id="controls">
+    <button id="playstop" disabled>Loading…</button>
+    <span id="status">waiting for visualizer</span>
+  </div>
+
+  <script>
+    const frame   = document.getElementById('viz-frame')
+    const btn     = document.getElementById('playstop')
+    const statusEl = document.getElementById('status')
+
+    let playing = false
+    let trackLoaded = false
+
+    // Resolve audio URL relative to this page so it works at any path depth
+    const TRACK_URL = new URL(
+      'audio/California Sunshine - The Gate To The Past (Remix).mp3',
+      window.location.href
+    ).href
+
+    function send(msg) {
+      frame.contentWindow?.postMessage(msg, '*')
+    }
+
+    function setStatus(text) {
+      statusEl.textContent = text
+    }
+
+    // Handle messages from the visualizer iframe
+    window.addEventListener('message', (e) => {
+      const msg = e.data
+      if (!msg || typeof msg.type !== 'string') return
+      console.log('[bridge-example] ←', msg.type, msg)
+
+      switch (msg.type) {
+        case 'VISUALIZER_READY':
+          setStatus('loading track…')
+          send({ type: 'LOAD_TRACK', url: TRACK_URL })
+          break
+
+        case 'READY':
+          trackLoaded = true
+          btn.disabled = false
+          btn.textContent = '▶  Play'
+          setStatus('ready')
+          break
+
+        case 'PLAYING':
+          playing = true
+          btn.disabled = false
+          btn.textContent = '■  Stop'
+          setStatus('playing')
+          break
+
+        case 'PAUSED':
+          playing = false
+          btn.disabled = false
+          btn.textContent = '▶  Play'
+          setStatus('paused')
+          break
+
+        case 'ENDED':
+          playing = false
+          btn.disabled = false
+          btn.textContent = '▶  Play'
+          setStatus('ended')
+          break
+
+        case 'BUFFERING':
+          setStatus('buffering…')
+          break
+
+        case 'ERROR':
+          btn.disabled = false
+          btn.textContent = '▶  Play'
+          setStatus('error: ' + (msg.error || 'unknown'))
+          console.error('[bridge-example] error:', msg.error)
+          break
+      }
+    })
+
+    btn.addEventListener('click', () => {
+      if (btn.disabled) return
+      if (playing) {
+        send({ type: 'STOP' })
+      } else {
+        send({ type: 'PLAY' })
+      }
+    })
+  </script>
+</body>
+</html>

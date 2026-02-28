@@ -2590,7 +2590,7 @@ export default class App {
     const loadingText = document.querySelector('.user_interaction')
     
     const _loadProgress = (progress) => {
-      loadingText.innerHTML = `<div style="font-family: monospace; font-size: 24px; color: white;">Loading: ${Math.round(progress)}%</div>`
+      if (loadingText) loadingText.innerHTML = `<div style="font-family: monospace; font-size: 24px; color: white;">Loading: ${Math.round(progress)}%</div>`
     }
 
     try {
@@ -2631,7 +2631,7 @@ export default class App {
     // Start with default BPM
     App.bpmManager.setBPM(140)
 
-    loadingText.remove()
+    loadingText?.remove()
 
     // Initialize player controls
     this.initPlayerControls()
@@ -3247,8 +3247,10 @@ export default class App {
     this.resetView()
 
     // Clear App.holder (Three.js scene objects)
-    while (App.holder.children.length > 0) {
-      App.holder.remove(App.holder.children[0])
+    if (App.holder) {
+      while (App.holder.children.length > 0) {
+        App.holder.remove(App.holder.children[0])
+      }
     }
 
     // Clear renderer
