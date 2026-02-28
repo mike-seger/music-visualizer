@@ -208,8 +208,8 @@ export default class PreviewBatch {
    *   `butterchurn-presets/<group>/<name>.json` relative URL.
    * @param {number}            [opts.settleDelay=300]  ms to wait after switching
    * @param {'dynamic'|'fixed'} [opts.resolution='fixed']
-   * @param {number}            [opts.width=160]
-   * @param {number}            [opts.height=160]
+   * @param {number}            [opts.width=640]
+   * @param {number}            [opts.height=360]
    * @param {'PNG'|'JPG'}       [opts.format='PNG']
    * @param {(text: string) => void} [opts.onStatus]  Status string callback
    */
@@ -225,8 +225,8 @@ export default class PreviewBatch {
     getFileStem,
     settleDelay = 300,
     resolution = 'fixed',
-    width = 160,
-    height = 160,
+    width = 640,
+    height = 360,
     format = 'PNG',
     skipClear = false,
     onStatus,
@@ -654,8 +654,8 @@ export default class PreviewBatch {
    * @param {Function}  [opts.getFileStem]
    * @param {number}    [opts.settleDelay=300]  ms of rendered frames before capture
    * @param {'fixed'|'dynamic'} [opts.resolution='fixed']
-   * @param {number}    [opts.width=160]
-   * @param {number}    [opts.height=90]
+   * @param {number}    [opts.width=640]
+   * @param {number}    [opts.height=360]
    * @param {'PNG'|'JPG'} [opts.format='PNG']
    * @param {Function}  [opts.onStatus]
    */
@@ -669,8 +669,8 @@ export default class PreviewBatch {
     settleDelayMax = null,   // if > settleDelay, use random ms per preset in [settleDelay, settleDelayMax]
     forceCapture = false,    // re-capture even if already in _store
     resolution = 'fixed',
-    width = 160,
-    height = 90,
+    width = 640,
+    height = 360,
     format = 'PNG',
     onStatus,
     onCaptured,
@@ -901,8 +901,8 @@ export default class PreviewBatch {
    * @param {string}      opts.presetBase     Base URL, e.g. '/shadertoy-presets/default'
    * @param {number}      [opts.settleDelay]  ms to render before capture (default 500)
    * @param {'fixed'|'dynamic'} [opts.resolution]
-   * @param {number}      [opts.width=160]
-   * @param {number}      [opts.height=90]
+   * @param {number}      [opts.width=640]
+   * @param {number}      [opts.height=360]
    * @param {'PNG'|'JPG'} [opts.format='PNG']
    * @param {boolean}     [opts.forceCapture] Re-capture even if already stored
    * @param {Function}    [opts.onStatus]
@@ -915,8 +915,8 @@ export default class PreviewBatch {
     presetBase,
     settleDelay = 500,
     resolution = 'fixed',
-    width = 160,
-    height = 90,
+    width = 640,
+    height = 360,
     format = 'PNG',
     forceCapture = false,
     onStatus,
@@ -1387,7 +1387,7 @@ body {
 #copy-count { color: #fa4; }
 .grid { display: flex; flex-wrap: wrap; gap: 5px; }
 .tile {
-  position: relative; width: var(--tile-w, 160px); height: var(--tile-h, 160px);
+  position: relative; width: var(--tile-w, 640px); height: var(--tile-h, 360px);
   cursor: pointer; flex-shrink: 0; border-radius: 2px; overflow: hidden;
   background: #111; outline: 2px solid transparent; outline-offset: 0;
 }
@@ -1457,7 +1457,7 @@ body {
   if (entries.length > 0) {
     var probe = new Image()
     probe.onload = function () {
-      var scale = Math.min(160 / probe.naturalWidth, 160 / probe.naturalHeight)
+      var scale = Math.min(240 / probe.naturalWidth, 240 / probe.naturalHeight)
       document.documentElement.style.setProperty('--tile-w', Math.round(probe.naturalWidth  * scale) + 'px')
       document.documentElement.style.setProperty('--tile-h', Math.round(probe.naturalHeight * scale) + 'px')
     }

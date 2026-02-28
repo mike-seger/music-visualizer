@@ -123,8 +123,8 @@ export default class ControlsApp {
       if (isFormElement) return
       e.preventDefault()
       const cfg = this._previewConfig ?? {}
-      console.log(`[Snapshot] S key (controls): requesting snapshot at ${cfg.width ?? 160}x${cfg.height ?? 90}`)
-      this._send({ type: 'preview-snapshot-current', config: { width: cfg.width ?? 160, height: cfg.height ?? 90 } })
+      console.log(`[Snapshot] S key (controls): requesting snapshot at ${cfg.width ?? 640}x${cfg.height ?? 360}`)
+      this._send({ type: 'preview-snapshot-current', config: { width: cfg.width ?? 640, height: cfg.height ?? 360 } })
     })
   }
 
@@ -1184,7 +1184,7 @@ export default class ControlsApp {
   static _previewConfigKey = 'visualizer.preview.config'
 
   static _loadPreviewConfig() {
-    const defaults = { resolution: 'fixed', format: 'PNG', width: 160, height: 90, settleDelay: 300, regenSettleMax: 1500 }
+    const defaults = { resolution: 'fixed', format: 'PNG', width: 640, height: 360, settleDelay: 300, regenSettleMax: 1500 }
     try {
       const saved = JSON.parse(localStorage.getItem(ControlsApp._previewConfigKey) ?? 'null')
       if (saved && typeof saved === 'object') return { ...defaults, ...saved }

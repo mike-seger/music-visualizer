@@ -473,13 +473,13 @@ export default class App {
         break
 
       case 'preview-snapshot': {
-        const { width: snapW = 160, height: snapH = 90 } = msg.config || {}
+        const { width: snapW = 640, height: snapH = 360 } = msg.config || {}
         this._doSnapshot(snapW, snapH)
         break
       }
 
       case 'preview-snapshot-current': {
-        const { width: snapW = 160, height: snapH = 90 } = msg.config || {}
+        const { width: snapW = 640, height: snapH = 360 } = msg.config || {}
         this._doSnapshotCurrent(snapW, snapH)
         break
       }
@@ -3654,8 +3654,8 @@ export default class App {
       const cfg = this._previewConfig
       const name  = App.visualizerType
       const group = App.currentGroup
-      console.log(`[Snapshot] S key: capturing "${name}" in group "${group}" at ${cfg?.width ?? 160}x${cfg?.height ?? 90}`)
-      this._doSnapshotCurrent(cfg?.width ?? 160, cfg?.height ?? 90)
+      console.log(`[Snapshot] S key: capturing "${name}" in group "${group}" at ${cfg?.width ?? 640}x${cfg?.height ?? 360}`)
+      this._doSnapshotCurrent(cfg?.width ?? 640, cfg?.height ?? 360)
       return
     }
 
@@ -3755,7 +3755,7 @@ export default class App {
    * Capture the live canvas and send the PNG blob to the controls popup so it
    * can write it to the clipboard (popup holds focus; main window does not).
    */
-  _doSnapshot(snapW = 160, snapH = 90) {
+  _doSnapshot(snapW = 640, snapH = 360) {
     this._captureCanvasBlob(snapW, snapH)
       .then((blob) => {
         this._broadcastToControls({ type: 'snapshot-ready', blob, width: snapW, height: snapH })
@@ -3770,7 +3770,7 @@ export default class App {
    * Capture the live canvas and update the current preset's tile in the
    * preview panel — equivalent to Re-Generate but using the live frame.
    */
-  _doSnapshotCurrent(snapW = 160, snapH = 90) {
+  _doSnapshotCurrent(snapW = 640, snapH = 360) {
     const name  = App.visualizerType
     const group = App.currentGroup
     this._captureCanvasBlob(snapW, snapH)
@@ -3807,7 +3807,7 @@ export default class App {
   static _previewConfigKey = 'visualizer.preview.config'
 
   static _loadPreviewConfig() {
-    const defaults = { settleDelay: 300, resolution: 'fixed', width: 160, height: 90, format: 'PNG' }
+    const defaults = { settleDelay: 300, resolution: 'fixed', width: 640, height: 360, format: 'PNG' }
     try {
       const saved = JSON.parse(localStorage.getItem(App._previewConfigKey) ?? 'null')
       if (saved && typeof saved === 'object') return { ...defaults, ...saved }
