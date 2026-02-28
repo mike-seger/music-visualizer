@@ -141,6 +141,16 @@ export default class ControlsApp {
     if (!msg || typeof msg !== 'object') return
 
     switch (msg.type) {
+      case 'app-reconnected':
+        // Main app has restarted (e.g. HMR in dev mode). Re-start the
+        // controls-ready handshake so we receive a fresh init with the
+        // full group list once the main app finishes initialising.
+        if (!this._readyInterval) {
+          this._readyInterval = setInterval(() => this._send({ type: 'controls-ready' }), 250)
+        }
+        this._send({ type: 'controls-ready' })
+        break
+
       case 'init':
         // Stop retrying ready
         if (this._readyInterval) { clearInterval(this._readyInterval); this._readyInterval = null }

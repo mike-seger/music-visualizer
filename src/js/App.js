@@ -223,6 +223,10 @@ export default class App {
     this._popupGeoApplied = false
     this._popupControlsReady = false
     this._wmPermissionGranted = false
+    // Set to true after _initPresetGroups() completes so that controls-ready
+    // messages received before that point are ignored (the controls panel
+    // retries every 250 ms and will succeed once this flag is true).
+    this._groupsInitialised = false
 
     // BroadcastChannel for preset editor popup
     this._editorChannel = null
@@ -432,7 +436,12 @@ export default class App {
 
     switch (msg.type) {
       case 'controls-ready':
-        // Popup is open and waiting — send full init state
+        // Popup is open and waiting — send full init state.
+        // Guard: if preset groups haven't loaded yet (can happen in dev mode
+        // where on-demand transforms make the main app slower to initialise),
+        // ignore this ping.  The controls panel retries every 250 ms so it
+        // will succeed as soon as _groupsInitialised is set to true.
+        if (!this._groupsInitialised) break
         this._sendControlsInit()
         // Mark the popup as ready, then attempt to apply saved geometry.
         // Both popup-ready and window-management permission must be in place
@@ -2609,13 +2618,13 @@ export default class App {
         } catch (fallbackError) {
           console.error('[Audio] Default audio source also failed:', fallbackError)
           if (loadingText) {
-            loadingText.innerHTML = '<div style="font-family: monospace; font-size: 16px; color: #ff8080; text-align: center; max-width: 80vw;">Unable to load audio source.<br>Please make sure the media server is running and reachable.</div>'
+            loadingText.innerHTML = `<div style="font-family: monospace; font-size: 16px; color: #ff8080; text-align: center; max-width: 80vw;">Unable to load audio source.<br><small style="opacity:0.7">${App.audioManager.song.url}</small><br>Please make sure the media server is running and reachable.</div>`
           }
           return
         }
       } else {
         if (loadingText) {
-          loadingText.innerHTML = '<div style="font-family: monospace; font-size: 16px; color: #ff8080; text-align: center; max-width: 80vw;">Unable to load audio source.<br>Please make sure the media server is running and reachable.</div>'
+          loadingText.innerHTML = `<div style="font-family: monospace; font-size: 16px; color: #ff8080; text-align: center; max-width: 80vw;">Unable to load audio source.<br><small style="opacity:0.7">${App.audioManager.song.url}</small><br>Please make sure the media server is running and reachable.</div>`
         }
         return
       }
@@ -2659,6 +2668,8 @@ export default class App {
 
     // Load preset groups and populate initial visualizer list before building GUI
     await this._initPresetGroups()
+    console.log(`[butterchurn] groups initialised: ${App.presetGroupNames.length} total →`, App.presetGroupNames)
+    this._groupsInitialised = true
     const initialGroupPresets = await this._getPresetsForGroup(App.currentGroup)
     App.visualizerList = initialGroupPresets
     // Notify any persistent panels (preview, controls popup) that the app has
@@ -5300,8 +5311,9 @@ export default class App {
    */
   async _initPresetGroups() {
     const baseUrl = import.meta.env.BASE_URL
+    const url = baseUrl + App._bcPresetsBase + '/preset-groups.json'
     try {
-      const resp = await fetch(baseUrl + App._bcPresetsBase + '/preset-groups.json')
+      const resp = await fetch(url)
       if (resp.ok) {
         const groups = await resp.json()
         if (Array.isArray(groups)) {
@@ -5320,9 +5332,15 @@ export default class App {
           for (const g of App.presetGroupNames) {
             App._groupDisplayMap[g] = g.startsWith('_') ? g.slice(1) : g
           }
+        } else {
+          console.warn('[butterchurn] preset-groups.json is not an array:', groups)
         }
+      } else {
+        console.warn('[butterchurn] preset-groups.json fetch failed:', resp.status, url)
       }
-    } catch { /* use defaults only */ }
+    } catch (e) {
+      console.error('[butterchurn] preset-groups.json fetch error:', e, url)
+    }
 
     // Restore saved group or default to first
     const stored = this.getStoredPresetGroup()
@@ -5516,6 +5534,10 @@ export default class App {
       this.visualizerSwitcherConfig.group = groupName
     }
     this.groupController?.updateDisplay?.()
+
+    // Tell the preview panel immediately so it can show its loading overlay
+    // before the async fetch below completes.
+    this._broadcastToControls({ type: 'preview-loading' })
 
     // Invalidate the in-memory index cache so meta.json is always re-fetched on
     // group switch (prevents stale preset counts after the preset list changes).

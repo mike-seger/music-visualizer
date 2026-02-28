@@ -433,6 +433,12 @@ body.has-status { padding-top: 68px; }
       if (ch) ch.postMessage({ type: 'preview-ready' })
       return
     }
+    if (e.data.type === 'preview-loading') {
+      // Group switch just started on the main page — show the overlay immediately
+      // while the async fetch / tile build is in progress.
+      document.getElementById('loading-overlay').classList.add('visible')
+      return
+    }
     if (e.data.type === 'preview-status') {
       setStatus(e.data.text || '')
       return
@@ -453,7 +459,9 @@ body.has-status { padding-top: 68px; }
         // Show spinner — tiles will render when the final preview-data arrives
         loadingOverlay.classList.add('visible')
       } else {
-        loadingOverlay.classList.remove('visible')
+        // Render new tiles BEFORE removing the overlay so that the old tiles
+        // (whose blob URLs were revoked during the group switch) never flash
+        // as broken images between "overlay hides" and "new tiles appear".
         if (mc > 0) {
           captureBtn.textContent = 'Capture ' + mc + ' preview' + (mc === 1 ? '' : 's')
           captureBtn.classList.add('visible')
@@ -461,6 +469,7 @@ body.has-status { padding-top: 68px; }
           captureBtn.classList.remove('visible')
         }
         applyFilter(e.data.activePreset || '')
+        loadingOverlay.classList.remove('visible')
       }
       return
     }
