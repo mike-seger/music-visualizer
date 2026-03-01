@@ -26,6 +26,15 @@ let _pasteEl   = null
 let _revertEl  = null
 let _lastLoad  = null   // last editor-load payload for Revert
 
+// Error pane
+let _errorsEl        = null
+let _errorsHdrEl     = null
+let _errorsBodyEl    = null
+let _errorsChevronEl = null
+let _errorsCountEl   = null
+let _errorsText      = ''      // '' = no errors, non-empty = errors present
+let _errorsExpanded  = true    // whether the pane is open (vs collapsed to header)
+
 // All live CodeMirror views (destroyed on reload)
 let _views = []
 
@@ -237,8 +246,8 @@ function _buildTabUI(tabs) {
     btn.dataset.key  = tab.key
     btn.textContent  = tab.label
     btn.addEventListener('click', () => _activateTab(tab.key))
-    // Insert before #ed-copy so tabs stay left of the action buttons
-    _tabbarEl.insertBefore(btn, _copyEl)
+    // Insert before #ed-tab-spacer so tabs stay left of the action buttons
+    _tabbarEl.insertBefore(btn, document.getElementById('ed-tab-spacer'))
 
     // Panel
     const panel = document.createElement('div')
@@ -267,6 +276,33 @@ function _buildTabUI(tabs) {
   if (tabs.length) _activateTab(tabs[0].key)
 }
 
+// ── Error pane ─────────────────────────────────────────────────────────────
+
+const ERRORS_OPEN_H   = '180px'
+const ERRORS_CLOSED_H = '28px'   // header-only height
+
+function _updateErrorsPane() {
+  if (!_errorsEl) return
+  const hasContent = Boolean(_errorsText)
+  const h = hasContent ? (_errorsExpanded ? ERRORS_OPEN_H : ERRORS_CLOSED_H) : '0px'
+  document.documentElement.style.setProperty('--err-h', h)
+  if (_errorsChevronEl) _errorsChevronEl.textContent = _errorsExpanded ? '▲' : '▼'
+}
+
+function _setErrors(text) {
+  _errorsText = text || ''
+  if (_errorsBodyEl) _errorsBodyEl.textContent = _errorsText
+  if (_errorsCountEl) _errorsCountEl.textContent = ''
+  if (_errorsText) _errorsExpanded = true   // auto-expand on new errors
+  _updateErrorsPane()
+}
+
+function _toggleErrorsPane() {
+  if (!_errorsText) return
+  _errorsExpanded = !_errorsExpanded
+  _updateErrorsPane()
+}
+
 // ── Load ──────────────────────────────────────────────────────────────────
 
 function _load({ presetName = '', content = '', language = 'json', group = '' } = {}) {
@@ -275,9 +311,16 @@ function _load({ presetName = '', content = '', language = 'json', group = '' } 
   // Remove placeholder (belt + suspenders)
   document.getElementById('ed-empty')?.remove()
 
-  // Apply/Revert buttons only make sense for butterchurn (JSON) presets
-  if (_applyEl)  _applyEl.style.display  = language === 'json' ? '' : 'none'
-  if (_revertEl) _revertEl.style.display = language === 'json' ? '' : 'none'
+  // Clear any previous shader errors
+  _setErrors('')
+
+  // Apply and Revert work for both JSON and GLSL presets.
+  // Copy/Paste only make sense for butterchurn's multi-pane JSON editor.
+  const showJson = language === 'json' ? '' : 'none'
+  if (_applyEl)  _applyEl.style.display  = ''
+  if (_revertEl) _revertEl.style.display = ''
+  if (_copyEl)   _copyEl.style.display   = showJson
+  if (_pasteEl)  _pasteEl.style.display  = showJson
 
   // Destroy all previous views
   _views.forEach(v => v.destroy())
@@ -355,13 +398,22 @@ function _reconstructPreset() {
 }
 
 function _applyPreset() {
-  const preset = _reconstructPreset()
-  if (!preset) {
-    console.warn('[Apply] Could not reconstruct preset')
-    return
+  if (_currentLanguage === 'glsl') {
+    // Shadertoy: read the single GLSL editor and re-wrap if the wrapper was stripped
+    const meta = _tabMeta.get('glsl')
+    const view = _tabViews.get('glsl')
+    if (!view) { console.warn('[Apply] No GLSL editor view'); return }
+    const inner = view.state.doc.toString()
+    const glsl = meta?.hadWrapper ? meta.head + inner + meta.tail : inner
+    ch.postMessage({ type: 'editor-apply-glsl', glsl })
+    console.log('[Apply] GLSL shader sent to visualizer')
+  } else {
+    // Butterchurn: reconstruct JSON preset from all tab editors
+    const preset = _reconstructPreset()
+    if (!preset) { console.warn('[Apply] Could not reconstruct preset'); return }
+    ch.postMessage({ type: 'editor-apply-preset', preset })
+    console.log('[Apply] Preset sent to visualizer')
   }
-  ch.postMessage({ type: 'editor-apply-preset', preset })
-  console.log('[Apply] Preset sent to visualizer')
 }
 
 // ── Init ──────────────────────────────────────────────────────────────────────────
@@ -373,6 +425,14 @@ function init() {
   _copyEl   = document.getElementById('ed-copy')
   _pasteEl  = document.getElementById('ed-paste')
   _revertEl = document.getElementById('ed-revert')
+
+  _errorsEl        = document.getElementById('ed-errors')
+  _errorsHdrEl     = document.getElementById('ed-errors-hdr')
+  _errorsBodyEl    = document.getElementById('ed-errors-body')
+  _errorsChevronEl = document.getElementById('ed-errors-chevron')
+  _errorsCountEl   = document.getElementById('ed-errors-count')
+
+  _errorsHdrEl?.addEventListener('click', _toggleErrorsPane)
 
   _applyEl?.addEventListener('click', _applyPreset)
   _revertEl?.addEventListener('click', () => { if (_lastLoad) _load(_lastLoad) })
@@ -399,6 +459,7 @@ function init() {
   // Listen for content AFTER DOM is fully ready
   ch.addEventListener('message', (e) => {
     if (e.data?.type === 'editor-load') { _lastLoad = e.data; _load(e.data) }
+    else if (e.data?.type === 'editor-glsl-errors') { _setErrors(e.data.errors ?? '') }
   })
 
   // Signal readiness — App.js will deliver any buffered content

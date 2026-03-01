@@ -1654,6 +1654,21 @@ export default class ShadertoyMultipassVisualizer extends THREE.Object3D {
     this._errorOverlayDismissed = false
   }
 
+  /** Identifies this as a live-reloadable Shadertoy visualizer. */
+  get isShadertoy() { return true }
+
+  /**
+   * Hot-reload a new GLSL source into the running visualizer.
+   * Tears down and rebuilds all render passes in-place so the scene
+   * keeps running — no destroy/init cycle needed.
+   */
+  reloadSource(glsl) {
+    this._source = String(glsl || '')
+    this._buildPasses()
+    this._validateShadersAndMaybeShowOverlay()
+    this._resizeTargets()
+  }
+
   init() {
     this._scenePrevBackground = App.scene?.background ?? null
     if (App.scene) {
@@ -1790,8 +1805,11 @@ export default class ShadertoyMultipassVisualizer extends THREE.Object3D {
     if (!this._errorOverlayDismissed) el.style.display = 'block'
   }
 
+  getLastShaderErrors() {
+    return this._lastShaderErrors ?? ''
+  }
+
   _validateShadersAndMaybeShowOverlay() {
-    if (this._errorOverlayDismissed) return
     if (!App.renderer) return
     const gl = App.renderer.getContext?.()
     if (!gl) return
@@ -1820,6 +1838,7 @@ export default class ShadertoyMultipassVisualizer extends THREE.Object3D {
     }
 
     if (!errors.length) {
+      this._lastShaderErrors = ''
       if (this._errorOverlayEl) this._errorOverlayEl.style.display = 'none'
       return
     }
@@ -1839,7 +1858,11 @@ export default class ShadertoyMultipassVisualizer extends THREE.Object3D {
       lines.push('')
     }
 
-    this._setErrorOverlayText(lines.join('\n'))
+    this._lastShaderErrors = lines.join('\n')
+
+    if (!this._errorOverlayDismissed) {
+      this._setErrorOverlayText(this._lastShaderErrors)
+    }
   }
 
   _bindAnalyser() {

@@ -350,6 +350,21 @@ export default class App {
           } else {
             console.warn('[Editor] Cannot apply: no active butterchurn visualizer')
           }
+        } else if (e.data?.type === 'editor-apply-glsl') {
+          const glsl = e.data.glsl
+          if (App.currentVisualizer?.isShadertoy && glsl) {
+            try {
+              App.currentVisualizer.reloadSource(glsl)
+              console.log('[Editor] Applied edited GLSL shader')
+            } catch (err) {
+              console.error('[Editor] Failed to apply GLSL shader:', err)
+            }
+            // Always send compile result (errors or empty string) back to editor
+            const errors = App.currentVisualizer.getLastShaderErrors?.() ?? ''
+            this._editorChannel?.postMessage({ type: 'editor-glsl-errors', errors })
+          } else {
+            console.warn('[Editor] Cannot apply GLSL: no active shadertoy visualizer')
+          }
         }
       }
     } catch { /* BroadcastChannel not supported */ }
