@@ -142,8 +142,11 @@ export default class PreviewBatch {
       if (resp.ok) {
         const meta = await resp.json()
         if (typeof meta.imageExt === 'string' && meta.imageExt) imgExt = meta.imageExt
-        if (meta.srcMap) {
-          for (const [hash, filename] of Object.entries(meta.srcMap)) {
+        if (meta.files || meta.srcMap) {
+          const entries = Array.isArray(meta.files)
+            ? meta.files.map(f => [f.hash, f.name])
+            : Object.entries(meta.srcMap)
+          for (const [hash, filename] of entries) {
             const stem = filename.replace(/\.glsl$/i, '')
             hashByStem.set(stem, hash)
           }
@@ -567,12 +570,15 @@ export default class PreviewBatch {
     }
 
     const ext    = meta.imageExt || 'png'
-    const srcMap = meta.srcMap   || {}
 
     // Build name→hash and hash→imageUrl maps
+    // Prefer meta.files (supports duplicate hashes) over srcMap
+    const entries = Array.isArray(meta.files)
+      ? meta.files.map(f => [f.hash, f.name])
+      : Object.entries(meta.srcMap || {})
     const byName = new Map()   // displayName → hash
     const byHash = new Map()   // hash → { imageUrl, imgExt }
-    for (const [hash, filename] of Object.entries(srcMap)) {
+    for (const [hash, filename] of entries) {
       if (!hash) continue
       const dotIdx      = filename.lastIndexOf('.')
       const displayName = dotIdx > 0 ? filename.slice(0, dotIdx) : filename
@@ -1255,14 +1261,17 @@ async function _loadMeta(group) {
     if (!resp.ok) return { byHash: new Map(), byName: new Map(), idMap: new Map(), imageExt: 'png' }
     const meta = await resp.json()
     const ext = meta.imageExt || 'png'
-    const srcMap = meta.srcMap || {}
 
     const base = `${_getBcPresetsBase()}/${encodeURIComponent(group)}/previews/`
     const byHash = new Map()  // id → { imageUrl, imgExt }
     const byName = new Map()  // displayName → id
     const idMap  = new Map()  // id → original filename
 
-    for (const [id, filename] of Object.entries(srcMap)) {
+    // Prefer meta.files (supports duplicate hashes) over srcMap
+    const entries = Array.isArray(meta.files)
+      ? meta.files.map(f => [f.hash, f.name])
+      : Object.entries(meta.srcMap || {})
+    for (const [id, filename] of entries) {
       if (!id) continue
       idMap.set(id, filename)
       // Preview image is at previews/<id>.<ext>
@@ -1352,10 +1361,12 @@ function _buildIndexHtml() {
   const groupEntries = [..._store.entries()].filter(([, e]) => e.blob)
   const ext = groupEntries[0]?.[1]?.filename.match(/\.(png|jpg)$/i)?.[1] ?? 'png'
   const srcMap = {}
+  const files = []
   for (const [hash, { presetName }] of groupEntries.sort(([, a], [, b]) => a.presetName.localeCompare(b.presetName))) {
     srcMap[hash] = presetName
+    files.push({ name: presetName, hash })
   }
-  const metaInline = JSON.stringify({ imageExt: ext, srcMap })
+  const metaInline = JSON.stringify({ imageExt: ext, srcMap, files })
 
   return `<!DOCTYPE html>
 <html lang="en">
@@ -1448,10 +1459,12 @@ body {
   var copyCountEl = document.getElementById('copy-count')
   var titleEl = document.getElementById('title')
 
-  var entries = Object.keys(meta.srcMap).sort(function (a, b) {
-    return meta.srcMap[a].localeCompare(meta.srcMap[b])
-  }).map(function (hash) {
-    return { hash: hash, name: meta.srcMap[hash], filename: 'previews/' + hash + '.' + imgExt }
+  var entries = (meta.files || Object.keys(meta.srcMap).map(function (h) {
+    return { hash: h, name: meta.srcMap[h] }
+  })).sort(function (a, b) {
+    return a.name.localeCompare(b.name)
+  }).map(function (f) {
+    return { hash: f.hash, name: f.name, filename: 'previews/' + f.hash + '.' + imgExt }
   })
   titleEl.textContent = entries.length + ' previews'
 

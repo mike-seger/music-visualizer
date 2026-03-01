@@ -26,9 +26,12 @@ async function _loadFromBase(base) {
   const resp = await fetch(`${baseUrl}${base}/meta.json?version=${visualizerVersion}`)
   if (!resp.ok) { console.warn('[shaderRegistry] meta.json not found at', base); return }
   const meta = await resp.json()
-  if (!meta || typeof meta.srcMap !== 'object') { console.warn('[shaderRegistry] meta.json has no srcMap'); return }
+  if (!meta || (typeof meta.srcMap !== 'object' && !Array.isArray(meta.files))) { console.warn('[shaderRegistry] meta.json has no srcMap'); return }
 
-  for (const [hash, filename] of Object.entries(meta.srcMap)) {
+  const entries = Array.isArray(meta.files)
+    ? meta.files.map(f => [f.hash, f.name])
+    : Object.entries(meta.srcMap)
+  for (const [hash, filename] of entries) {
     if (!filename) continue
     const name = filename.replace(/\.glsl$/i, '')
     SHADER_VISUALIZERS.push({

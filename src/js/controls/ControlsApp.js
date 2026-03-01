@@ -1218,6 +1218,11 @@ export default class ControlsApp {
     folder
       .add({ snap: () => this._send({ type: 'preview-snapshot-current', config: { width: cfg.width, height: cfg.height } }) }, 'snap')
       .name('Snapshot → Current')
+
+    // Snapshot → Selected — capture live canvas and apply to all selected preset tiles
+    folder
+      .add({ snapSel: () => this._send({ type: 'preview-snapshot-selected', config: { width: cfg.width, height: cfg.height } }) }, 'snapSel')
+      .name('Snapshot → Selected')
   }
 
   // -------------------------------------------------------------------

@@ -1,0 +1,119 @@
+{
+  "baseVals": {
+    "rating": 5,
+    "gammaadj": 1.365677940929997,
+    "echo_zoom": 1.0686661911301885,
+    "wave_mode": 6,
+    "wave_thick": 1,
+    "wave_brighten": 0,
+    "wave_a": 59.369523983268024,
+    "wave_scale": 1.0745291169295468,
+    "wave_smoothing": 0.4431167647442227,
+    "modwavealphastart": 0.585324852883666,
+    "modwavealphaend": 1.1218926469766657,
+    "warpscale": 2.3044830886050045,
+    "zoom": 1.0432782500139668,
+    "warp": 0.02568684380621601,
+    "wave_r": 0.5609463234883328,
+    "wave_g": 0.5609463234883328,
+    "wave_b": 0.5609463234883328,
+    "mv_a": 0,
+    "decay": 1,
+    "echo_alpha": 0.5,
+    "wave_mystery": -0.3,
+    "mv_x": 0,
+    "mv_y": 0,
+    "mv_l": 1,
+    "b1ed": 0
+  },
+  "shapes": [
+    {
+      "baseVals": {
+        "enabled": 0.2928721491295232,
+        "sides": 44,
+        "rad": 0.03347,
+        "g": 1,
+        "b": 1,
+        "r2": 1,
+        "b2": 1,
+        "border_a": 0
+      },
+      "init_eqs_str": "a['xs'] = 0; a['xm'] = 0; a['ys'] = 0; a['ym'] = 0; a['fran']=1; a['xs']=1; a['ys']=1; a['xm']=0.5; a['ym']=0.5;",
+      "frame_eqs_str": "a['xs']=(a['xs']*((1-(2*above(a['xm'], 0.99)))-(2*below(a['xm'], 0.01)))); a['ys']=(a['ys']*((1-(2*above(a['ym'], 0.99)))-(2*below(a['ym'], 0.01)))); a['xm']=(a['xm']+((0.03*a['xs'])*((Math.sin((a['time']*0.53))*0.4)+(0.6*Math.cos((a['time']*0.62)))))); a['ym']=(a['ym']+((0.03*a['ys'])*((Math.sin((a['time']*0.29))*0.5)+(0.5*Math.cos((a['time']*0.78)))))); a['x']=a['xm']; a['y']=a['ym']; a['r']=((0.5+(0.25*Math.sin((a['x']*12))))+(0.25*Math.sin((a['y']*3)))); a['g']=((0.5+(0.25*Math.sin((a['x']*7))))+(0.25*Math.sin((a['y']*32)))); a['b']=((0.5+(0.25*Math.sin((a['x']*21))))+(0.25*Math.sin((a['y']*16)))); a['r2']=a['r']; a['g2']=a['g']; a['b2']=a['b']; a['rad']=div((0.2*((a['bass_att']+a['mid_att'])+a['treb_att'])),3);"
+    },
+    {
+      "baseVals": {
+        "enabled": 0.2928721491295232,
+        "sides": 44,
+        "rad": 0.03347,
+        "g": 1,
+        "b": 1,
+        "r2": 1,
+        "b2": 1,
+        "border_a": 0
+      },
+      "init_eqs_str": "a['xs'] = 0; a['xm'] = 0; a['ys'] = 0; a['ym'] = 0; a['fran']=1; a['xs']=1; a['ys']=1; a['xm']=0.5; a['ym']=0.5;",
+      "frame_eqs_str": "a['xs']=(a['xs']*((1-(2*above(a['xm'], 0.99)))-(2*below(a['xm'], 0.01)))); a['ys']=(a['ys']*((1-(2*above(a['ym'], 0.99)))-(2*below(a['ym'], 0.01)))); a['xm']=(a['xm']+((0.03*a['xs'])*((Math.sin((a['time']*0.53))*0.6)+(0.4*Math.cos((a['time']*0.62)))))); a['ym']=(a['ym']+((0.03*a['ys'])*((Math.sin((a['time']*0.29))*0.7)+(0.3*Math.cos((a['time']*0.78)))))); a['x']=a['xm']; a['y']=a['ym']; a['r']=((0.5+(0.25*Math.sin((a['x']*12))))+(0.25*Math.sin((a['y']*3)))); a['g']=((0.5+(0.25*Math.sin((a['x']*7))))+(0.25*Math.sin((a['y']*32)))); a['b']=((0.5+(0.25*Math.sin((a['x']*21))))+(0.25*Math.sin((a['y']*16)))); a['r2']=a['r']; a['g2']=a['g']; a['b2']=a['b']; a['rad']=div((0.2*((a['bass_att']+a['mid_att'])+a['treb_att'])),3);"
+    },
+    {
+      "baseVals": {
+        "sides": 44,
+        "rad": 0.03347,
+        "g": 1,
+        "b": 1,
+        "r2": 1,
+        "b2": 1,
+        "border_a": 0,
+        "enabled": 0
+      },
+      "init_eqs_str": "a['xs'] = 0; a['xm'] = 0; a['ys'] = 0; a['ym'] = 0; a['fran']=1; a['xs']=1; a['ys']=1; a['xm']=0.5; a['ym']=0.5;",
+      "frame_eqs_str": "a['xs']=(a['xs']*((1-(2*above(a['xm'], 0.99)))-(2*below(a['xm'], 0.01)))); a['ys']=(a['ys']*((1-(2*above(a['ym'], 0.99)))-(2*below(a['ym'], 0.01)))); a['xm']=(a['xm']+((0.03*a['xs'])*((Math.sin((a['time']*0.35))*0.5)+(0.5*Math.cos((a['time']*0.87)))))); a['ym']=(a['ym']+((0.03*a['ys'])*((Math.sin((a['time']*0.92))*0.3)+(0.7*Math.cos((a['time']*0.26)))))); a['x']=a['xm']; a['y']=a['ym']; a['r']=(0.5+(0.5*Math.sin((a['time']*0.25)))); a['g']=(0.5+(Math.abs(a['r'])*Math.sin((a['time']*0.5)))); a['b']=(0.5+(Math.abs(a['g'])*Math.sin(a['time']))); a['r2']=a['r']; a['g2']=a['g']; a['b2']=a['b']; a['rad']=div((1.6*((a['bass_att']+a['mid_att'])+a['treb_att'])),3);"
+    },
+    {
+      "baseVals": {
+        "enabled": 0
+      },
+      "init_eqs_str": " ",
+      "frame_eqs_str": ""
+    }
+  ],
+  "waves": [
+    {
+      "baseVals": {
+        "enabled": 0
+      },
+      "init_eqs_str": " ",
+      "frame_eqs_str": "",
+      "point_eqs_str": ""
+    },
+    {
+      "baseVals": {
+        "enabled": 0
+      },
+      "init_eqs_str": " ",
+      "frame_eqs_str": "",
+      "point_eqs_str": ""
+    },
+    {
+      "baseVals": {
+        "enabled": 0
+      },
+      "init_eqs_str": " ",
+      "frame_eqs_str": "",
+      "point_eqs_str": ""
+    },
+    {
+      "baseVals": {
+        "enabled": 0
+      },
+      "init_eqs_str": " ",
+      "frame_eqs_str": "",
+      "point_eqs_str": ""
+    }
+  ],
+  "init_eqs_str": "a['dx_residual'] = 0; a['dy_residual'] = 0; a['bass_thresh'] = 0;",
+  "frame_eqs_str": "a['wave_r']=(a['wave_r']+(0.500*((0.60*Math.sin((0.933*a['time'])))+(0.40*Math.sin((1.045*a['time'])))))); a['wave_g']=(a['wave_g']+(0.500*((0.60*Math.sin((0.900*a['time'])))+(0.40*Math.sin((0.956*a['time'])))))); a['wave_b']=(a['wave_b']+(0.500*((0.60*Math.sin((0.910*a['time'])))+(0.40*Math.sin((0.920*a['time'])))))); a['zoom']=(a['zoom']+(0.013*((0.60*Math.sin((0.339*a['time'])))+(0.40*Math.sin((0.276*a['time'])))))); a['rot']=(a['rot']+(0.040*((0.60*Math.sin((0.381*a['time'])))+(0.40*Math.sin((0.579*a['time'])))))); a['decay']=(a['decay']-(0.01*equal(mod(a['frame'],50), 0))); a['zoom']=(a['zoom']+((a['bass_att']-1)*0.2));",
+  "pixel_eqs_str": "",
+  "warp": "// (built-in) uniform sampler2D sampler_pw_noise_lq;\nuniform sampler2D sampler_shub1;\n\n\nshader_body\n{\nvec2 _uv = uv;\n\nfloat corr = (texsize.xy*texsize_noise_lq.zw).x;\nvec2 uv1 = vec2(_uv.x-0.5,_uv.y-0.5)*aspect.xy;\n\n//_uv = vec2(_uv.x,_uv.y)*aspect.xy;\n\nivec2 k1 = ivec2(mod((texsize.xy*_uv), 2.0));\n\nvec3 ist = ((texture(sampler_blur1, _uv).xyz * scale1) + bias1);\n\nvec3 crisp = texture(sampler_main,_uv).xyz;\ncrisp = crisp + (.003) -.00*pow(rad,2.0);\n\nvec3 ret1 = crisp;\n\nvec3 dec = vec3(.98,0.98,0.975);\n\nret1 = ret1 * (1.0-.0*ist)*(1.0-.08*abs(tan(4.0*ist*1.58)));\nret = ret1;\nret = ret -.01;\n\n\n\n}",
+  "comp": "shader_body\n{\n    vec2 uv_echo = (uv - 0.5)*1.003*vec2(-1.0,-1.0) + 0.5;\n    ret = mix( texture(sampler_main, uv).xyz, \n                texture(sampler_main, uv_echo).xyz, \n                0.50 \n              ); //video echo\n    ret *= 2.75; //gamma\n    ret *= ret; //darken\n}"
+}

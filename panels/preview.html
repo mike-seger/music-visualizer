@@ -505,6 +505,16 @@ body.has-status { padding-top: 68px; }
       if (ch) ch.postMessage({ type: 'preview-regen', names: regenNames })
       return
     }
+    if (e.data.type === 'preview-snapshot-selected-request') {
+      var selItems = []
+      for (var ai = 0; ai < allItems.length; ai++) {
+        if (selected.has(allItems[ai].hash)) {
+          selItems.push({ hash: allItems[ai].hash, presetName: allItems[ai].presetName })
+        }
+      }
+      if (ch) ch.postMessage({ type: 'preview-snapshot-selected-reply', items: selItems })
+      return
+    }
     if (e.data.type === 'preview-filter') {
       currentFilter = e.data.filter || ''
       applyFilter()

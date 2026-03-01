@@ -85,7 +85,8 @@ if os.path.isfile(meta_file):
     except:
         pass
 
-    if len(old_src_map) == len(src_files):
+    old_files = old_meta.get('files', [])
+    if len(old_files) == len(src_files):
         meta_mtime = os.path.getmtime(meta_file)
         any_newer = any(
             os.path.getmtime(os.path.join(src_dir, f)) > meta_mtime
@@ -96,17 +97,20 @@ if os.path.isfile(meta_file):
 
 # ── Compute hashes (only if regenerating) ───────────────────────────────────
 if needs_regen:
-    src_map = {}  # id → filename
+    src_map = {}  # id → filename  (unique hashes — used for presets/ sync)
+    files   = []  # [{name, hash}, …]  (ALL files, duplicate hashes allowed)
     for fname in src_files:
         path = os.path.join(src_dir, fname)
         h = hashlib.sha256(open(path, 'rb').read()).hexdigest()[:20]
         src_map[h] = fname
+        files.append({'name': fname, 'hash': h})
 
     # Write meta.json
     meta = {
         'type': preset_type,
         'imageExt': image_ext,
-        'srcMap': dict(sorted(src_map.items(), key=lambda x: x[1].lower()))
+        'srcMap': dict(sorted(src_map.items(), key=lambda x: x[1].lower())),
+        'files': sorted(files, key=lambda x: x['name'].lower()),
     }
     with open(meta_file, 'w') as f:
         json.dump(meta, f, indent=2, ensure_ascii=False)

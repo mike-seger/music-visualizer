@@ -599,6 +599,24 @@ export default class App {
         break
       }
 
+      case 'preview-snapshot-selected': {
+        const { width: snapW = 640, height: snapH = 360 } = msg.config || {}
+        this._snapshotSelectedConfig = { width: snapW, height: snapH }
+        this._broadcastToControls({ type: 'preview-snapshot-selected-request' })
+        break
+      }
+
+      case 'preview-snapshot-selected-reply': {
+        const items = msg.items // [{ hash, presetName }, …]
+        if (!items || items.length === 0) {
+          this._broadcastToControls({ type: 'preview-status', text: 'Snapshot → Selected: no presets selected.' })
+          break
+        }
+        const { width: ssW = 640, height: ssH = 360 } = this._snapshotSelectedConfig || {}
+        this._doSnapshotSelected(items, ssW, ssH)
+        break
+      }
+
       case 'preview-zip':
         this._downloadPreviewZip(msg.hashes)
         break
@@ -3936,6 +3954,56 @@ export default class App {
   }
 
   /**
+   * Cycle through each selected preset, switch to it, wait for it to settle,
+   * capture the live canvas, and store the snapshot as that preset's preview.
+   * Restores the originally-active preset when done.
+   */
+  async _doSnapshotSelected(items, snapW = 640, snapH = 360) {
+    const group    = App.currentGroup
+    const cfg      = this._previewConfig
+    const settle   = Math.max(cfg.settleDelay ?? 300, 500)
+    const origName = App.visualizerType
+    let count      = 0
+
+    const status = (text) => {
+      if (this.visualizerToastName) this.visualizerToastName.textContent = text
+      const el = this.visualizerToast
+      if (el) el.style.opacity = '0.9'
+      this._broadcastToControls({ type: 'preview-status', text })
+    }
+
+    status(`Snapshot → Selected: 0/${items.length}…`)
+
+    try {
+      for (const { hash, presetName } of items) {
+        // Switch to this preset (hard-cut, no blend)
+        await this.switchVisualizer(presetName, { notify: false, blendTime: 0 })
+        // Let it render for the settle period
+        await new Promise((r) => setTimeout(r, settle))
+        // Capture the frame
+        const blob = await this._captureCanvasBlob(snapW, snapH)
+        const { hash: storedHash, blobUrl } = this.previewBatch.storeEntry(group, presetName, hash, blob)
+        this._broadcastToControls({
+          type: 'preview-tile-update',
+          item: { hash: storedHash, blobUrl, presetName, group, jsonPath: '', missing: false },
+        })
+        count++
+        status(`Snapshot → Selected: ${count}/${items.length}…`)
+      }
+      status(`Snapshot applied to ${count} selected preset(s)`)
+      console.log(`[Snapshot] applied to ${count} selected preset(s) in group "${group}"`)
+    } catch (e) {
+      console.warn('[Snapshot] capture failed:', e)
+      status(`Snapshot failed after ${count}/${items.length}: ${e?.message ?? e}`)
+    } finally {
+      // Restore the original preset
+      if (origName && origName !== App.visualizerType) {
+        await this.switchVisualizer(origName, { notify: false, blendTime: 0 })
+      }
+    }
+  }
+
+  /**
    * Return the currently-visible rendering canvas.
    * For Butterchurn groups the visualizer owns its own <canvas>;
    * for Three.js/Shadertoy visualizers the renderer element is used.
@@ -5487,8 +5555,12 @@ export default class App {
       const meta = await resp.json()
       if (meta && typeof meta.srcMap === 'object') {
         // Build reverse map: displayName → hash
+        // Prefer meta.files (supports duplicate hashes) over srcMap
         const nameToHash = new Map()
-        for (const [hash, filename] of Object.entries(meta.srcMap)) {
+        const entries = Array.isArray(meta.files)
+          ? meta.files.map(f => [f.hash, f.name])
+          : Object.entries(meta.srcMap)
+        for (const [hash, filename] of entries) {
           nameToHash.set(filename.replace(/\.json$/i, ''), hash)
         }
         App._userGroupIndex.set(groupName, { ...meta, nameToHash })
