@@ -39,7 +39,7 @@ function parseShaderSections(source, debugName = 'shader') {
   }
 
   for (const line of lines) {
-    const m = line.match(/^\s*\/\/\s*#\s*(.+?)\s*$/)
+    const m = line.match(/^\s*\/\/\s*#(?!#)\s*(.+?)\s*$/)
     if (m) {
       flush()
       currentName = m[1]
@@ -1255,10 +1255,13 @@ function ensureMainWrapper(source, opts = {}) {
   // makes the result fully transparent (appearing black) on our canvas.
   const alphaFixLine = forceOpaqueOutput ? '  fragColor.a = 1.0;\n' : ''
 
+  // In GLSL ES 3.00 mode (WebGL2), gl_FragColor does not exist — use the declared out variable.
+  const outputLine = opts.glsl2 ? '  _fragOut = fragColor;\n' : '  gl_FragColor = fragColor;\n'
+
   // Shadertoy semantics: fragCoord is in pixels of the *current render target*.
   // Keeping this accurate avoids breaking shaders that do pixel addressing and
   // feedback (e.g., writing state into specific pixel locations).
-  return `${source}\n\nvoid main() {\n  vec4 fragColor = vec4(0.0);\n  vec2 fragCoord = gl_FragCoord.xy;\n  mainImage(fragColor, fragCoord);\n${alphaFixLine}  gl_FragColor = fragColor;\n}\n`
+  return `${source}\n\nvoid main() {\n  vec4 fragColor = vec4(0.0);\n  vec2 fragCoord = gl_FragCoord.xy;\n  mainImage(fragColor, fragCoord);\n${alphaFixLine}${outputLine}}\n`
 }
 
 function buildFragmentSource(common, passCode, opts = {}) {
@@ -1271,12 +1274,19 @@ function buildFragmentSource(common, passCode, opts = {}) {
   const supportsDerivatives = !!caps.derivatives
   const supportsTextureLodExt = !!caps.textureLod
 
+  // Auto-detect GLSL version from source signals (gl_FragColor, fwidth, etc.)
+  const glslDetection = detectGLSLVersion(original)
+  const useGLSL2 = !!(caps.isWebGL2) && glslDetection.version !== 1
+
   let body = original
 
   // Compatibility transforms
   body = transformFloatLiteralSuffix(body)
   body = transformVec2Array3x3Fill(body)
-  body = transformTexelFetch(body)
+  if (!useGLSL2) {
+    // texelFetch is natively available in GLSL ES 3.00; only transform for WebGL1.
+    body = transformTexelFetch(body)
+  }
   body = transformAudioLegacyRowSampling(body, opts?.channelHints)
 
   const loopResult = transformDynamicForLoops(body)
@@ -1294,13 +1304,15 @@ function buildFragmentSource(common, passCode, opts = {}) {
   /** @type {string[]} */
   const prelude = []
 
-  // WebGL1 extensions must appear before any non-preprocessor statements.
-  if (needsDerivatives && supportsDerivatives) {
-    prelude.push('#extension GL_OES_standard_derivatives : enable')
-  }
-  if (needsTextureLod && supportsTextureLodExt) {
-    prelude.push('#extension GL_EXT_shader_texture_lod : enable')
-    prelude.push('#define ST_HAS_TEXLOD 1')
+  if (!useGLSL2) {
+    // WebGL1 — enable extensions when available.
+    if (needsDerivatives && supportsDerivatives) {
+      prelude.push('#extension GL_OES_standard_derivatives : enable')
+    }
+    if (needsTextureLod && supportsTextureLodExt) {
+      prelude.push('#extension GL_EXT_shader_texture_lod : enable')
+      prelude.push('#define ST_HAS_TEXLOD 1')
+    }
   }
 
   if (loopResult.changed) {
@@ -1318,9 +1330,16 @@ function buildFragmentSource(common, passCode, opts = {}) {
   prelude.push(`precision ${floatPrec} float;`)
   prelude.push(`precision ${intPrec} int;`)
 
-  const compatFns = getShadertoyCompatFns(body)
-  if (compatFns.length) {
-    prelude.push(...compatFns)
+  if (useGLSL2) {
+    // GLSL ES 3.00 — in/out qualifiers must come after precision declarations.
+    // dFdx/dFdy/fwidth/textureLod/round/tanh/texture() are all built-in; no polyfills needed.
+    prelude.push('in vec2 vUv;')
+    prelude.push('out vec4 _fragOut;')
+  } else {
+    const compatFns = getShadertoyCompatFns(body)
+    if (compatFns.length) {
+      prelude.push(...compatFns)
+    }
   }
 
   // Shadertoy uniforms (only if not already declared)
@@ -1355,10 +1374,65 @@ function buildFragmentSource(common, passCode, opts = {}) {
 
   // Ensure there is a main(). For the final Image pass, default to forcing opaque
   // output so Shadertoy-style alpha=0.0 doesn't become fully transparent.
-  src = ensureMainWrapper(src, { forceOpaqueOutput: !!opts.forceOpaqueOutput })
+  src = ensureMainWrapper(src, { forceOpaqueOutput: !!opts.forceOpaqueOutput, glsl2: useGLSL2 })
+
+  // NOTE: Do NOT prepend '#version 300 es' here — THREE.js handles it via
+  // glslVersion on the RawShaderMaterial, which must be the very first thing.
 
   return src
 }
+
+// ---------------------------------------------------------------------------
+// GLSL version auto-detection
+// (Inline copy of scripts/detect-glsl-version.cjs for browser/ESM use)
+// ---------------------------------------------------------------------------
+
+const _WEBGL1_SIGNALS = [
+  { pattern: /\bgl_FragColor\b/,                        label: 'gl_FragColor (removed in GLSL ES 3.00)' },
+  { pattern: /\btexture2D\s*\(/,                        label: 'texture2D() (deprecated in GLSL ES 3.00)' },
+  { pattern: /\bvarying\s+/,                            label: 'varying (removed in GLSL ES 3.00)' },
+  { pattern: /\battribute\s+/,                          label: 'attribute (removed in GLSL ES 3.00)' },
+  // comma-declared for-loop variables: for(float a=0.,b=0.;  — rejected by many WebGL2 drivers
+  { pattern: /\bfor\s*\(\s*\w+\s+\w+\s*=[^;]+,[^;]+;/, label: 'comma-declared for-loop variables' },
+]
+
+const _WEBGL2_SIGNALS = [
+  { pattern: /\bfwidth\s*\(/,       label: 'fwidth() (built-in in GLSL ES 3.00)' },
+  { pattern: /\bdFdx\s*\(/,         label: 'dFdx() (built-in in GLSL ES 3.00)' },
+  { pattern: /\bdFdy\s*\(/,         label: 'dFdy() (built-in in GLSL ES 3.00)' },
+  { pattern: /\btextureLod\s*\(/,   label: 'textureLod() (built-in in GLSL ES 3.00)' },
+  { pattern: /\btexelFetch\s*\(/,   label: 'texelFetch() (WebGL2 / GLSL ES 3.00 only)' },
+  { pattern: /#version\s+300\s+es/, label: '#version 300 es (explicit GLSL ES 3.00)' },
+  { pattern: /\blayout\s*\(/,       label: 'layout() (GLSL ES 3.00 only)' },
+  // bare texture() (not texture2D) is the GLSL ES 3.00 spelling
+  { pattern: /\btexture\s*\(/,      label: 'texture() without 2D suffix (GLSL ES 3.00)' },
+  // array constructor syntax: float[9](...) is GLSL ES 3.00 only
+  { pattern: /\b[A-Za-z_]\w*\s*\[\s*\d+\s*\]\s*\(/,  label: 'array constructor (e.g. float[9](...), GLSL ES 3.00 only)' },
+]
+
+/**
+ * Detect whether a GLSL shader requires WebGL1 or WebGL2.
+ * @param {string} source
+ * @returns {{ version: 1|2, reason: string }}
+ */
+function detectGLSLVersion(source) {
+  const src = String(source || '')
+  if (/^\s*\/\/@WebGL1/.test(src)) return { version: 1, reason: 'explicit //@WebGL1 override' }
+  if (/^\s*\/\/@WebGL2/.test(src)) return { version: 2, reason: 'explicit //@WebGL2 override' }
+  // Strip comments before signal matching to avoid false positives (e.g. "Time varying" in a comment)
+  const stripped = src
+    .replace(/\/\*[\s\S]*?\*\//g, ' ')  // block comments
+    .replace(/\/\/[^\n]*/g, ' ')          // line comments
+  for (const { pattern, label } of _WEBGL1_SIGNALS) {
+    if (pattern.test(stripped)) return { version: 1, reason: `detected WebGL1 signal: ${label}` }
+  }
+  for (const { pattern, label } of _WEBGL2_SIGNALS) {
+    if (pattern.test(stripped)) return { version: 2, reason: `detected WebGL2 signal: ${label}` }
+  }
+  return { version: 1, reason: 'no signals detected, defaulting to WebGL1' }
+}
+
+// ---------------------------------------------------------------------------
 
 const FULLSCREEN_VERT = /* glsl */ `
 precision highp float;
@@ -1373,6 +1447,38 @@ void main() {
   gl_Position = vec4(position, 1.0);
 }
 `
+
+// GLSL ES 3.00 vertex shader for WebGL2 mode.
+// NOTE: No '#version 300 es' here — THREE.js prepends it via glslVersion on the material.
+const FULLSCREEN_VERT_WEBGL2 = /* glsl */ `
+precision highp float;
+
+in vec3 position;
+in vec2 uv;
+
+out vec2 vUv;
+
+void main() {
+  vUv = uv;
+  gl_Position = vec4(position, 1.0);
+}
+`
+
+/**
+ * Parse `// @iChannel<n>: <url>` comments from GLSL source.
+ * Written by import-shadertoy.cjs to wire downloaded media files to channels.
+ * @param {string} source
+ * @returns {Record<number, string>}  e.g. { 1: '/shadertoy-media/foo.png', 2: '...' }
+ */
+function parseChannelTextureURLs(source) {
+  const urls = {}
+  const re = /^\s*\/\/\s*@iChannel(\d)\s*:\s*(\S+)/gm
+  let m
+  while ((m = re.exec(source))) {
+    urls[parseInt(m[1], 10)] = m[2]
+  }
+  return urls
+}
 
 function makeFullscreenGeometry() {
   const geo = new THREE.BufferGeometry()
@@ -1460,12 +1566,15 @@ function makeDefaultCubeTexture() {
 }
 
 function computeShaderCaps(gl) {
-  if (!gl) return { textureLod: false, derivatives: false }
+  if (!gl) return { textureLod: false, derivatives: false, isWebGL2: false }
 
-  // getExtension returns null if unsupported; calling it enables the extension when present.
-  const textureLod = !!gl.getExtension('EXT_shader_texture_lod')
-  const derivatives = !!gl.getExtension('OES_standard_derivatives')
-  return { textureLod, derivatives }
+  const isWebGL2 = typeof WebGL2RenderingContext !== 'undefined' && gl instanceof WebGL2RenderingContext
+
+  // In WebGL2, derivatives and textureLod are built-in; no extension needed.
+  // For WebGL1, query extensions (which also enables them when present).
+  const textureLod = isWebGL2 || !!gl.getExtension('EXT_shader_texture_lod')
+  const derivatives = isWebGL2 || !!gl.getExtension('OES_standard_derivatives')
+  return { textureLod, derivatives, isWebGL2 }
 }
 
 function detectUsedChannels(source) {
@@ -1616,6 +1725,8 @@ export default class ShadertoyMultipassVisualizer extends THREE.Object3D {
     this._blackTex = null
     this._noiseTex = null
     this._cubeTex = null
+    /** @type {(THREE.Texture|null)[]} Textures loaded from @iChannel<n> URL comments */
+    this._loadedTextures = [null, null, null, null]
 
     this._caps = { textureLod: false, derivatives: false }
 
@@ -1697,6 +1808,8 @@ export default class ShadertoyMultipassVisualizer extends THREE.Object3D {
     this._validateShadersAndMaybeShowOverlay()
 
     this._resizeTargets()
+
+    this._loadChannelTextures()
 
     window.addEventListener('resize', this._onResize)
     window.addEventListener('pointermove', this._onPointerMove, { passive: true })
@@ -1817,9 +1930,13 @@ export default class ShadertoyMultipassVisualizer extends THREE.Object3D {
     const errors = []
     const pushErrorsForMat = (label, mat) => {
       if (!mat?.vertexShader || !mat?.fragmentShader) return
+      // THREE.js prepends '#version 300 es\n' at render time when glslVersion is THREE.GLSL3.
+      // The raw mat.vertexShader / mat.fragmentShader strings don't include it, so we must
+      // add it ourselves here to get accurate compile results from the standalone validator.
+      const glsl3Prefix = mat.glslVersion === THREE.GLSL3 ? '#version 300 es\n' : ''
       const r = compileAndLinkProgram(gl, {
-        vertexSource: mat.vertexShader,
-        fragmentSource: mat.fragmentShader,
+        vertexSource: glsl3Prefix + mat.vertexShader,
+        fragmentSource: glsl3Prefix + mat.fragmentShader,
       })
       if (r.ok) return
 
@@ -1916,6 +2033,12 @@ export default class ShadertoyMultipassVisualizer extends THREE.Object3D {
     this._imageMat = null
     this._imageMesh = null
 
+    // Auto-detect GLSL version from source signals (gl_FragColor, fwidth, comma for-loops, etc.)
+    const _glslDetection = detectGLSLVersion(this._source)
+    console.log(`[GLSL] ${this._debugName} → ${_glslDetection.reason}`)
+    const _useGLSL2 = this._caps.isWebGL2 && _glslDetection.version !== 1
+    const _vertShader = _useGLSL2 ? FULLSCREEN_VERT_WEBGL2 : FULLSCREEN_VERT
+
     const parsed = parseShaderSections(this._source, this._debugName)
 
     // Assign buffer channels sequentially by appearance; duplicates are OK.
@@ -1943,9 +2066,10 @@ export default class ShadertoyMultipassVisualizer extends THREE.Object3D {
 
       const frag = buildFragmentSource(parsed.common, pass.code, { caps: this._caps, channelTypes, channelHints, forceOpaqueOutput: false })
       const mat = new THREE.RawShaderMaterial({
-        vertexShader: FULLSCREEN_VERT,
+        vertexShader: _vertShader,
         fragmentShader: frag,
         uniforms: this._makeUniforms(),
+        glslVersion: _useGLSL2 ? THREE.GLSL3 : null,
         depthTest: false,
         depthWrite: false,
       })
@@ -1979,9 +2103,10 @@ export default class ShadertoyMultipassVisualizer extends THREE.Object3D {
 
       const frag = buildFragmentSource(parsed.common, imagePass.code, { caps: this._caps, channelTypes: this._imageChannelTypes, channelHints: this._imageChannelHints, forceOpaqueOutput: true })
       const mat = new THREE.RawShaderMaterial({
-        vertexShader: FULLSCREEN_VERT,
+        vertexShader: _vertShader,
         fragmentShader: frag,
         uniforms: this._makeUniforms(),
+        glslVersion: _useGLSL2 ? THREE.GLSL3 : null,
         depthTest: false,
         depthWrite: false,
       })
@@ -2295,6 +2420,33 @@ export default class ShadertoyMultipassVisualizer extends THREE.Object3D {
     mat.uniforms.iChannelTime.value[3] = t
   }
 
+  _loadChannelTextures() {
+    const urls = parseChannelTextureURLs(this._source)
+    if (!Object.keys(urls).length) return
+
+    // Resolve root-relative paths (/foo) through Vite's BASE_URL so they work
+    // whether the app is served at / or /visualizer/ (or any sub-path).
+    const baseUrl = import.meta.env?.BASE_URL ?? '/'
+    const resolveUrl = (url) => url.startsWith('/') ? `${baseUrl}${url.slice(1)}` : url
+
+    const loader = new THREE.TextureLoader()
+    for (const [ch, url] of Object.entries(urls)) {
+      const idx = parseInt(ch, 10)
+      loader.loadAsync(resolveUrl(url)).then((tex) => {
+        tex.wrapS = THREE.RepeatWrapping
+        tex.wrapT = THREE.RepeatWrapping
+        tex.minFilter = THREE.LinearMipmapLinearFilter
+        tex.magFilter = THREE.LinearFilter
+        tex.generateMipmaps = true
+        tex.needsUpdate = true
+        this._loadedTextures[idx] = tex
+        console.log(`[GLSL] Loaded iChannel${idx}: ${resolveUrl(url)} (${tex.image?.width}×${tex.image?.height})`)
+      }).catch((e) => {
+        console.warn(`[GLSL] Failed to load iChannel${idx}: ${resolveUrl(url)}`, e)
+      })
+    }
+  }
+
   _getBufferTexture(channelIndex /* 1..4 */) {
     const pass = this._passes[channelIndex - 1]
     if (!pass || !pass.rts) return this._blackTex
@@ -2311,6 +2463,17 @@ export default class ShadertoyMultipassVisualizer extends THREE.Object3D {
   _setChannel(mat, ch, tex, kind) {
     const uniformName = `iChannel${ch}`
     if (!mat?.uniforms?.[uniformName] || !mat?.uniforms?.iChannelResolution) return
+
+    // A texture loaded from a @iChannel<n>: URL comment takes priority over all heuristics.
+    const loadedTex = this._loadedTextures?.[ch]
+    if (loadedTex) {
+      mat.uniforms[uniformName].value = loadedTex
+      const res = mat.uniforms.iChannelResolution.value
+      if (Array.isArray(res) && res[ch]) {
+        res[ch].set(loadedTex.image?.width || 1, loadedTex.image?.height || 1, 1)
+      }
+      return
+    }
 
     mat.uniforms[uniformName].value = tex
 
@@ -2540,6 +2703,11 @@ export default class ShadertoyMultipassVisualizer extends THREE.Object3D {
 
     if (this._cubeTex) this._cubeTex.dispose()
     this._cubeTex = null
+
+    for (const tex of this._loadedTextures) {
+      if (tex) tex.dispose()
+    }
+    this._loadedTextures = [null, null, null, null]
 
     if (this._errorOverlayEl?.parentNode) {
       this._errorOverlayEl.parentNode.removeChild(this._errorOverlayEl)

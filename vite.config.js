@@ -76,6 +76,13 @@ export default defineConfig({
   },
   server: {
     host: true,
+    headers: {
+      // Prevent the browser from caching static assets (including public/ files
+      // fetched via JS fetch()) in dev mode. 'no-cache' (Vite's default) only
+      // means "revalidate", which still allows stale responses. 'no-store'
+      // forces a fresh fetch every time, so Cmd-Shift-R always reflects changes.
+      'Cache-Control': 'no-store',
+    },
   },
   resolve: {
     dedupe: ['three'],
