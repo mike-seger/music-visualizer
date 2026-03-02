@@ -16,6 +16,7 @@
 #   • Skips when meta.json is up-to-date and presets/ has the right count.
 #   • Only copies files that are missing or outdated in presets/.
 #   • Removes orphan ID copies from presets/.
+#   • Removes orphan preview images from previews/.
 # ──────────────────────────────────────────────────────────────────────────────
 
 set -euo pipefail
@@ -169,4 +170,23 @@ if os.path.isdir(dst_dir):
             orphans += 1
     if orphans > 0:
         print(f'  🗑  {group_dir}: removed {orphans} orphan(s) from presets/.', file=sys.stderr)
+
+# Remove orphans from previews/
+# A preview is orphaned if its name (minus extension) doesn't match any file in presets/
+preview_orphans = 0
+if os.path.isdir(prev_dir):
+    preset_stems = set()
+    if os.path.isdir(dst_dir):
+        for pf in os.listdir(dst_dir):
+            if not pf.startswith('.'):
+                preset_stems.add(pf.rsplit('.', 1)[0] if '.' in pf else pf)
+    for pf in os.listdir(prev_dir):
+        if pf.startswith('.'):
+            continue
+        stem = pf.rsplit('.', 1)[0] if '.' in pf else pf
+        if stem not in preset_stems:
+            os.remove(os.path.join(prev_dir, pf))
+            preview_orphans += 1
+    if preview_orphans > 0:
+        print(f'  🗑  {group_dir}: removed {preview_orphans} orphan(s) from previews/.', file=sys.stderr)
 PYEOF
