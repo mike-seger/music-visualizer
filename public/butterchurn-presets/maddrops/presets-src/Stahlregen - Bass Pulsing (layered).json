@@ -1,1 +1,163 @@
-{"baseVals":{"rating":5,"gammaadj":3.94,"decay":0.94,"additivewave":1,"wave_thick":1,"brighten":1,"darken":1,"solarize":1,"invert":1,"wave_scale":2.026,"wave_mystery":-0.3,"warpanimspeed":1.504,"warpscale":0.251,"zoomexp":0.50329,"fshader":1,"zoom":1.0201,"ob_r":0.04,"ob_g":0.04,"ob_b":0.04,"ob_a":1,"mv_a":0},"shapes":[{"baseVals":{"enabled":1,"sides":5,"rad":0.07419,"r":0,"g2":0,"border_a":0},"init_eqs_str":" ","frame_eqs_str":""},{"baseVals":{"enabled":0},"init_eqs_str":" ","frame_eqs_str":""},{"baseVals":{"enabled":0},"init_eqs_str":" ","frame_eqs_str":""},{"baseVals":{"enabled":0},"init_eqs_str":" ","frame_eqs_str":""}],"waves":[{"baseVals":{"enabled":0},"init_eqs_str":" ","frame_eqs_str":"","point_eqs_str":""},{"baseVals":{"enabled":0},"init_eqs_str":" ","frame_eqs_str":"","point_eqs_str":""},{"baseVals":{"enabled":0},"init_eqs_str":" ","frame_eqs_str":"","point_eqs_str":""},{"baseVals":{"enabled":0},"init_eqs_str":" ","frame_eqs_str":"","point_eqs_str":""}],"init_eqs_str":"a['count3'] = 0; a['wave1'] = 0; a['count4'] = 0; a['q1'] = 0; a['wave3'] = 0; a['wave2'] = 0; a['count2'] = 0; a['q4'] = 0; a['count1'] = 0; a['wave'] = 0; a['q2'] = 0; a['wave4'] = 0; a['q3'] = 0; a['step'] = 0; a['count1']=0.875; a['count2']=0.625; a['count3']=0.375; a['count4']=0.125;","frame_eqs_str":"a['step']=div((0.25+(0.5*a['bass_att'])),a['fps']); a['count1']=((Math.abs(below(a['count1'], 1))>0.00001)?((a['count1']+a['step'])):((a['count1']-1))); a['count2']=((Math.abs(below(a['count2'], 1))>0.00001)?((a['count2']+a['step'])):((a['count2']-1))); a['count3']=((Math.abs(below(a['count3'], 1))>0.00001)?((a['count3']+a['step'])):((a['count3']-1))); a['count4']=((Math.abs(below(a['count4'], 1))>0.00001)?((a['count4']+a['step'])):((a['count4']-1))); a['q1']=a['count1']; a['q2']=a['count2']; a['q3']=a['count3']; a['q4']=a['count4']; a['warp']=0.075; a['wave_g']=(0.7+(0.3*Math.sin((a['time']*1.8)))); a['wave_b']=(0.65+(0.25*Math.sin((a['time']*3)))); a['wave_r']=(0.47+(0.3*Math.cos((a['time']*0.75))));","pixel_eqs_str":"a['wave1']=(above(a['rad'], a['q1'])*below(a['rad'], (a['q1']+0.1))); a['wave2']=(above(a['rad'], a['q2'])*below(a['rad'], (a['q2']+0.1))); a['wave3']=(above(a['rad'], a['q3'])*below(a['rad'], (a['q3']+0.1))); a['wave4']=(above(a['rad'], a['q4'])*below(a['rad'], (a['q4']+0.1))); a['wave']=(((a['wave1']+a['wave2'])+a['wave3'])+a['wave4']); a['sx']=(1.025-(0.05*a['wave'])); a['sy']=(1.025-(0.05*a['wave']));","warp":"shader_body\n{\nvec2 _uv = uv;\n\nvec2 uv1 = vec2(mix(uv_orig,_uv,1.0)); //equals _uv\nvec2 uv2 = vec2(mix(uv_orig,_uv,0.1)); // mod(20.0, of) _uv\nvec2 uv3 = vec2(mix(uv_orig,_uv,0.2)); //mod(20.0, of) _uv but in the opposite direction\n\nret.x = texture(sampler_main, uv1).xyz.x;\nret.y = texture(sampler_main, uv2).xyz.y;\nret.z = texture(sampler_main, uv3).xyz.z;\n    \n    // darken (decay) over time\n    ret *= 0.9; //or try: ret -= 0.004;\n\n}","comp":"shader_body\n{\n\nvec3 hue_shader_plus = vec3(hue_shader*8.0-6.65);\n\nvec3 base = texture(sampler_main, uv).xyz;\nret = hue_shader_plus.xyz*base.y;\nret = mix(ret,hue_shader_plus.yzx,base.x);\nret = mix(ret,hue_shader_plus.zxy,base.z);\n\nret *= 1.5; //gamma\n//ret = 1.0-ret;\n}"}
+{
+  "shapes": [
+    {
+      "baseVals": {
+        "enabled": 1,
+        "sides": 5,
+        "rad": 0.07419,
+        "r": 0,
+        "g2": 0,
+        "border_a": 0
+      },
+      "init_eqs_str": "",
+      "frame_eqs_str": ""
+    },
+    {
+      "baseVals": {
+        "enabled": 0
+      }
+    },
+    {
+      "baseVals": {
+        "enabled": 0
+      }
+    },
+    {
+      "baseVals": {
+        "enabled": 0
+      }
+    }
+  ],
+  "waves": [
+    {
+      "baseVals": {
+        "enabled": 0
+      }
+    },
+    {
+      "baseVals": {
+        "enabled": 0
+      }
+    },
+    {
+      "baseVals": {
+        "enabled": 0
+      }
+    },
+    {
+      "baseVals": {
+        "enabled": 0
+      }
+    }
+  ],
+  "init_eqs_str": "a['count3'] = 0; a['wave1'] = 0; a['count4'] = 0; a['q1'] = 0; a['wave3'] = 0; a['wave2'] = 0; a['count2'] = 0; a['q4'] = 0; a['count1'] = 0; a['wave'] = 0; a['q2'] = 0; a['wave4'] = 0; a['q3'] = 0; a['step'] = 0; a['count1']=0.875; a['count2']=0.625; a['count3']=0.375; a['count4']=0.125;",
+  "frame_eqs_str": "a['step']=div((0.25+(0.5*a['bass_att'])),a['fps']); a['count1']=((Math.abs(below(a['count1'], 1))>0.00001)?((a['count1']+a['step'])):((a['count1']-1))); a['count2']=((Math.abs(below(a['count2'], 1))>0.00001)?((a['count2']+a['step'])):((a['count2']-1))); a['count3']=((Math.abs(below(a['count3'], 1))>0.00001)?((a['count3']+a['step'])):((a['count3']-1))); a['count4']=((Math.abs(below(a['count4'], 1))>0.00001)?((a['count4']+a['step'])):((a['count4']-1))); a['q1']=a['count1']; a['q2']=a['count2']; a['q3']=a['count3']; a['q4']=a['count4']; a['warp']=0.075; a['wave_g']=(0.7+(0.3*Math.sin((a['time']*1.8)))); a['wave_b']=(0.65+(0.25*Math.sin((a['time']*3)))); a['wave_r']=(0.47+(0.3*Math.cos((a['time']*0.75))));",
+  "pixel_eqs_str": "a['wave1']=(above(a['rad'], a['q1'])*below(a['rad'], (a['q1']+0.1))); a['wave2']=(above(a['rad'], a['q2'])*below(a['rad'], (a['q2']+0.1))); a['wave3']=(above(a['rad'], a['q3'])*below(a['rad'], (a['q3']+0.1))); a['wave4']=(above(a['rad'], a['q4'])*below(a['rad'], (a['q4']+0.1))); a['wave']=(((a['wave1']+a['wave2'])+a['wave3'])+a['wave4']); a['sx']=(1.025-(0.05*a['wave'])); a['sy']=(1.025-(0.05*a['wave']));",
+  "baseVals": {
+    "rating": 5,
+    "gammaadj": 3.94,
+    "decay": 0.94,
+    "additivewave": 1,
+    "wave_thick": 1,
+    "brighten": 1,
+    "darken": 1,
+    "solarize": 1,
+    "invert": 1,
+    "wave_scale": 2.026,
+    "wave_mystery": -0.3,
+    "warpanimspeed": 1.504,
+    "warpscale": 0.251,
+    "zoomexp": 0.50329,
+    "fshader": 1,
+    "zoom": 1.0201,
+    "ob_r": 0.04,
+    "ob_g": 0.04,
+    "ob_b": 0.04,
+    "ob_a": 1,
+    "mv_a": 0
+  },
+  "warp": " shader_body { \n  vec3 ret_1;\n  ret_1.x = texture (sampler_main, uv).x;\n  ret_1.y = texture (sampler_main, mix (uv_orig, uv, vec2(0.1, 0.1))).y;\n  ret_1.z = texture (sampler_main, mix (uv_orig, uv, vec2(0.2, 0.2))).z;\n  ret_1 = (ret_1 * 0.9);\n  vec4 tmpvar_2;\n  tmpvar_2.w = 1.0;\n  tmpvar_2.xyz = ret_1;\n  ret = tmpvar_2.xyz;\n }",
+  "comp": " shader_body { \n  vec3 ret_1;\n  vec3 tmpvar_2;\n  tmpvar_2 = ((hue_shader * 8.0) - 6.65);\n  vec4 tmpvar_3;\n  tmpvar_3 = texture (sampler_main, uv);\n  ret_1 = (tmpvar_2 * tmpvar_3.y);\n  ret_1 = (mix (mix (ret_1, tmpvar_2.yzx, tmpvar_3.xxx), tmpvar_2.zxy, tmpvar_3.zzz) * 1.5);\n  vec4 tmpvar_4;\n  tmpvar_4.w = 1.0;\n  tmpvar_4.xyz = ret_1;\n  ret = tmpvar_4.xyz;\n }",
+  "presetParts": {
+    "presetVersion": 1,
+    "baseVals": {
+      "rating": 5,
+      "gammaadj": 3.94,
+      "decay": 0.94,
+      "additivewave": 1,
+      "wave_thick": 1,
+      "brighten": 1,
+      "darken": 1,
+      "solarize": 1,
+      "invert": 1,
+      "wave_scale": 2.026,
+      "wave_mystery": -0.3,
+      "warpanimspeed": 1.504,
+      "warpscale": 0.251,
+      "zoomexp": 0.50329,
+      "fshader": 1,
+      "zoom": 1.0201,
+      "ob_r": 0.04,
+      "ob_g": 0.04,
+      "ob_b": 0.04,
+      "ob_a": 1,
+      "mv_a": 0
+    },
+    "presetInit": "count1 = .875;\ncount2 = .625;\ncount3 = .375;\ncount4 = .125;",
+    "perFrame": "step = (.25+.5*bass_att)/fps;\n\ncount1 = if(below(count1,1),count1+step,count1-1);\ncount2 = if(below(count2,1),count2+step,count2-1);\ncount3 = if(below(count3,1),count3+step,count3-1);\ncount4 = if(below(count4,1),count4+step,count4-1);\n\nq1 = count1;\nq2 = count2;\nq3 = count3;\nq4 = count4;\n \nwarp = .075;\n\nwave_g = .7+.3*sin(time*1.8);\nwave_b = .65+.25*sin(time*3);\nwave_r = .47+.3*cos(time*.75);",
+    "perVertex": "wave1 = above(rad,q1)*below(rad,q1+.1);\nwave2 = above(rad,q2)*below(rad,q2+.1);\nwave3 = above(rad,q3)*below(rad,q3+.1);\nwave4 = above(rad,q4)*below(rad,q4+.1);\n\nwave = wave1+wave2+wave3+wave4;\n\nsx = 1.025-.05*wave;\nsy = 1.025-.05*wave;",
+    "waves": [
+      {
+        "baseVals": {
+          "enabled": 0
+        }
+      },
+      {
+        "baseVals": {
+          "enabled": 0
+        }
+      },
+      {
+        "baseVals": {
+          "enabled": 0
+        }
+      },
+      {
+        "baseVals": {
+          "enabled": 0
+        }
+      }
+    ],
+    "shapes": [
+      {
+        "baseVals": {
+          "enabled": 1,
+          "sides": 5,
+          "rad": 0.07419,
+          "r": 0,
+          "g2": 0,
+          "border_a": 0
+        },
+        "init_eqs_str": "",
+        "frame_eqs_str": ""
+      },
+      {
+        "baseVals": {
+          "enabled": 0
+        }
+      },
+      {
+        "baseVals": {
+          "enabled": 0
+        }
+      },
+      {
+        "baseVals": {
+          "enabled": 0
+        }
+      }
+    ],
+    "warp": "shader_body\n{\nfloat2 uv1 = lerp(uv_orig,uv,1); //equals uv\nfloat2 uv2 = lerp(uv_orig,uv,0.1); // 20% of uv\nfloat2 uv3 = lerp(uv_orig,uv,0.2); //20% of uv but in the opposite direction\n\nret.x = GetPixel(uv1).x;\nret.y = GetPixel(uv2).y;\nret.z = GetPixel(uv3).z;\n    \n    // darken (decay) over time\n    ret *= 0.9; //or try: ret -= 0.004;\n}",
+    "comp": "shader_body\n{\n\nfloat3 hue_shader_plus = hue_shader*8-6.65;\n\nfloat3 base = GetPixel(uv);\nret = hue_shader_plus.xyz*base.y;\nret = lerp(ret,hue_shader_plus.yzx,base.x);\nret = lerp(ret,hue_shader_plus.zxy,base.z);\n\nret *= 1.5; //gamma\n//ret = 1-ret;\n}"
+  }
+}

@@ -1,0 +1,165 @@
+{
+  "shapes": [
+    {
+      "baseVals": {
+        "enabled": 1,
+        "sides": 100,
+        "additive": 1,
+        "x": 0.1,
+        "rad": 0.29878,
+        "r": 0.4,
+        "g": 0.4,
+        "b": 0.2,
+        "r2": 0.5,
+        "g2": 0.5,
+        "b2": 0.5,
+        "border_a": 0
+      },
+      "init_eqs_str": "a['q4'] = 0; a['q1'] = 0; a['q2'] = 0; a['q3'] = 0;",
+      "frame_eqs_str": "a['x']=(0.25+Math.abs((div(Math.floor(randint(100)),100)-0.5))); a['y']=(0.25+Math.abs((div(Math.floor(randint(100)),100)-0.5))); a['rad']=a['q4']; a['a']=a['q4']; a['r']=((above(a['q1'], a['q2'])*0.5)+(above(a['q1'], a['q3'])*0.5)); a['g']=((above(a['q2'], a['q1'])*0.5)+(above(a['q2'], a['q3'])*0.5)); a['b']=((above(a['q3'], a['q1'])*0.5)+(above(a['q3'], a['q2'])*0.5));"
+    },
+    {
+      "baseVals": {
+        "enabled": 1,
+        "y": 0,
+        "rad": 0.40271
+      },
+      "init_eqs_str": "a['dist'] = 0; a['newx'] = 0; a['newy'] = 0; a['tox'] = 0; a['toy'] = 0; a['y']=-0.5;",
+      "frame_eqs_str": "a['dist']=sqrt((((a['newx']-a['x'])*(a['newx']-a['x']))+((a['newy']-a['y'])*(a['newy']-a['y'])))); a['newx']=((above(0.1, a['dist'])*div(Math.floor(randint(100)),100))+(above(a['dist'], 0.1)*a['newx'])); a['newy']=((above(0.1, a['dist'])*div(Math.floor(randint(100)),100))+(above(a['dist'], 0.1)*a['newy'])); a['tox']=(a['tox']+div((a['newx']-a['x']),10)); a['x']=a['tox']; a['toy']=(a['toy']+div((a['newy']+a['y']),10)); a['y']=a['toy'];"
+    },
+    {
+      "baseVals": {
+        "enabled": 0
+      }
+    },
+    {
+      "baseVals": {
+        "enabled": 0
+      }
+    }
+  ],
+  "waves": [
+    {
+      "baseVals": {
+        "enabled": 0
+      }
+    },
+    {
+      "baseVals": {
+        "enabled": 0
+      }
+    },
+    {
+      "baseVals": {
+        "enabled": 0
+      }
+    },
+    {
+      "baseVals": {
+        "enabled": 0
+      }
+    }
+  ],
+  "init_eqs_str": "a['mq29'] = 0; a['cthr'] = 0; a['mq1'] = 0; a['vollvl'] = 0; a['q25'] = 0; a['bassmax'] = 0; a['q12'] = 0; a['midlvl'] = 0; a['q22'] = 0; a['q21'] = 0; a['q13'] = 0; a['q29'] = 0; a['q6'] = 0; a['q1'] = 0; a['mq31'] = 0; a['q5'] = 0; a['mq21'] = 0; a['mq24'] = 0; a['chng'] = 0; a['mq28'] = 0; a['treblvl'] = 0; a['mq23'] = 0; a['midmax'] = 0; a['q31'] = 0; a['q23'] = 0; a['q24'] = 0; a['q11'] = 0; a['volmax'] = 0; a['atime'] = 0; a['q4'] = 0; a['q26'] = 0; a['maxdec'] = 0; a['mq27'] = 0; a['mq25'] = 0; a['basslvl'] = 0; a['mq22'] = 0; a['beat'] = 0; a['vol'] = 0; a['trebmax'] = 0; a['mq26'] = 0; a['q2'] = 0; a['q27'] = 0; a['q3'] = 0; a['q28'] = 0;",
+  "frame_eqs_str": "a['chng']=Math.sin((a['time']*0.5)); a['cthr']=0.9999; a['mq21']=((Math.abs(above(a['chng'], a['cthr']))>0.00001)?(randint(3)):(a['mq21'])); a['mq22']=((Math.abs(above(a['chng'], a['cthr']))>0.00001)?(randint(3)):(a['mq22'])); a['mq23']=((Math.abs(above(a['chng'], a['cthr']))>0.00001)?(randint(3)):(a['mq23'])); a['mq24']=((Math.abs(above(a['chng'], a['cthr']))>0.00001)?(randint(2)):(a['mq24'])); a['mq25']=((Math.abs(above(a['chng'], a['cthr']))>0.00001)?(randint(2)):(a['mq25'])); a['mq26']=((Math.abs(above(a['chng'], a['cthr']))>0.00001)?(randint(2)):(a['mq26'])); a['mq27']=((Math.abs(above(a['chng'], a['cthr']))>0.00001)?(randint(1)):(a['mq27'])); a['mq28']=((Math.abs(above(a['chng'], a['cthr']))>0.00001)?(randint(1)):(a['mq28'])); a['mq29']=((Math.abs(above(a['chng'], a['cthr']))>0.00001)?((randint(1)*0.3)):(a['mq29'])); a['mq31']=((Math.abs(above(a['chng'], a['cthr']))>0.00001)?((randint(1)*0.3)):(a['mq31'])); a['monitor']=a['chng']; a['q21']=a['mq21']; a['q22']=a['mq22']; a['q23']=a['mq23']; a['q24']=a['mq24']; a['q25']=a['mq25']; a['q26']=a['mq26']; a['q27']=a['mq27']; a['q28']=a['mq28']; a['q29']=a['mq29']; a['q31']=a['mq31']; a['monitor']=a['mq1']; a['vol']=((a['bass']+a['treb'])+a['mid']); a['atime']=(a['atime']+a['vol']); a['q11']=(0.4+(Math.sin((a['atime']*0.006))*0.4)); a['q12']=(0.4+(Math.cos((a['atime']*0.00613828348))*0.4)); a['q13']=(0.4+(Math.sin((a['atime']*0.00598593455))*0.4)); a['monitor']=a['q13']; a['maxdec']=0.0001; a['q5']=0.98765321; a['bassmax']=((a['bassmax']+(above(a['bass'], a['bassmax'])*(a['bass']-a['bassmax'])))-(above(a['bassmax'], a['bass'])*(a['bassmax']*a['maxdec']))); a['basslvl']=((above(a['bass'], a['basslvl'])*a['bass'])+(above(a['basslvl'], a['bass'])*(a['basslvl']*a['q5']))); a['q1']=div(a['basslvl'],a['bassmax']); a['midmax']=((a['midmax']+(above(a['mid'], a['midmax'])*(a['mid']-a['midmax'])))-(above(a['midmax'], a['mid'])*(a['midmax']*a['maxdec']))); a['midlvl']=((above(a['mid'], a['midlvl'])*a['mid'])+(above(a['midlvl'], a['mid'])*(a['midlvl']*a['q5']))); a['q2']=div(a['midlvl'],a['midmax']); a['trebmax']=((a['trebmax']+(above(a['treb'], a['trebmax'])*(a['treb']-a['trebmax'])))-(above(a['trebmax'], a['treb'])*(a['trebmax']*a['maxdec']))); a['treblvl']=((above(a['treb'], a['treblvl'])*a['treb'])+(above(a['treblvl'], a['treb'])*(a['treblvl']*a['q5']))); a['q3']=div(a['treblvl'],a['trebmax']); a['vol']=div(((a['bass']+a['treb'])+a['mid']),3); a['beat']=div((above(a['vol'], a['vollvl'])*a['vollvl']),a['vol']); a['volmax']=((a['volmax']+(above(a['vol'], a['volmax'])*(a['vol']-a['volmax'])))-(above(a['volmax'], a['vol'])*(a['volmax']*a['maxdec']))); a['vollvl']=((above(a['vol'], a['vollvl'])*a['vol'])+(above(a['vollvl'], a['vol'])*(a['vollvl']*a['q5']))); a['q4']=div(a['vollvl'],a['volmax']); a['q6']=a['beat']; a['monitor']=a['trebmax'];",
+  "pixel_eqs_str": "a['zoom']=(a['zoom']+(div(a['q1'],10)-div(a['q3'],5)));",
+  "baseVals": {
+    "rating": 5,
+    "gammaadj": 1.7,
+    "decay": 0.99,
+    "wrap": 0,
+    "darken": 1,
+    "wave_a": 0.001,
+    "fshader": 1,
+    "warp": 0.01,
+    "wave_r": 0,
+    "wave_g": 0,
+    "wave_b": 0,
+    "mv_a": 0
+  },
+  "warp": " shader_body { \n  vec2 uv_1;\n  uv_1 = uv;\n  vec2 zz_2;\n  vec3 ret_3;\n  vec2 tmpvar_4;\n  tmpvar_4 = (uv - vec2(0.5, 0.5));\n  vec3 tmpvar_5;\n  tmpvar_5 = (0.016 * texture (sampler_noise_lq, ((uv * 0.3) + (0.01 * rand_frame).xy))).xyz;\n  vec2 tmpvar_6;\n  tmpvar_6 = (0.8 * sin((tmpvar_4 * 8.0)));\n  float tmpvar_7;\n  tmpvar_7 = clamp ((0.01 / sqrt(\n    dot (tmpvar_6, tmpvar_6)\n  )), 0.0, 1.0);\n  vec2 tmpvar_8;\n  tmpvar_8 = ((-(tmpvar_4) * texsize.xy) * q26);\n  zz_2 = tmpvar_8;\n  if ((q25 == 1.0)) {\n    zz_2 = (tmpvar_8 * (abs(tmpvar_4.y) / abs(tmpvar_4.x)));\n  } else {\n    if ((q25 == 2.0)) {\n      zz_2 = (zz_2 * (abs(tmpvar_4.y) - abs(tmpvar_4.x)));\n    };\n  };\n  uv_1 = (uv + ((\n    clamp ((sin(zz_2) / cos(zz_2)), vec2(-20.0, -20.0), vec2(20.0, 20.0))\n   * texsize.zw) * 4.0));\n  ret_3 = (((\n    (0.95 * (texture (sampler_main, uv_1) + tmpvar_7).xyz)\n   + tmpvar_5) - 0.02) - (0.06 * (\n    (texture (sampler_blur2, uv_1).xyz * scale2)\n   + bias2).x));\n  vec4 tmpvar_9;\n  tmpvar_9 = texture (sampler_noisevol_hq, (((vec3(0.05, 0.05, 0.0) * uv_1.xyy) * (\n    (q27 * texsize.xyy)\n   * texsize_noisevol_hq.zww)) + ((time * vec3(0.0, 0.0, 1.0)) * q29)));\n  if (((ret_3.x > (q21 * q13)) && (ret_3.x <= (q24 * q11)))) {\n    ret_3.y = (ret_3.y - (tmpvar_9.x * 0.5));\n  };\n  if (((ret_3.y > (q22 * q11)) && (ret_3.y <= (q25 * q12)))) {\n    ret_3.z = (ret_3.z - (tmpvar_9.y * 0.5));\n  };\n  if (((ret_3.z > (q23 * q12)) && (ret_3.z <= (q26 * q13)))) {\n    ret_3.x = (ret_3.x - (tmpvar_9.z * 0.5));\n  };\n  vec4 tmpvar_10;\n  tmpvar_10.w = 1.0;\n  tmpvar_10.xyz = ret_3;\n  ret = tmpvar_10.xyz;\n }",
+  "comp": " shader_body { \n  vec2 uv_1;\n  vec2 uv3_2;\n  vec2 uv2_3;\n  vec3 ret_4;\n  uv_1 = (uv - 0.5);\n  uv_1 = (uv_1 * aspect.xy);\n  uv2_3.x = ((uv_1.x * -0.497265) - (uv_1.y * 0.8675987));\n  uv2_3.y = ((uv_1.x * 0.8675987) + (uv_1.y * -0.497265));\n  uv3_2.x = ((uv_1.x * -0.5000263) - (uv_1.y * -0.8660102));\n  uv3_2.y = ((uv_1.x * -0.8660102) + (uv_1.y * -0.5000263));\n  vec3 tmpvar_5;\n  tmpvar_5 = max (texture (sampler_main, (uv_1 + 0.5)).xyz, texture (sampler_main, (uv2_3 + 0.5)).xyz);\n  ret_4 = tmpvar_5;\n  vec4 tmpvar_6;\n  tmpvar_6 = texture (sampler_noisevol_hq, (((vec3(0.05, 0.05, 0.0) * uv3_2.xyy) * (\n    (q28 * texsize.xyy)\n   * texsize_noisevol_hq.zww)) + ((time * vec3(0.0, 0.0, 1.0)) * q31)));\n  if (((tmpvar_5.x > (q26 * q13)) && (tmpvar_5.x <= (q23 * q11)))) {\n    ret_4.z = (tmpvar_5.z - (tmpvar_6.x * 0.5));\n  };\n  if (((tmpvar_5.y > (q25 * q11)) && (tmpvar_5.y <= (q22 * q12)))) {\n    ret_4.x = (tmpvar_5.x - (tmpvar_6.y * 0.5));\n  };\n  if (((ret_4.z > (q24 * q12)) && (ret_4.z <= (q21 * q13)))) {\n    ret_4.y = (tmpvar_5.y - (tmpvar_6.z * 0.5));\n  };\n  ret_4 = (max (ret_4, texture (sampler_main, (uv3_2 + 0.5)).xyz) * 1.3);\n  ret_4 = (ret_4 * ((hue_shader * 4.0) - 2.0));\n  vec4 tmpvar_7;\n  tmpvar_7.w = 1.0;\n  tmpvar_7.xyz = ret_4;\n  ret = tmpvar_7.xyz;\n }",
+  "presetParts": {
+    "presetVersion": 1,
+    "baseVals": {
+      "rating": 5,
+      "gammaadj": 1.7,
+      "decay": 0.99,
+      "wrap": 0,
+      "darken": 1,
+      "wave_a": 0.001,
+      "fshader": 1,
+      "warp": 0.01,
+      "wave_r": 0,
+      "wave_g": 0,
+      "wave_b": 0,
+      "mv_a": 0
+    },
+    "presetInit": "",
+    "perFrame": "chng=sin(time*.5);\ncthr=.9999;\nmq21=if(above(chng,cthr),rand(3),mq21);\nmq22=if(above(chng,cthr),rand(3),mq22);\nmq23=if(above(chng,cthr),rand(3),mq23);\nmq24=if(above(chng,cthr),rand(2),mq24);\nmq25=if(above(chng,cthr),rand(2),mq25);\nmq26=if(above(chng,cthr),rand(2),mq26);\nmq27=if(above(chng,cthr),rand(1),mq27);\nmq28=if(above(chng,cthr),rand(1),mq28);\nmq29=if(above(chng,cthr),rand(1)*.3,mq29);\nmq31=if(above(chng,cthr),rand(1)*.3,mq31);\nmonitor=chng;\nq21=mq21;q22=mq22;q23=mq23;q24=mq24;q25=mq25;q26=mq26;\nq27=mq27;q28=mq28;q29=mq29;q31=mq31;\n\nmonitor=mq1;\nvol=bass+treb+mid;\natime=atime+vol;\nq11=.4+sin(atime*.006        )*.4;\nq12=.4+cos(atime*.00613828348)*.4;\nq13=.4+sin(atime*.00598593455)*.4;\nmonitor=q13;\n\nmaxDec = .0001;\nq5 = .98765321;\n\n\nbassMax = bassMax + (above(bass,bassMax) * (bass-bassMax)) - (above(bassMax,bass) * (bassMax*maxDec));\nbassLvl = (above(bass,bassLvl) * (bass)) + (above(bassLvl,bass) * (bassLvl*q5));\nq1 = bassLvl/bassMax;\n\nmidMax = midMax + (above(mid,midMax) * (mid-midMax)) - (above(midMax,mid) * (midMax*maxDec));\nmidLvl = (above(mid,midLvl) * (mid)) + (above(midLvl,mid) * (midLvl*q5));\nq2 = midLvl/midMax;\n\ntrebMax = trebMax + (above(treb,trebMax) * (treb-trebMax)) - (above(trebMax,treb) * (trebMax*maxDec));\ntrebLvl = (above(treb,trebLvl) * (treb)) + (above(trebLvl,treb) * (trebLvl*q5));\nq3 = trebLvl/trebMax;\n\nvol = (bass+treb+mid)/3;\nbeat = above(vol,volLvl)*volLvl/vol;\nvolMax = volMax + (above(vol,volMax) * (vol-volMax)) - (above(volMax,vol) * (volMax*maxDec));\nvolLvl = (above(vol,volLvl) * (vol)) + (above(volLvl,vol) * (volLvl*q5));\nq4 = volLvl/volMax;\n\nq6 = beat;\n\nmonitor = trebMax;",
+    "perVertex": "//warp = (((1-abs(x-.5))+(1-abs(x-.5))))/12.5;\nzoom = zoom+((q1/10)-(q3/5))",
+    "waves": [
+      {
+        "baseVals": {
+          "enabled": 0
+        }
+      },
+      {
+        "baseVals": {
+          "enabled": 0
+        }
+      },
+      {
+        "baseVals": {
+          "enabled": 0
+        }
+      },
+      {
+        "baseVals": {
+          "enabled": 0
+        }
+      }
+    ],
+    "shapes": [
+      {
+        "baseVals": {
+          "enabled": 1,
+          "sides": 100,
+          "additive": 1,
+          "x": 0.1,
+          "rad": 0.29878,
+          "r": 0.4,
+          "g": 0.4,
+          "b": 0.2,
+          "r2": 0.5,
+          "g2": 0.5,
+          "b2": 0.5,
+          "border_a": 0
+        },
+        "init_eqs_str": "",
+        "frame_eqs_str": "x = .25+abs(int(rand(100))/100-.5);\ny = .25+abs(int(rand(100))/100-.5);\nrad = q4;\na = q4;\n\nr = above(q1,q2)*(.5) + above(q1,q3)*(.5);\ng = above(q2,q1)*(.5) + above(q2,q3)*(.5);\nb = above(q3,q1)*(.5) + above(q3,q2)*(.5);"
+      },
+      {
+        "baseVals": {
+          "enabled": 1,
+          "y": 0,
+          "rad": 0.40271
+        },
+        "init_eqs_str": "y = -.5;",
+        "frame_eqs_str": "dist = sqrt((newX-x)*(newX-x)+(newY-y)*(newY-y));\n\nnewX = ((above(0.1,dist) * (int(rand(100))/100)) + (above(dist,0.1) * (newX)));\nnewY = ((above(0.1,dist) * (int(rand(100))/100)) + (above(dist,0.1) * (newY)));\n\ntoX = toX+(newX-x)/10;\nx = toX;\n\ntoY = toY+(newY+y)/10;\ny = toY;"
+      },
+      {
+        "baseVals": {
+          "enabled": 0
+        }
+      },
+      {
+        "baseVals": {
+          "enabled": 0
+        }
+      }
+    ],
+    "warp": "shader_body {\n\nfloat2 uv1 = float2(uv.x-0.5,uv.y-0.5);//*aspect.xy;\n\nfloat3 noiseVal =.016*(tex2D(sampler_noise_lq, uv*.3+.01*rand_frame));\n//float3 Feedback = GetBlur1(1-uv);\n\nfloat2 uv2 = .8*sin((uv1)*8);;\nfloat dots = saturate(.01/length(uv2));\n\nfloat2 zz = -uv1 *texsize.xy *q26;\n\nif (q25 ==1) {zz *= (abs(uv1.y)/abs(uv1.x));}\nelse if (q25==2)  {zz *= (abs(uv1.y)-abs(uv1.x));}\n\n\nfloat2 h1 = clamp(tan(zz),-20,20);\n\nuv.xy += h1*texsize.zw * 4;\n\nfloat3 crisp1 = tex2D(sampler_main,uv) + dots;\nfloat blur = GetBlur2 (uv);\nret = .95*crisp1+noiseVal-.02 - .06*blur;\nfloat4 noise9 = tex3D(sampler_noisevol_hq, \n                      ((uv.xyy*q27\n                       )*texsize.xyy*texsize_noisevol_hq.zww\n                      ).xyz*\n                      float3(1,1,0)*0.05 + \n                      time*float3(0,0,1)*q29\n                     );\nif(ret.x> q21*q13         && ret.x<= q24*q11        )ret.y -= (noise9).x*.5; \nif(ret.y> q22*q11         && ret.y<= q25*q12        )ret.z -= (noise9).y*.5; \nif(ret.z> q23*q12         && ret.z<= q26*q13        )ret.x -= (noise9).z*.5; \n\n\n}",
+    "comp": "shader_body\n{\n\n    float2 uv2, uv3;\n    float ang2, c, s;\n\n    uv -= 0.5;\n    uv *= aspect.xy;    \n\n    ang2 = 6.28*0.333;\n    c = cos(ang2);\n    s = sin(ang2);\n    uv2.x =  uv.x*c - uv.y*s;\n    uv2.y =  uv.x*s + uv.y*c;\n\n    ang2 = 6.28*0.667;\n    c = cos(ang2);\n    s = sin(ang2);\n    uv3.x =  uv.x*c - uv.y*s;\n    uv3.y =  uv.x*s + uv.y*c;\n\n    ret = tex2D(sampler_main, uv + 0.5).xyz;\n    ret = max(ret, tex2D(sampler_main,uv2 + 0.5).xyz);\nfloat4 noise9 = tex3D(sampler_noisevol_hq, \n                      ((uv3.xyy*q28\n                       )*texsize.xyy*texsize_noisevol_hq.zww\n                      ).xyz*\n                      float3(1,1,0)*0.05 + \n                      time*float3(0,0,1)*q31\n                     );\nif(ret.x> q26*q13         && ret.x<= q23*q11        )ret.z -= (noise9).x*.5; \nif(ret.y> q25*q11         && ret.y<= q22*q12        )ret.x -= (noise9).y*.5; \nif(ret.z> q24*q12         && ret.z<= q21*q13        )ret.y -= (noise9).z*.5; \n    ret = max(ret, tex2D(sampler_main,uv3 + 0.5).xyz);\n\n    ret *= 1.3;\n    ret *= hue_shader*4-2;\n\n}\n\n"
+  }
+}
