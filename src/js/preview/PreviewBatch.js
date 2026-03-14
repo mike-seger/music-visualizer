@@ -255,13 +255,6 @@ export default class PreviewBatch {
     const quality = format === 'JPG' ? 0.92 : undefined
     const groupFolder = _sanitize(group)
 
-    const urlFor = getPresetUrl ??
-      ((g, n) => {
-        const id = prebuilt.byName.get(n)
-        if (id) return `${_getBcPresetsBase()}/${encodeURIComponent(g)}/presets/${id}.json`
-        return `${_getBcPresetsBase()}/${encodeURIComponent(g)}/presets/${encodeURIComponent(n)}.json`
-      })
-
     // ── Load pre-built previews for this group (if any) ──
     // Returns { byHash, byName, idMap, imageExt }
     const prebuilt = await _loadMeta(group)
@@ -328,22 +321,12 @@ export default class PreviewBatch {
       if (this._cancelled) break
 
       let hash = prebuilt.byName.get(name) ?? null
-      if (!hash) {
-        try {
-          let resp = await fetch(urlFor(group, name))
-          if (!resp.ok && !getPresetUrl) {
-            // Fallback: try old top-level location
-            resp = await fetch(`${_getBcPresetsBase()}/${encodeURIComponent(group)}/${encodeURIComponent(name)}.json`)
-          }
-          if (resp.ok) hash = await _sha256short(await resp.text())
-        } catch { /* network failure */ }
-      }
 
       if (hash !== null && _store.has(hash) && _store.get(hash).group === group) { skipped++; continue }
 
       if (hash === null) {
-        // No JSON available (e.g. Shadertoy / Custom WebGL shaders); use a
-        // stable synthetic key so the preset still gets captured.
+        // No JSON preset file for this group (e.g. Custom WebGL shaders);
+        // use a stable synthetic key so the preset still gets captured.
         hash = `synthetic:${_sanitize(group)}/${_sanitize(name)}`
       }
 
@@ -474,10 +457,12 @@ export default class PreviewBatch {
    * @returns {Promise<{ missingNames: string[] }>}
    */
   async loadPrebuilt(group, list, { getFileStem, onStatus } = {}) {
-    // Clear stale store entries for this group so removed presets don't persist.
+    // Clear all store entries for this group so that removed/renamed presets
+    // don't persist and the missing count reflects reality.
+    // openPreview() will revoke the associated blob URLs for any cleared entry
+    // (since those hashes are no longer in _store) on its next call.
     for (const [hash, entry] of _store) {
       if (entry.group === group) {
-        if (_previewUrls.has(hash)) { URL.revokeObjectURL(_previewUrls.get(hash)); _previewUrls.delete(hash) }
         _store.delete(hash)
       }
     }
@@ -694,11 +679,12 @@ export default class PreviewBatch {
     const tw = width
     const th = height
 
+    // urlFor: use caller-supplied getPresetUrl, or look up the hash in the
+    // prebuilt index (all presets live at presets/<hash>.json).
     const urlFor = getPresetUrl ??
       ((g, n) => {
         const id = prebuilt.byName.get(n)
-        if (id) return `${_getBcPresetsBase()}/${encodeURIComponent(g)}/presets/${id}.json`
-        return `${_getBcPresetsBase()}/${encodeURIComponent(g)}/presets/${encodeURIComponent(n)}.json`
+        return id ? `${_getBcPresetsBase()}/${encodeURIComponent(g)}/presets/${id}.json` : null
       })
 
     // ── Phase 1: load pre-built images ────────────────────────────────────────
@@ -1071,15 +1057,28 @@ export default class PreviewBatch {
    * @returns {Array|null}
    */
   openPreview(group, orderedNames) {
-    // Revoke stale URLs first (always, so we don't leak)
-    for (const url of _previewUrls.values()) URL.revokeObjectURL(url)
-    _previewUrls.clear()
+    // Revoke URLs for hashes that are no longer in _store for the requested group
+    // (deleted presets, or entries from a different group that are now stale).
+    // DO NOT revoke all URLs upfront — existing URLs for still-valid _store entries
+    // are reused so that DOM tiles remain valid between double-calls (e.g. the
+    // initial build + loadPrebuilt re-fetch cycle).
+    for (const [hash, url] of _previewUrls) {
+      if (!_store.has(hash) || _store.get(hash).group !== group) {
+        URL.revokeObjectURL(url)
+        _previewUrls.delete(hash)
+      }
+    }
 
     const items = []
     for (const [hash, entry] of _store) {
       if (entry.group !== group) continue
-      const blobUrl = URL.createObjectURL(entry.blob)
-      _previewUrls.set(hash, blobUrl)
+      // Reuse the existing blob URL when the entry is unchanged; only create a
+      // new one when the hash is newly added to the store.
+      let blobUrl = _previewUrls.get(hash)
+      if (!blobUrl) {
+        blobUrl = URL.createObjectURL(entry.blob)
+        _previewUrls.set(hash, blobUrl)
+      }
       items.push({
         hash,
         blobUrl,

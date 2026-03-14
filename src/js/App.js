@@ -4082,10 +4082,22 @@ export default class App {
   _buildAllPreviewItems(group, list) {
     const captured = this.previewBatch.openPreview(group, list) ?? []
     const capturedByName = new Map(captured.map((it) => [it.presetName, it]))
+    // Secondary index by hash: two display names that share the same content hash
+    // (e.g. a synthesized preset and its source symlink) only produce one _store
+    // entry (last writer wins on the presetName field).  The hash-based lookup
+    // lets the "losing" name still be counted as captured.
+    const capturedByHash = new Map(captured.map((it) => [it.hash, it]))
+    const nameToHash = App._userGroupIndex.get(group)?.nameToHash ?? new Map()
     const placeholderUrl = `${import.meta.env.BASE_URL}img/preview.png`
     let missingCount = 0
     const items = (list || []).map((name) => {
       if (capturedByName.has(name)) return capturedByName.get(name)
+      // Fallback: same hash captured under a different display name
+      const hash = nameToHash.get(name)
+      if (hash && capturedByHash.has(hash)) {
+        const orig = capturedByHash.get(hash)
+        return { ...orig, presetName: name }
+      }
       missingCount++
       return {
         hash: 'placeholder:' + name,

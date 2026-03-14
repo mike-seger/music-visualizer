@@ -301,6 +301,7 @@ body.has-status { padding-top: 68px; }
   var allItems = []  // full unfiltered list for the current group
   var currentFilter = ''  // tracks the viz-controls name filter
   var filteredItems = []  // current rendered items (after filter)
+  var placeholderUrl = null  // fallback URL for tiles whose blob URL fails to load
 
   var selected = (function () {
     try { return new Set(JSON.parse(localStorage.getItem('visualizer-selected') ?? '[]')) }
@@ -453,6 +454,13 @@ body.has-status { padding-top: 68px; }
         updateCount()
       }
       allItems = e.data.items || []
+      // Track the placeholder URL for use as an onerror fallback in tiles
+      for (var _pi = 0; _pi < allItems.length; _pi++) {
+        if (allItems[_pi].missing && allItems[_pi].blobUrl) {
+          placeholderUrl = allItems[_pi].blobUrl
+          break
+        }
+      }
       var mc = e.data.missingCount != null ? e.data.missingCount : 0
       var loadingOverlay = document.getElementById('loading-overlay')
       if (_isLoading) {
@@ -635,6 +643,11 @@ body.has-status { padding-top: 68px; }
     img.alt = item.presetName
     img.loading = 'lazy'
     img.draggable = false
+    // Safety net: if the blob URL is somehow revoked or invalid, fall back to
+    // the placeholder so tiles never show the browser's broken-image icon.
+    if (!item.missing && placeholderUrl) {
+      img.onerror = function () { this.onerror = null; this.src = placeholderUrl }
+    }
 
     // Name bar: [text ···] [♡] [☐]
     var nameDiv = document.createElement('div')
