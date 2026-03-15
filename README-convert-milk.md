@@ -72,6 +72,64 @@ The output JSON has this structure:
 }
 ```
 
+## AWS Call Logging
+
+The HLSL→GLSL shader conversion is performed by a remote AWS Lambda service (up to two calls per preset: one for the warp shader, one for the comp shader). You can log every request for diagnostics or performance analysis.
+
+### Enable logging
+
+**Via CLI flag:**
+
+```bash
+node scripts/convert-milk.cjs --batch <inputDir> <outputDir> --log tmp/aws-calls.log
+```
+
+**Via environment variable:**
+
+```bash
+LOG_FILE=tmp/aws-calls.log node scripts/convert-milk.cjs --batch <inputDir> <outputDir>
+```
+
+The log file is **appended to** on every run (never truncated), so successive runs accumulate entries.
+
+### Log format
+
+Each line is a JSON object:
+
+```jsonc
+{ "t": "2026-03-15T12:34:56.789Z",  // ISO timestamp
+  "label": "Foo.milk [warp]",        // filename + shader slot ([warp] or [comp])
+  "status": 200,                     // HTTP status from the Lambda
+  "ms": 342,                         // round-trip time in milliseconds
+  "ok": true,                        // false if HTTP status was not 2xx
+  "hlslBytes": 1847,                 // size of the HLSL input sent
+  "glslBytes": 2103 }                // size of the GLSL output received (ok:true only)
+```
+
+On HTTP error `ok` is `false` and `glslBytes` is omitted.
+
+### Summary
+
+When a log file is open, a summary is printed to stderr at the end of the batch:
+
+```
+AWS calls: 708 total, 706 ok, 2 failed, 241560 ms total, avg 341 ms
+```
+
+### Analysing the log
+
+```bash
+# Average response time
+python3 -c "
+import json
+lines = [json.loads(l) for l in open('tmp/aws-calls.log')]
+print('avg ms:', round(sum(l['ms'] for l in lines) / len(lines)) if lines else 0)
+"
+
+# Show failed calls
+grep '"ok":false' tmp/aws-calls.log
+```
+
 ## Conversion Pipeline
 
 ```
