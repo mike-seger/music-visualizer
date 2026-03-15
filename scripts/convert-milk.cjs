@@ -30,6 +30,41 @@ var convertShapeEquations = converter.convertShapeEquations;
 var CONVERT_URL = 'https://p2tpeb5v8b.execute-api.us-east-2.amazonaws.com/default/milkdropShaderConverter';
 
 // ---------------------------------------------------------------------------
+// Request logging
+// ---------------------------------------------------------------------------
+
+/**
+ * Optional log file. Set via LOG_FILE env var or --log <path> CLI flag.
+ * Each line is a JSON object: { t, label, shader, hlslBytes, status, ms, ok, error }
+ */
+var _logStream = null;
+var _logFile   = null;
+var _logStats  = { calls: 0, ok: 0, fail: 0, totalMs: 0 };
+
+function _openLog(filePath) {
+  _logFile = path.resolve(filePath);
+  _logStream = fs.createWriteStream(_logFile, { flags: 'a' });
+  process.stderr.write('Logging AWS calls → ' + _logFile + '\n');
+}
+
+function _appendLog(record) {
+  if (_logStream) _logStream.write(JSON.stringify(record) + '\n');
+}
+
+function _closeLog() {
+  if (_logStream) {
+    _logStream.end();
+    _logStream = null;
+    process.stderr.write(
+      'AWS calls: ' + _logStats.calls + ' total, ' +
+      _logStats.ok + ' ok, ' + _logStats.fail + ' failed, ' +
+      Math.round(_logStats.totalMs) + ' ms total' +
+      (_logStats.calls ? ', avg ' + Math.round(_logStats.totalMs / _logStats.calls) + ' ms' : '') + '\n'
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
 // Shader conversion (AWS Lambda + glsl-optimizer)
 // ---------------------------------------------------------------------------
 
@@ -60,21 +95,35 @@ function getOptimizeGlsl() {
  *
  * @param {Function} optimizeFn  The glsl-optimizer cwrap function.
  * @param {string}   rawHlsl     Raw HLSL from splitPreset.
+ * @param {string}   [label]     Human-readable label for logging (e.g. 'preset.milk [warp]').
  * @returns {Promise<string>}    Final GLSL string.
  */
-function convertShaderAsync(optimizeFn, rawHlsl) {
+function convertShaderAsync(optimizeFn, rawHlsl, label) {
   if (!rawHlsl || !rawHlsl.trim()) return Promise.resolve('');
 
   var prepared = prepareShader(rawHlsl);
   if (!prepared) return Promise.resolve('');
+
+  var t0 = Date.now();
+  _logStats.calls++;
 
   return fetch(CONVERT_URL, {
     method: 'POST',
     body: JSON.stringify({ optimize: false, shader: prepared }),
   })
     .then(function (r) {
-      if (!r.ok) throw new Error('Shader conversion HTTP ' + r.status);
-      return r.json();
+      var ms = Date.now() - t0;
+      _logStats.totalMs += ms;
+      if (!r.ok) {
+        _logStats.fail++;
+        _appendLog({ t: new Date().toISOString(), label: label || '', status: r.status, ms: ms, ok: false, hlslBytes: prepared.length });
+        throw new Error('Shader conversion HTTP ' + r.status);
+      }
+      return r.json().then(function (data) {
+        _logStats.ok++;
+        _appendLog({ t: new Date().toISOString(), label: label || '', status: r.status, ms: ms, ok: true, hlslBytes: prepared.length, glslBytes: (data.shader||'').length });
+        return data;
+      });
     })
     .then(function (data) {
       var optimized = optimizeFn(data.shader, 1, 0);
@@ -90,9 +139,10 @@ function convertShaderAsync(optimizeFn, rawHlsl) {
  * Convert the text of a .milk file into a Butterchurn-compatible JSON object.
  *
  * @param {string} milkText  Full contents of a .milk file (including headers).
+ * @param {string} [label]   Optional label for logging (e.g. filename).
  * @returns {Promise<object>} Butterchurn preset object.
  */
-function convertMilk(milkText) {
+function convertMilk(milkText, label) {
   // splitPreset expects the full .milk text (including the [preset00] header).
   // Stripping it causes the parser to return empty data for all fields.
   var content = milkText.replace(/\r\n/g, '\n');
@@ -154,10 +204,11 @@ function convertMilk(milkText) {
   }
 
   // --- convert shaders (async) ---
+  var _label = label || '';
   return getOptimizeGlsl().then(function (optimizeFn) {
     return Promise.all([
-      convertShaderAsync(optimizeFn, split.warp || ''),
-      convertShaderAsync(optimizeFn, split.comp || ''),
+      convertShaderAsync(optimizeFn, split.warp || '', _label + ' [warp]'),
+      convertShaderAsync(optimizeFn, split.comp || '', _label + ' [comp]'),
     ]);
   }).then(function (shaders) {
     return {
@@ -193,7 +244,7 @@ function printUsage() {
  */
 function convertFile(filePath) {
   var text = fs.readFileSync(filePath, 'utf8');
-  return convertMilk(text).then(function (preset) {
+  return convertMilk(text, path.basename(filePath)).then(function (preset) {
     return JSON.stringify(preset, null, 2);
   });
 }
@@ -234,6 +285,7 @@ async function batchConvert(inputDir, outputDir) {
     }
   }
   process.stderr.write('\nDone. ' + ok + ' converted, ' + fail + ' failed.\n');
+  _closeLog();
 }
 
 /**
@@ -253,6 +305,15 @@ function readStdin() {
 
 if (require.main === module) {
   var args = process.argv.slice(2);
+
+  // --log <file>  (or LOG_FILE env var) — log every AWS request as JSON lines
+  var logIdx = args.indexOf('--log');
+  if (logIdx !== -1 && args[logIdx + 1]) {
+    _openLog(args[logIdx + 1]);
+    args.splice(logIdx, 2);
+  } else if (process.env.LOG_FILE) {
+    _openLog(process.env.LOG_FILE);
+  }
 
   if (args[0] === '--batch') {
     if (args.length < 3) {

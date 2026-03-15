@@ -1,0 +1,324 @@
+{
+  "shapes": [
+    {
+      "baseVals": {
+        "enabled": 1,
+        "sides": 15,
+        "textured": 1,
+        "rad": 0.72072,
+        "tex_zoom": 1.24291,
+        "g": 0.4,
+        "b": 0.89,
+        "a": 0.8,
+        "r2": 1,
+        "g2": 0,
+        "b2": 1,
+        "border_b": 0,
+        "border_a": 0
+      },
+      "init_eqs_str": "",
+      "frame_eqs_str": "a['tex_ang']=(0.7+(0.3*Math.sin(a['time'])));"
+    },
+    {
+      "baseVals": {
+        "enabled": 1,
+        "sides": 63,
+        "textured": 1,
+        "x": 0.81,
+        "y": 0.3,
+        "rad": 0.3971,
+        "tex_ang": 2.51327,
+        "tex_zoom": 0.90799,
+        "g": 1,
+        "b": 1,
+        "a": 0.6,
+        "r2": 1,
+        "b2": 1,
+        "a2": 0.47,
+        "border_r": 0.5,
+        "border_g": 0.5,
+        "border_b": 0.5,
+        "border_a": 0
+      },
+      "init_eqs_str": "",
+      "frame_eqs_str": ""
+    },
+    {
+      "baseVals": {
+        "enabled": 1,
+        "sides": 63,
+        "x": 0.323,
+        "y": 0,
+        "rad": 0.27319,
+        "tex_zoom": 0.49981,
+        "g": 1,
+        "b": 1,
+        "a": 0.7,
+        "r2": 1,
+        "b2": 1,
+        "border_r": 0,
+        "border_a": 0
+      },
+      "init_eqs_str": "",
+      "frame_eqs_str": "a['x']=div(rand(100),100); a['y']=div(rand(100),100); a['a']=0.8; a['r']=0; a['b']=1; a['g']=1; a['a2']=1; a['r2']=0; a['b2']=0; a['g2']=0; a['rad']=0.02;"
+    },
+    {
+      "baseVals": {
+        "enabled": 0
+      }
+    }
+  ],
+  "waves": [
+    {
+      "baseVals": {
+        "enabled": 0
+      }
+    },
+    {
+      "baseVals": {
+        "enabled": 0
+      }
+    },
+    {
+      "baseVals": {
+        "enabled": 0
+      }
+    },
+    {
+      "baseVals": {
+        "enabled": 0
+      }
+    }
+  ],
+  "init_eqs_str": "a['index2'] = 0; a['index'] = 0; a['q22'] = 0; a['q21'] = 0; a['q29'] = 0; a['movex'] = 0; a['q1'] = 0; a['dec_med'] = 0; a['index3'] = 0; a['rott'] = 0; a['is_beat'] = 0; a['q31'] = 0; a['q23'] = 0; a['k1'] = 0; a['q24'] = 0; a['dec_slow'] = 0; a['q4'] = 0; a['q26'] = 0; a['p2'] = 0; a['avg'] = 0; a['movez'] = 0; a['crawl'] = 0; a['beat'] = 0; a['p1'] = 0; a['peak'] = 0; a['q2'] = 0; a['q27'] = 0; a['q3'] = 0; a['t0'] = 0; a['q32'] = 0; a['q28'] = 0; a['q30'] = 0; a['q20'] = 0;",
+  "frame_eqs_str": "a['dec_med']=Math.exp(div(-3,a['fps'])); a['dec_slow']=Math.exp(div(-0.3,a['fps'])); a['beat']=Math.max(Math.max(a['bass'], a['mid']), a['treb']); a['avg']=((a['avg']*a['dec_slow'])+(a['beat']*(1-a['dec_slow']))); a['is_beat']=(above(a['beat'], ((0.5+a['avg'])+a['peak']))*above(a['time'], (a['t0']+0.2))); a['t0']=((a['is_beat']*a['time'])+((1-a['is_beat'])*a['t0'])); a['peak']=((a['is_beat']*a['beat'])+(((1-a['is_beat'])*a['peak'])*a['dec_med'])); a['index']=mod((a['index']+a['is_beat']),8); a['index2']=mod((a['index2']+(a['is_beat']*bnot(a['index']))),8); a['index3']=mod((a['index3']+((a['is_beat']*bnot(a['index']))*bnot(a['index2']))),3); a['q20']=a['avg']; a['q21']=a['beat']; a['q22']=a['peak']; a['q23']=a['index']; a['q24']=a['is_beat']; a['q26']=(((a['bass']+a['mid'])+a['treb'])+1); a['q27']=(a['index']+1); a['q28']=(a['index2']+1); a['k1']=(a['is_beat']*equal(mod(a['index'],2), 0)); a['p1']=((a['k1']*(a['p1']+1))+((1-a['k1'])*a['p1'])); a['p2']=((a['dec_med']*a['p2'])+((1-a['dec_med'])*a['p1'])); a['rott']=div((a['p2']*3.1416),4); a['q1']=Math.cos(a['rott']); a['q2']=Math.sin(a['rott']); a['q3']=-a['q2']; a['q4']=a['q1']; a['movex']=(a['movex']+div((0.03*30),a['fps'])); a['q29']=a['movex']; a['movez']=(a['movez']+div((0.07*30),a['fps'])); a['q30']=a['movez']; a['crawl']=(a['crawl']+div(((0.001*(2+a['q22']))*30),a['fps'])); a['q31']=a['crawl']; a['q32']=(2+Math.sin(div(a['time'],7))); a['monitor']=a['index2'];",
+  "pixel_eqs_str": "a['zoom']=1.0;",
+  "baseVals": {
+    "rating": 2,
+    "gammaadj": 1.98,
+    "decay": 0.5,
+    "echo_zoom": 1,
+    "echo_alpha": 0.5,
+    "echo_orient": 3,
+    "additivewave": 1,
+    "wave_thick": 1,
+    "modwavealphabyvolume": 1,
+    "wave_brighten": 0,
+    "darken": 1,
+    "wave_a": 3.749,
+    "wave_scale": 2.466,
+    "wave_smoothing": 0,
+    "wave_mystery": 0.2,
+    "modwavealphastart": 0.71,
+    "modwavealphaend": 1.3,
+    "warpanimspeed": 1.459,
+    "warpscale": 2.007,
+    "zoom": 0.9999,
+    "warp": 0.01,
+    "sx": 0.9999,
+    "wave_r": 0,
+    "wave_g": 0,
+    "wave_b": 0,
+    "ob_r": 1,
+    "ob_g": 1,
+    "ob_b": 1,
+    "ib_size": 0.11,
+    "mv_x": 64,
+    "mv_y": 48,
+    "mv_l": 1.85,
+    "mv_r": 0.5,
+    "mv_g": 0.5,
+    "mv_b": 0.5,
+    "mv_a": 0,
+    "b1x": 0.7,
+    "b1ed": 0
+  },
+  "warp": " shader_body { \n  float rota_1;\n  vec2 uv6_2;\n  vec2 tmpvar_3;\n  tmpvar_3 = (uv - 0.5);\n  rota_1 = (dot (texture (sampler_noise_hq, (\n    (tmpvar_3 / 5.0)\n   + q31)), vec4(0.32, 0.49, 0.29, 0.0)) * 2.0);\n  float tmpvar_4;\n  tmpvar_4 = sin(rota_1);\n  float tmpvar_5;\n  tmpvar_5 = cos(rota_1);\n  mat2 tmpvar_6;\n  tmpvar_6[uint(0)].x = tmpvar_5;\n  tmpvar_6[uint(0)].y = -(tmpvar_4);\n  tmpvar_6[1u].x = tmpvar_4;\n  tmpvar_6[1u].y = tmpvar_5;\n  uv6_2 = (tmpvar_3 * tmpvar_6);\n  float tmpvar_7;\n  tmpvar_7 = (4.0 * sqrt(dot (uv6_2, uv6_2)));\n  vec2 tmpvar_8;\n  tmpvar_8 = normalize((uv6_2 * tmpvar_7));\n  vec2 tmpvar_9;\n  tmpvar_9 = (((20.0 * \n    (sin(tmpvar_7) / cos(tmpvar_7))\n  ) * tmpvar_8) * tmpvar_8);\n  vec4 tmpvar_10;\n  tmpvar_10.w = 1.0;\n  tmpvar_10.xyz = (((\n    (vec3(clamp ((1.0 - abs(\n      (tmpvar_9.y * tmpvar_9.x)\n    )), 0.0, 1.0)) * vec3(1.0, 0.0, 0.0))\n   * \n    (1.0 - (2.0 * rad))\n  ) + (\n    (texture (sampler_main, uv).xyz * (1.0 - (0.1 * pow (rad, 3.0))))\n   * vec3(0.0, 1.0, 1.0))) - 0.004);\n  ret = tmpvar_10.xyz;\n }",
+  "comp": "vec3 xlat_mutableret1;\nvec2 xlat_mutablers2;\nvec2 xlat_mutabletmp;\nvec2 xlat_mutableuv2;\nvec2 xlat_mutableuv3;\n shader_body { \n  vec3 dots_1;\n  vec3 inten_3;\n  float dist_4;\n  dist_4 = 1.0;\n  inten_3 = vec3(1.0, 1.0, 1.0);\n  xlat_mutableret1 = vec3(0.0, 0.0, 0.0);\n  xlat_mutabletmp = ((uv - 0.5) * aspect.xy);\n  for (int n_2 = 0; n_2 <= 4; n_2++) {\n    dist_4 = (1.0 - fract((\n      (0.25 * float(n_2))\n     + q29)));\n    float tmpvar_5;\n    tmpvar_5 = (float(mod (float(n_2), 2.0)));\n    float tmpvar_6;\n    tmpvar_6 = (float(mod (float((n_2 + 1)), 2.0)));\n    xlat_mutableuv2.x = ((xlat_mutabletmp.x * tmpvar_5) - (xlat_mutabletmp.y * tmpvar_6));\n    xlat_mutableuv2.y = ((xlat_mutabletmp.x * tmpvar_6) + (xlat_mutabletmp.y * tmpvar_5));\n    xlat_mutableuv2 = (xlat_mutableuv2 * aspect.yx);\n    inten_3.x = ((sqrt(dist_4) * (1.0 - \n      (dist_4 * dist_4)\n    )) * 2.0);\n    inten_3.y = 1.0;\n    inten_3.z = 1.0;\n    xlat_mutableuv3 = (((\n      (4.0 * xlat_mutableuv2)\n     * dist_4) + (0.7 * \n      float(n_2)\n    )) + ((0.2 * q29) * tmpvar_5));\n    xlat_mutableret1 = max (xlat_mutableret1, (texture (sampler_main, xlat_mutableuv3).xyz * inten_3));\n  };\n  vec2 tmpvar_7;\n  tmpvar_7 = ((uv - 0.5) * aspect.xy);\n  float tmpvar_8;\n  tmpvar_8 = (1.0/(((6.0 * \n    sqrt(dot (tmpvar_7, tmpvar_7))\n  ) + 0.1)));\n  vec2 tmpvar_9;\n  tmpvar_9.x = (ang / 2.0);\n  tmpvar_9.y = tmpvar_8;\n  xlat_mutableuv2.x = tmpvar_9.x;\n  xlat_mutableuv2.y = (tmpvar_8 + q30);\n  xlat_mutablers2 = (cos((xlat_mutableuv2 * 4.0)) + (xlat_mutableret1 * 12.0).xy);\n  dots_1 = (clamp ((vec3(0.0, 0.05, 0.45) * tmpvar_8), 0.0, 1.0) + ((\n    (0.5 + q22)\n   * \n    (1.0 - rad)\n  ) * clamp (\n    (0.05 / sqrt(dot (xlat_mutablers2, xlat_mutablers2)))\n  , 0.0, 1.0)));\n  vec3 tmpvar_10;\n  tmpvar_10.yz = vec2(0.6, 0.3);\n  tmpvar_10.x = (q26 / 2.0);\n  vec4 tmpvar_11;\n  tmpvar_11.w = 1.0;\n  tmpvar_11.xyz = (((xlat_mutableret1 * tmpvar_10) - (\n    (2.0 * xlat_mutableret1.x)\n   * \n    (1.0 - dots_1)\n  )) + ((\n    (0.4 * q32)\n   * dots_1) * clamp (\n    (1.0 - (2.0 * xlat_mutableret1.x))\n  , 0.0, 1.0)));\n  ret = tmpvar_11.xyz;\n }",
+  "presetParts": {
+    "presetVersion": 2,
+    "baseVals": {
+      "rating": 2,
+      "gammaadj": 1.98,
+      "decay": 0.5,
+      "echo_zoom": 1,
+      "echo_alpha": 0.5,
+      "echo_orient": 3,
+      "additivewave": 1,
+      "wave_thick": 1,
+      "modwavealphabyvolume": 1,
+      "wave_brighten": 0,
+      "darken": 1,
+      "wave_a": 3.749,
+      "wave_scale": 2.466,
+      "wave_smoothing": 0,
+      "wave_mystery": 0.2,
+      "modwavealphastart": 0.71,
+      "modwavealphaend": 1.3,
+      "warpanimspeed": 1.459,
+      "warpscale": 2.007,
+      "zoom": 0.9999,
+      "warp": 0.01,
+      "sx": 0.9999,
+      "wave_r": 0,
+      "wave_g": 0,
+      "wave_b": 0,
+      "ob_r": 1,
+      "ob_g": 1,
+      "ob_b": 1,
+      "ib_size": 0.11,
+      "mv_x": 64,
+      "mv_y": 48,
+      "mv_l": 1.85,
+      "mv_r": 0.5,
+      "mv_g": 0.5,
+      "mv_b": 0.5,
+      "mv_a": 0,
+      "b1x": 0.7,
+      "b1ed": 0
+    },
+    "presetInit": "",
+    "perFrame": "dec_med = exp(-3/fps);\ndec_slow = exp(-0.3/fps);\nbeat = max (max (bass, mid), treb); \navg = avg*dec_slow + beat*(1-dec_slow);\nis_beat = above(beat, .5+avg+peak) * above (time, t0+.2);\nt0 = is_beat*time + (1-is_beat)*t0;\npeak = is_beat * beat + (1-is_beat)*peak*dec_med;\nindex = (index + is_beat) %8;\nindex2 = (index2 + is_beat*bnot(index))%8;\nindex3 = (index3 + is_beat*bnot(index)*bnot(index2))%3;\n\nq20 = avg;\nq21 = beat;\nq22 = peak;\nq23 = index;\nq24 = is_beat;\nq26 = bass + mid + treb + 1;\nq27 = index + 1;\nq28 = index2+1;\n\nk1 =  is_beat*equal(index%2,0);\np1 =  k1*(p1+1) + (1-k1)*p1;\np2 = dec_med * p2+ (1-dec_med)*p1;\nrott = p2 * 3.1416/4;\n\nq1 = cos(rott);\nq2 = sin(rott);\nq3 = -q2;\nq4 = q1;\n\nmovex = movex + .03*30/fps;\nq29 = movex;\nmovez = movez + .07*30/fps;\nq30 = movez;\n\ncrawl = crawl + .001*(2+q22)*30/fps;\nq31 = crawl;\n\nq32 = 2 + sin(time/7);\nmonitor = index2;",
+    "perVertex": "zoom = 1.0;",
+    "waves": [
+      {
+        "baseVals": {
+          "samples": 132,
+          "sep": 29,
+          "usedots": 1,
+          "thick": 1,
+          "additive": 1,
+          "scaling": 0.89152,
+          "smoothing": 0.82,
+          "g": 0.2,
+          "b": 0,
+          "a": 0.6,
+          "enabled": 0
+        },
+        "init_eqs_str": "",
+        "frame_eqs_str": "t2 = t2 + bass_att;",
+        "point_eqs_str": "\n\nska = sqr(sin(sample*3.14));\n\n\nb = 0; g = .1; r = 0.6;\na = ska * (bass_att);\nx = .5 + sample *(.1+value1);\ny = .5 + sample*(.1+value2);"
+      },
+      {
+        "baseVals": {
+          "thick": 1,
+          "scaling": 0.89152,
+          "smoothing": 0.82,
+          "a": 0.1,
+          "enabled": 0
+        },
+        "init_eqs_str": "",
+        "frame_eqs_str": "",
+        "point_eqs_str": ""
+      },
+      {
+        "baseVals": {
+          "thick": 1,
+          "scaling": 0.89152,
+          "smoothing": 0.82,
+          "a": 0.1,
+          "enabled": 0
+        },
+        "init_eqs_str": "",
+        "frame_eqs_str": "",
+        "point_eqs_str": ""
+      },
+      {
+        "baseVals": {
+          "spectrum": 1,
+          "usedots": 1,
+          "enabled": 0
+        },
+        "init_eqs_str": "",
+        "frame_eqs_str": "",
+        "point_eqs_str": "ra = .8;\nrb = .5;\npib = 6.28318530718;\n\n\ntic = min(time-tin,.1);\ntin = if(equal(sample,0),time,tin);\n\nmod = 1.5 + .5*sin(time*.15);\nmed = 1.5 + .5*sin(time*.134);\nmed = 5;\namod = 3;\n\nvr = rand(10001)*.0001;\nrb = rb + rand(10001)*.0001*.1;\n\na = vr;\n\nsa = vr*pib*.5;\nsp = sa*mod + q1*1.3;\nsam = sa*med - q1*.219;\n\nox = ra*sin(sam*pib);\noy = ra*cos(sam*pib);\nox = ox + rb*-cos(sp)*sin(sam*pib);\noz = rb*-sin(sp);\noy = oy + rb*-cos(sp)*cos(sam*pib);\n\n\nxang = time*.132;\nxang = q2;\nyang = time*.153;\nyang = q3;\nzang = time*.110;\nzang = q4;\nfov = 0.6 + 0.2*sin(time);\nfov = .5;\n\nmx = ox*cos(zang) - oy*sin(zang);\nmy = ox*sin(zang) + oy*cos(zang);\nox = mx;\noy = my;\nmx = ox*cos(yang) + oz*sin(yang);\nmz = - ox*sin(yang) + oz*cos(yang);\nox = mx;\noz = mz;\nmy = oy*cos(xang) - oz*sin(xang);\nmz = oy*sin(xang) + oz*cos(xang);\noy = my;\noz = mz;\n\noz = oz - 2;\nx = ox*fov/oz + 0.5;\nx = (x-.5)*0.75 + 0.5;\ny = oy*fov/oz + 0.5;\n"
+      }
+    ],
+    "shapes": [
+      {
+        "baseVals": {
+          "enabled": 1,
+          "sides": 15,
+          "textured": 1,
+          "rad": 0.72072,
+          "tex_zoom": 1.24291,
+          "g": 0.4,
+          "b": 0.89,
+          "a": 0.8,
+          "r2": 1,
+          "g2": 0,
+          "b2": 1,
+          "border_b": 0,
+          "border_a": 0
+        },
+        "init_eqs_str": "",
+        "frame_eqs_str": "tex_ang = .7 + .3 * sin(time);"
+      },
+      {
+        "baseVals": {
+          "enabled": 1,
+          "sides": 63,
+          "textured": 1,
+          "x": 0.81,
+          "y": 0.3,
+          "rad": 0.3971,
+          "tex_ang": 2.51327,
+          "tex_zoom": 0.90799,
+          "g": 1,
+          "b": 1,
+          "a": 0.6,
+          "r2": 1,
+          "b2": 1,
+          "a2": 0.47,
+          "border_r": 0.5,
+          "border_g": 0.5,
+          "border_b": 0.5,
+          "border_a": 0
+        },
+        "init_eqs_str": "",
+        "frame_eqs_str": ""
+      },
+      {
+        "baseVals": {
+          "enabled": 1,
+          "sides": 63,
+          "x": 0.323,
+          "y": 0,
+          "rad": 0.27319,
+          "tex_zoom": 0.49981,
+          "g": 1,
+          "b": 1,
+          "a": 0.7,
+          "r2": 1,
+          "b2": 1,
+          "border_r": 0,
+          "border_a": 0
+        },
+        "init_eqs_str": "",
+        "frame_eqs_str": "x = rand(100)/100;\ny = rand(100)/100;\n\na = 0.8; r = 0; b = 1; g = 1;\na2 = 1; r2=0; b2 = 0; g2 = 0;\nrad = .02;"
+      },
+      {
+        "baseVals": {
+          "additive": 1,
+          "x": 0.6,
+          "rad": 0.08081,
+          "tex_zoom": 0.49981,
+          "r": 0,
+          "g": 1,
+          "b": 1,
+          "b2": 1,
+          "a2": 1,
+          "border_r": 0.5,
+          "border_g": 0.5,
+          "border_b": 0.5,
+          "border_a": 0,
+          "enabled": 0
+        },
+        "init_eqs_str": "",
+        "frame_eqs_str": ""
+      }
+    ],
+    "warp": "sampler sampler_worms;\nfloat3 color, crab;\nfloat sr,cr,dx,dy;\n\nshader_body {\nfloat corr = texsize.xy*texsize_noise_lq.zw;\n\nfloat2 uv1 = (uv-.5);\n\nfloat f1 = 2;\n\nfloat2 uv6 = uv1-.1;\n\nfloat rota = 3.14/4 * uv.x*2;\n\n//LIESMICH - diese Formel gibt nur eine Spinne:\nrota = lum(tex2D (sampler_noise_hq,uv1/5 + q31))*2;\n\nsr = sin(rota); cr = cos(rota);\nuv6 = mul(uv1,float2x2(cr,sr,-sr,cr));\n\nfloat z = 4*length(uv6);\nfloat2 dz = normalize(uv6*z);\nfloat2 rs = 20*tan(z)*dz*dz; //#evtl. nochmal x dz\n\n\ncrab = saturate((1-abs(rs.y*rs.x)));\ncrab *= float3 (1,0,0);\n//crab*= (1-crab)*4; //Loch in der Mitte\n\nfloat3 blur = GetBlur1(frac(uv));\n\nret = crab *(1-2*rad) + \nGetPixel(uv)*(1-.1*pow(rad,3))*float3(0,1,1)-.004;\n}",
+    "comp": "float dx,dy, c, s;;\nfloat3 ret1, neu;\nfloat2 rs,rs2,uv1,uv4,dz,uv3, uv2, tmp;\nshader_body\n{\n\nfloat2 hor = float2 (texsize.z,0);\nfloat2 ver = float2 (0,texsize.w);\n\ndz = 0;\nfloat dist = 1;\nfloat3 inten = 1;\nfloat mask = 0;\nret1 = 0;\nint anz = 4;\nint n = 0; dx = 0; dy = 0;\ntmp = (uv-.5) * aspect.xy;\nwhile (n <= anz) {\n    dist = 1-frac(.25*n+q29); //evtl sqrt !\nuv2 = tmp;\n\n    c = n%2;\n    s = (n+1)%2;\n    uv2.x =  tmp.x*c - tmp.y*s;\n    uv2.y =  tmp.x*s + tmp.y*c;\n    uv2*= aspect.yx;   \n    inten.r =  sqrt(dist)*(1-dist*dist)*2;\n    inten.g = 1;\n    inten.b = 1;\n \n    uv3 = 4*(uv2)*dist + .7* n + .2*q29*c;\n    neu = GetPixel(uv3);\n\n    dx = lum(GetPixel(uv3+hor)- GetPixel(uv3-hor));\n    dy = lum(GetPixel(uv3+ver)- GetPixel(uv3-ver));\n    dz += inten.r*float2 (dx,dy);\n    \n   ret1 = max(ret1,neu*inten);\nn++;\n}\n\n//******************\n\nfloat2 uv1 = (uv-.5)*aspect.xy ;\nfloat rad2 = 6*length(uv1);\nfloat rad1 = 1/(rad2+.1);\n\nuv2 = float2 (ang/2, rad1);\nrs2 = uv2;\nuv2.y = uv2.y + q30;\n\nfloat3 noise = .5;\nfloat3 dots = noise * rs2.y * float3(.0,.1,.9);\ndots = saturate(dots);\n\nrs2 = cos(uv2*4) + (ret1)*12;\ndots += (.5+q22)*(1-rad)*saturate(.05/length(rs2)) ;\n\nret = ret1*float3(q26/2,.6,.3) - 2*ret1.r*(1-dots)\n + .4*q32*dots * saturate(1-2*ret1.r) ;\n\n}"
+  }
+}
