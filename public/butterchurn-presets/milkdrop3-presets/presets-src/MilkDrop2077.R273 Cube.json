@@ -1,0 +1,261 @@
+{
+  "shapes": [
+    {
+      "baseVals": {
+        "enabled": 1,
+        "sides": 100,
+        "textured": 1,
+        "x": 0.88,
+        "y": 0.8,
+        "rad": 0.33004,
+        "g": 1,
+        "b": 1,
+        "r2": 1,
+        "b2": 1,
+        "a2": 1,
+        "border_a": 0
+      },
+      "init_eqs_str": "a['q8'] = 0;",
+      "frame_eqs_str": "a['x']=(0.5+(0.4*Math.sin(((0.2765*a['time'])+(0.341*a['q8']))))); a['y']=(0.5+(0.4*Math.sin(((0.311*a['time'])+(0.213*a['q8']))))); a['ang']=(3.1415-(3.1415*Math.cos((a['time']*0.1389))));"
+    },
+    {
+      "baseVals": {
+        "enabled": 1,
+        "sides": 100,
+        "textured": 1,
+        "x": 0.88,
+        "y": 0.2,
+        "rad": 0.33004,
+        "g": 1,
+        "b": 1,
+        "r2": 1,
+        "b2": 1,
+        "a2": 1,
+        "border_a": 0
+      },
+      "init_eqs_str": "a['q8'] = 0;",
+      "frame_eqs_str": "a['x']=(0.5+(0.4*Math.sin(((0.212*a['time'])+(0.1*a['q8']))))); a['y']=(0.5+(0.4*Math.sin(((0.2891*a['time'])+(0.121*a['q8']))))); a['ang']=(3.1415+(3.1415*Math.sin((a['time']*0.181))));"
+    },
+    {
+      "baseVals": {
+        "enabled": 1,
+        "sides": 100,
+        "textured": 1,
+        "x": 0.12,
+        "y": 0.8,
+        "rad": 0.33004,
+        "g": 1,
+        "b": 1,
+        "r2": 1,
+        "b2": 1,
+        "a2": 1,
+        "border_a": 0
+      },
+      "init_eqs_str": "a['q6'] = 0;",
+      "frame_eqs_str": "a['x']=(0.5+(0.4*Math.sin(((0.0932*a['time'])+(0.421*a['q6']))))); a['y']=(0.5+(0.4*Math.sin(((0.1178*a['time'])+(0.2135*a['q6']))))); a['ang']=(3.1415-(3.1415*Math.cos((a['time']*0.1154))));"
+    },
+    {
+      "baseVals": {
+        "enabled": 0
+      }
+    }
+  ],
+  "waves": [
+    {
+      "baseVals": {
+        "enabled": 0
+      }
+    },
+    {
+      "baseVals": {
+        "enabled": 0
+      }
+    },
+    {
+      "baseVals": {
+        "enabled": 0
+      }
+    },
+    {
+      "baseVals": {
+        "enabled": 0
+      }
+    }
+  ],
+  "init_eqs_str": "a['du'] = 0; a['q6'] = 0; a['q1'] = 0; a['q5'] = 0; a['mult'] = 0; a['oldtq8'] = 0; a['ang2'] = 0; a['dv'] = 0; a['q4'] = 0; a['tq8'] = 0; a['q2'] = 0; a['dist'] = 0; a['q3'] = 0; a['q7'] = 0; a['q8'] = 0;",
+  "frame_eqs_str": "a['wave_r']=(a['wave_r']+(0.350*((0.60*Math.sin((0.980*a['time'])))+(0.40*Math.sin((1.047*a['time'])))))); a['wave_g']=(a['wave_g']+(0.350*((0.60*Math.sin((0.835*a['time'])))+(0.40*Math.sin((1.081*a['time'])))))); a['wave_b']=(a['wave_b']+(0.350*((0.60*Math.sin((0.814*a['time'])))+(0.40*Math.sin((1.011*a['time'])))))); a['tq8']=(a['oldtq8']+Math.min(((Math.abs(above((a['bass']+a['bass_att']), 2.5))>0.00001)?((a['tq8']+(0.025*pow(((a['bass']+a['bass_att'])-2), 5)))):(0)), 1)); a['oldtq8']=a['tq8']; a['tq8']=(a['tq8']+(a['time']*0.1)); a['monitor']=a['tq8']; a['q1']=(0.62*((0.60*Math.sin((0.374*a['tq8'])))+(0.40*Math.sin((0.294*a['tq8']))))); a['q2']=(0.62*((0.60*Math.sin((0.393*a['tq8'])))+(0.40*Math.sin((0.223*a['tq8']))))); a['q3']=(0.62*((0.60*Math.sin((0.174*-a['tq8'])))+(0.40*Math.sin((0.364*a['tq8']))))); a['q4']=(0.62*((0.60*Math.sin((0.234*a['tq8'])))+(0.40*Math.sin((0.271*-a['tq8']))))); a['q5']=(0.62*((0.60*Math.sin((0.414*a['tq8'])))+(0.40*Math.sin((0.264*a['tq8']))))); a['q6']=(0.62*((0.60*Math.sin((0.234*a['tq8'])))+(0.40*Math.sin((0.191*a['tq8']))))); a['q7']=(0.62*((0.60*Math.sin((0.401*a['tq8'])))+(0.40*Math.sin((0.307*a['tq8']))))); a['q8']=(0.62*((0.60*Math.sin((0.162*a['tq8'])))+(0.40*Math.sin((0.167*-a['tq8']))))); a['decay']=(a['decay']-(0.01*equal(mod(a['q8'],5), 0))); a['wave_a']=0; a['ob_r']=(a['wave_r']-0.2); a['ob_b']=(a['wave_b']-0.2); a['ob_g']=(a['wave_g']-2); a['ob_r']=(0.4-(0.49*((0.5*Math.sin((a['time']*2.701)))+(0.3*Math.cos((a['time']*0.438)))))); a['ob_g']=(0.5-(0.48*Math.sin((a['time']*3.324)))); a['ob_b']=(0.5-(0.48*Math.cos((a['time']*2.316))));",
+  "pixel_eqs_str": "a['du']=(((a['x']*2)-1)-a['q1']); a['dv']=(((a['y']*2)-1)-a['q2']); a['dist']=sqrt(((a['du']*a['du'])+(a['dv']*a['dv']))); a['ang2']=Math.atan2(a['du'], a['dv']); a['mult']=div(0.008,(a['dist']+0.4)); a['dx']=(a['mult']*Math.sin((a['ang2']-1))); a['dy']=(a['mult']*Math.cos((a['ang2']-1))); a['du']=(((a['x']*2)-1)-a['q3']); a['dv']=(((a['y']*2)-1)-a['q4']); a['dist']=sqrt(((a['du']*a['du'])+(a['dv']*a['dv']))); a['ang2']=Math.atan2(a['du'], a['dv']); a['mult']=div(0.008,(a['dist']+0.4)); a['dx']=(a['dx']+(a['mult']*Math.sin((a['ang2']+1)))); a['dy']=(a['dy']+(a['mult']*Math.cos((a['ang2']+1)))); a['du']=(((a['x']*2)-1)-a['q5']); a['dv']=(((a['y']*2)-1)-a['q6']); a['dist']=sqrt(((a['du']*a['du'])+(a['dv']*a['dv']))); a['ang2']=Math.atan2(a['du'], a['dv']); a['mult']=div(0.008,(a['dist']+0.2)); a['dx']=(a['dx']+(a['mult']*Math.sin((a['ang2']+2)))); a['dy']=(a['dy']+(a['mult']*Math.cos((a['ang2']+2)))); a['du']=(((a['x']*2)-1)-a['q7']); a['dv']=(((a['y']*2)-1)-a['q8']); a['dist']=sqrt(((a['du']*a['du'])+(a['dv']*a['dv']))); a['ang2']=Math.atan2(a['du'], a['dv']); a['mult']=div(0.008,(a['dist']+0.2)); a['dx']=(a['dx']+(a['mult']*Math.sin((a['ang2']-2)))); a['dy']=(a['dy']+(a['mult']*Math.cos((a['ang2']-2)))); a['zoom']=(((3*a['dx'])-(3*a['dy']))+1);",
+  "baseVals": {
+    "rating": 3,
+    "gammaadj": 2.26,
+    "decay": 0.97,
+    "echo_zoom": 1.007,
+    "echo_alpha": 0.5,
+    "echo_orient": 3,
+    "wave_mode": 2,
+    "wave_brighten": 0,
+    "wrap": 0,
+    "wave_a": 1,
+    "wave_scale": 0,
+    "wave_smoothing": 0.9,
+    "wave_mystery": 0.173,
+    "warpscale": 1.331,
+    "fshader": 0.53,
+    "zoom": 1.00496,
+    "warp": 0.00016,
+    "sx": 0.99967,
+    "sy": 0.9999,
+    "wave_g": 0,
+    "wave_b": 0,
+    "wave_x": 0.448,
+    "wave_y": 0.122,
+    "ob_size": 0,
+    "ob_r": 1,
+    "ob_a": 1,
+    "ib_size": 0,
+    "mv_x": 1,
+    "mv_y": 1,
+    "mv_dx": 0.087,
+    "mv_dy": 0.343,
+    "mv_l": 1.663,
+    "mv_r": 0.89,
+    "mv_g": 0.03,
+    "mv_b": 0.881,
+    "mv_a": 0.199
+  },
+  "warp": "vec2 xlat_mutableball;\nvec2 xlat_mutablers;\nvec2 xlat_mutableuv1;\n shader_body { \n  vec2 uv_1;\n  xlat_mutableuv1 = ((uv_orig - 0.5) * aspect.xy);\n  float tmpvar_2;\n  tmpvar_2 = ((8.0 * sqrt(\n    dot (xlat_mutableuv1, xlat_mutableuv1)\n  )) + time);\n  xlat_mutablers = (clamp ((\n    (sin(tmpvar_2) / cos(tmpvar_2))\n   * \n    normalize(xlat_mutableuv1)\n  ), vec2(-5.0, -5.0), vec2(5.0, 5.0)) / 3.0);\n  vec2 tmpvar_3;\n  tmpvar_3.x = q9;\n  tmpvar_3.y = q10;\n  xlat_mutableball = (xlat_mutableuv1 - tmpvar_3);\n  float tmpvar_4;\n  tmpvar_4 = clamp ((1.0 - (\n    sqrt(dot (xlat_mutableball, xlat_mutableball))\n   / 0.015)), 0.0, 1.0);\n  float tmpvar_5;\n  tmpvar_5 = float((tmpvar_4 >= 0.001));\n  xlat_mutablers = ((q28 * xlat_mutablers) + ((1.0 - q28) * xlat_mutablers.yx));\n  uv_1 = (uv_orig + ((\n    ((1.0 - tmpvar_5) * 0.03)\n   * xlat_mutablers.yx) + (\n    ((0.6 * tmpvar_5) * tmpvar_4)\n   * \n    normalize(xlat_mutableball)\n  )));\n  mat2 tmpvar_6;\n  tmpvar_6[uint(0)] = _qb.xy;\n  tmpvar_6[1u] = _qb.zw;\n  vec4 tmpvar_7;\n  tmpvar_7.w = 1.0;\n  tmpvar_7.xyz = (((\n    (texture (sampler_main, uv_1).xyz - (((texture (sampler_blur1, \n      fract(uv_1)\n    ).xyz * scale1) + bias1) * 0.03))\n   + \n    (vec3(0.1, 0.84, 0.6) * ((0.08 * abs(vec3(\n      (0.12 / sqrt((xlat_mutableuv1 * tmpvar_6).x))\n    ))) - (tmpvar_4 * (0.2 + \n      (0.3 * slow_roam_cos.xyz)\n    ))))\n  ) * 0.99) - 0.018);\n  ret = tmpvar_7.xyz;\n }",
+  "comp": " shader_body { \n  vec3 ret_1;\n  vec4 tmpvar_2;\n  tmpvar_2 = texture (sampler_main, uv);\n  float tmpvar_3;\n  tmpvar_3 = dot (tmpvar_2.xyz, vec3(0.32, 0.49, 0.29));\n  ret_1 = (((vec3(0.1, 0.6, 1.1) * tmpvar_2.x) + (vec3(0.1, 0.6, 0.55) * tmpvar_2.y)) + (vec3(1.5, 0.6, 0.2) * tmpvar_2.z));\n  ret_1 = ((ret_1 * ret_1) * (0.5 + (\n    clamp (((cos(\n      ((tmpvar_3 * 27.0) + 3.0)\n    ) * 30.0) - 26.0), 0.0, 1.0)\n   * \n    clamp (((cos(\n      ((tmpvar_3 * 27.0) + 3.0)\n    ) * 3.0) - 6.0), 0.0, 1.0)\n  )));\n  vec4 tmpvar_4;\n  tmpvar_4.w = 1.0;\n  tmpvar_4.xyz = ret_1;\n  ret = tmpvar_4.xyz;\n }",
+  "presetParts": {
+    "presetVersion": 1,
+    "baseVals": {
+      "rating": 3,
+      "gammaadj": 2.26,
+      "decay": 0.97,
+      "echo_zoom": 1.007,
+      "echo_alpha": 0.5,
+      "echo_orient": 3,
+      "wave_mode": 2,
+      "wave_brighten": 0,
+      "wrap": 0,
+      "wave_a": 1,
+      "wave_scale": 0,
+      "wave_smoothing": 0.9,
+      "wave_mystery": 0.173,
+      "warpscale": 1.331,
+      "fshader": 0.53,
+      "zoom": 1.00496,
+      "warp": 0.00016,
+      "sx": 0.99967,
+      "sy": 0.9999,
+      "wave_g": 0,
+      "wave_b": 0,
+      "wave_x": 0.448,
+      "wave_y": 0.122,
+      "ob_size": 0,
+      "ob_r": 1,
+      "ob_a": 1,
+      "ib_size": 0,
+      "mv_x": 1,
+      "mv_y": 1,
+      "mv_dx": 0.087,
+      "mv_dy": 0.343,
+      "mv_l": 1.663,
+      "mv_r": 0.89,
+      "mv_g": 0.03,
+      "mv_b": 0.881,
+      "mv_a": 0.199
+    },
+    "presetInit": "",
+    "perFrame": "wave_r = wave_r + 0.350*( 0.60*sin(0.980*time) + 0.40*sin(1.047*time) );\nwave_g = wave_g + 0.350*( 0.60*sin(0.835*time) + 0.40*sin(1.081*time) );\nwave_b = wave_b + 0.350*( 0.60*sin(0.814*time) + 0.40*sin(1.011*time) );\ntq8 = oldtq8+min(if(above(bass+bass_att,2.5),tq8+0.025*pow((bass+bass_att-2),5),0),1);\noldtq8 = tq8;\ntq8 = tq8 + time*0.1;\nmonitor = tq8;\nq1 = 0.62*( 0.60*sin(0.374*tq8) + 0.40*sin(0.294*tq8) );\nq2 = 0.62*( 0.60*sin(0.393*tq8) + 0.40*sin(0.223*tq8) );\nq3 = 0.62*( 0.60*sin(0.174*-tq8) + 0.40*sin(0.364*tq8) );\nq4 = 0.62*( 0.60*sin(0.234*tq8) + 0.40*sin(0.271*-tq8) );\nq5 = 0.62*( 0.60*sin(0.414*tq8) + 0.40*sin(0.264*tq8) );\nq6 = 0.62*( 0.60*sin(0.234*tq8) + 0.40*sin(0.191*tq8) );\nq7 = 0.62*( 0.60*sin(0.401*tq8) + 0.40*sin(0.307*tq8) );\nq8 = 0.62*( 0.60*sin(0.162*tq8) + 0.40*sin(0.167*-tq8) );\ndecay = decay - 0.01*equal(q8%5,0);\nwave_a =0;\nob_r = wave_r-.2;\nob_b = wave_b-.2;\nob_g = wave_g-2;\nob_r = 0.4 - 0.49*(0.5*sin(time*2.701)+ 0.3*cos(time*0.438));\nob_g = 0.5- 0.48*sin(time*3.324);\nob_b = 0.5 - 0.48*cos(time*2.316);",
+    "perVertex": "du = x*2-1 - q1;\ndv = y*2-1 - q2;\ndist = sqrt(du*du+dv*dv);\nang2 = atan2(du,dv);\nmult = 0.008/(dist+0.4);\ndx = mult*sin(ang2-1);\ndy = mult*cos(ang2-1);\ndu = x*2-1 - q3;\ndv = y*2-1 - q4;\ndist = sqrt(du*du+dv*dv);\nang2 = atan2(du,dv);\nmult = 0.008/(dist+0.4);\ndx = dx + mult*sin(ang2+1);\ndy = dy + mult*cos(ang2+1);\ndu = x*2-1 - q5;\ndv = y*2-1 - q6;\ndist = sqrt(du*du+dv*dv);\nang2 = atan2(du,dv);\nmult = 0.008/(dist+0.2);\ndx = dx + mult*sin(ang2+2);\ndy = dy + mult*cos(ang2+2);\ndu = x*2-1 - q7;\ndv = y*2-1 - q8;\ndist = sqrt(du*du+dv*dv);\nang2 = atan2(du,dv);\nmult = 0.008/(dist+0.2);\ndx = dx + mult*sin(ang2-2);\ndy = dy + mult*cos(ang2-2);\nzoom = 3*dx - 3*dy+1;\n//rot = 3*dx - 3*dy;\n//dx = 0;\n//dy =0;",
+    "waves": [
+      {
+        "baseVals": {},
+        "init_eqs_str": "",
+        "frame_eqs_str": "",
+        "point_eqs_str": ""
+      },
+      {
+        "baseVals": {},
+        "init_eqs_str": "",
+        "frame_eqs_str": "",
+        "point_eqs_str": ""
+      },
+      {
+        "baseVals": {},
+        "init_eqs_str": "",
+        "frame_eqs_str": "",
+        "point_eqs_str": ""
+      },
+      {
+        "baseVals": {},
+        "init_eqs_str": "",
+        "frame_eqs_str": "",
+        "point_eqs_str": ""
+      }
+    ],
+    "shapes": [
+      {
+        "baseVals": {
+          "enabled": 1,
+          "sides": 100,
+          "textured": 1,
+          "x": 0.88,
+          "y": 0.8,
+          "rad": 0.33004,
+          "g": 1,
+          "b": 1,
+          "r2": 1,
+          "b2": 1,
+          "a2": 1,
+          "border_a": 0
+        },
+        "init_eqs_str": "",
+        "frame_eqs_str": "x = 0.5+ 0.4*sin(0.2765*time+0.341*q8);\ny = 0.5+ 0.4*sin(0.311*time+0.213*q8);\nang = 3.1415-3.1415*cos(time*0.1389);"
+      },
+      {
+        "baseVals": {
+          "enabled": 1,
+          "sides": 100,
+          "textured": 1,
+          "x": 0.88,
+          "y": 0.2,
+          "rad": 0.33004,
+          "g": 1,
+          "b": 1,
+          "r2": 1,
+          "b2": 1,
+          "a2": 1,
+          "border_a": 0
+        },
+        "init_eqs_str": "",
+        "frame_eqs_str": "x = 0.5+ 0.4*sin(0.212*time+0.1*q8);\ny = 0.5+ 0.4*sin(0.2891*time+0.121*q8);\nang = 3.1415+3.1415*sin(time*0.181);"
+      },
+      {
+        "baseVals": {
+          "enabled": 1,
+          "sides": 100,
+          "textured": 1,
+          "x": 0.12,
+          "y": 0.8,
+          "rad": 0.33004,
+          "g": 1,
+          "b": 1,
+          "r2": 1,
+          "b2": 1,
+          "a2": 1,
+          "border_a": 0
+        },
+        "init_eqs_str": "",
+        "frame_eqs_str": "x = 0.5+ 0.4*sin(0.0932*time+0.421*q6);\ny = 0.5+ 0.4*sin(0.1178*time+0.2135*q6);\nang = 3.1415-3.1415*cos(time*0.1154);"
+      },
+      {
+        "baseVals": {},
+        "init_eqs_str": "",
+        "frame_eqs_str": ""
+      }
+    ],
+    "warp": "float3 mus;\nfloat2 rs,ball, uv1, uv6, uv7;\nfloat dx,dy;\nshader_body {\nuv = uv_orig;\nuv1 = (uv-.5) * aspect.xy;\n\n//GOLD\nfloat z = 8*length(uv1)+time;\nfloat2 uvn =normalize(uv1);\nrs = clamp(tan(z)*uvn,-5,5)/3;\n\n// KUGEL\nfloat2 p0 = float2(q9,q10);\nball = uv1 - p0;\nfloat size = .015;\nfloat dist = length(ball)  / size;\nz = saturate(1-dist);\n\n//ADD\nfloat mask = (z >= .001); \nrs = q28*rs + (1-q28)*rs.yx;\nuv += (1-mask)*.03*(rs.yx) + .6*mask*z*normalize(ball);\n\n\nuv6 = mul (uv1,float2x2(_qb));\nmus = (.12/(sqrt(uv6.x)));\nmus = .08*abs(mus) - z* (.2 + .3*slow_roam_cos.xyz);\n\nfloat3 gold = float3 (.1,.84,.6); \n\n//float2 uv2 = .7*uv1+.3*float2 (sin(uv1.y*16), sin(uv1.x*16));\n//uv2 *= .2;\n//float3 dots = q26*saturate(.0015/(length(uv2)));\n\nfloat3 col = gold;\n\nfloat3 blur = GetBlur1(frac(uv));\nfloat3 crisp= tex2D(sampler_main,uv);\n\nfloat3 ret1 = crisp - blur*.03 + col*(mus);\nret = ret1*.99-.018;\n}",
+    "comp": "shader_body\n{\n    ret = tex2D(sampler_main, uv).xyz;\n    float L = lum(ret);\n    float bw = saturate(cos(L*27 + 3)*30 - 26);\n    float L2 = lum(GetBlur1(uv));\n    float bw2 = saturate(cos(L*27 + 3)*3 - 6);\n\n    ret = float3(.1,.6,1.1)*ret.x +\n          float3(.1,.6,.55)*ret.y + \n          float3(1.5,.6,.2)*ret.z;\n\n    ret = ret*ret * (.5 + bw*bw2*1);\n\n}"
+  }
+}

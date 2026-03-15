@@ -1,0 +1,219 @@
+{
+  "shapes": [
+    {
+      "baseVals": {
+        "enabled": 0
+      }
+    },
+    {
+      "baseVals": {
+        "enabled": 0
+      }
+    },
+    {
+      "baseVals": {
+        "enabled": 0
+      }
+    },
+    {
+      "baseVals": {
+        "enabled": 0
+      }
+    }
+  ],
+  "waves": [
+    {
+      "baseVals": {
+        "enabled": 1,
+        "usedots": 1,
+        "thick": 1,
+        "additive": 1,
+        "r": 0.3,
+        "g": 0.7
+      },
+      "init_eqs_str": "a['s'] = 0; a['xp'] = 0; a['yp'] = 0; a['zp'] = 0; a['t1'] = 0; a['x_screen'] = 0; a['y_screen'] = 0; a['advance'] = 0;",
+      "frame_eqs_str": "a['advance']=(a['advance']+0.005); a['advance']=((Math.abs(above(a['advance'], 2))>0.00001)?(0):(a['advance'])); a['t1']=a['advance'];",
+      "point_eqs_str": "a['s']=(a['sample']*6.28); a['xp']=(((Math.sin(a['s'])+Math.sin((a['s']*0.34)))+Math.sin((a['s']*24.3)))+Math.sin((a['s']*13.8))); a['xp']=(a['xp']*0.20); a['yp']=(((Math.cos(a['s'])+Math.sin((a['s']*0.24)))+Math.cos((a['s']*17.4)))+Math.sin((a['s']*37.7))); a['yp']=(a['yp']*0.20); a['zp']=(((Math.cos(a['s'])+Math.cos((a['s']*5.24)))+Math.cos((a['s']*47.4)))+Math.cos((a['s']*27.7))); a['zp']=(a['zp']*0.25); a['zp']=((a['zp']+1)-a['t1']); a['zp']=((Math.abs(below(a['zp'], 0))>0.00001)?((a['zp']+2)):(a['zp'])); a['a']=(1-(a['zp']*0.5)); a['zp']=(a['zp']*0.7); a['x_screen']=(div(a['xp'],a['zp'])+0.5); a['y_screen']=(div(a['yp'],a['zp'])+0.5); a['x']=a['x_screen']; a['y']=a['y_screen']; a['r']=1; a['g']=1; a['b']=1;"
+    },
+    {
+      "baseVals": {
+        "enabled": 1,
+        "usedots": 1,
+        "thick": 1
+      },
+      "init_eqs_str": "a['s'] = 0; a['xp'] = 0; a['yp'] = 0; a['zp'] = 0; a['t1'] = 0; a['x_screen'] = 0; a['y_screen'] = 0; a['advance'] = 0;",
+      "frame_eqs_str": "a['advance']=(a['advance']+0.005); a['advance']=((Math.abs(above(a['advance'], 2))>0.00001)?(0):(a['advance'])); a['t1']=a['advance'];",
+      "point_eqs_str": "a['s']=(a['sample']*6.28); a['xp']=(((Math.sin(a['s'])+Math.sin((a['s']*0.34)))+Math.sin((a['s']*24.3)))+Math.sin((a['s']*13.8))); a['xp']=(a['xp']*0.20); a['yp']=(((Math.cos(a['s'])+Math.sin((a['s']*0.24)))+Math.cos((a['s']*17.4)))+Math.sin((a['s']*37.7))); a['yp']=(a['yp']*0.20); a['zp']=(((Math.cos(a['s'])+Math.cos((a['s']*5.24)))+Math.cos((a['s']*47.4)))+Math.cos((a['s']*27.7))); a['zp']=(a['zp']*0.25); a['zp']=((a['zp']+1)-a['t1']); a['zp']=((Math.abs(below(a['zp'], 0))>0.00001)?((a['zp']+2)):(a['zp'])); a['a']=(1-(a['zp']*0.5)); a['zp']=(a['zp']*0.7); a['x_screen']=(div(-a['xp'],a['zp'])+0.5); a['y_screen']=(div(-a['yp'],a['zp'])+0.5); a['x']=a['x_screen']; a['y']=a['y_screen']; a['r']=1; a['g']=1; a['b']=1;"
+    },
+    {
+      "baseVals": {
+        "enabled": 0
+      }
+    },
+    {
+      "baseVals": {
+        "enabled": 0
+      }
+    }
+  ],
+  "init_eqs_str": "a['q5'] = 0; a['q6'] = 0; a['bt'] = 0; a['q1'] = 0;",
+  "frame_eqs_str": "a['decay']=0.6; a['wave_a']=0; a['zoom']=1; a['warp']=0; a['q5']=a['aspectx']; a['q6']=a['aspecty']; a['bt']=(a['bt']+div(a['bass'],a['fps'])); a['q1']=a['bt'];",
+  "pixel_eqs_str": "",
+  "baseVals": {
+    "rating": 4,
+    "gammaadj": 1.46,
+    "decay": 0.935,
+    "echo_zoom": 1.007,
+    "echo_alpha": 0.5,
+    "echo_orient": 2,
+    "wave_mode": 5,
+    "wave_dots": 1,
+    "wave_brighten": 0,
+    "brighten": 1,
+    "darken": 1,
+    "wave_a": 0.001,
+    "wave_scale": 0.012,
+    "wave_smoothing": 0.9,
+    "warpanimspeed": 0.498,
+    "warpscale": 100,
+    "zoomexp": 1.00183,
+    "fshader": 1,
+    "zoom": 0.99815,
+    "warp": 0.01,
+    "sx": 1.0018,
+    "sy": 0.9999,
+    "wave_r": 0.5,
+    "wave_g": 0.4,
+    "wave_b": 0.3,
+    "ob_size": 0,
+    "ob_r": 0.36,
+    "ob_g": 0.29,
+    "ob_b": 0.29,
+    "ob_a": 1,
+    "ib_size": 0,
+    "ib_r": 1,
+    "ib_g": 0,
+    "ib_b": 1,
+    "ib_a": 1,
+    "mv_x": 64,
+    "mv_y": 48,
+    "mv_l": 1,
+    "mv_r": 0.39,
+    "mv_g": 0.44,
+    "mv_b": 0.9,
+    "mv_a": 0
+  },
+  "warp": " shader_body { \n  vec4 color_1;\n  vec2 tmpvar_2;\n  tmpvar_2 = (((uv_orig * texsize.xy) * 2.0) - texsize.xy);\n  float tmpvar_3;\n  tmpvar_3 = (0.79 * (1.0 + (\n    pow (bass_att, 3.0)\n   / 32.0)));\n  float tmpvar_4;\n  float tmpvar_5;\n  tmpvar_5 = (min (abs(\n    (tmpvar_2.x / tmpvar_2.y)\n  ), 1.0) / max (abs(\n    (tmpvar_2.x / tmpvar_2.y)\n  ), 1.0));\n  float tmpvar_6;\n  tmpvar_6 = (tmpvar_5 * tmpvar_5);\n  tmpvar_6 = (((\n    ((((\n      ((((-0.01213232 * tmpvar_6) + 0.05368138) * tmpvar_6) - 0.1173503)\n     * tmpvar_6) + 0.1938925) * tmpvar_6) - 0.3326756)\n   * tmpvar_6) + 0.9999793) * tmpvar_5);\n  tmpvar_6 = (tmpvar_6 + (float(\n    (abs((tmpvar_2.x / tmpvar_2.y)) > 1.0)\n  ) * (\n    (tmpvar_6 * -2.0)\n   + 1.570796)));\n  tmpvar_4 = (tmpvar_6 * sign((tmpvar_2.x / tmpvar_2.y)));\n  if ((abs(tmpvar_2.y) > (1e-08 * abs(tmpvar_2.x)))) {\n    if ((tmpvar_2.y < 0.0)) {\n      if ((tmpvar_2.x >= 0.0)) {\n        tmpvar_4 += 3.141593;\n      } else {\n        tmpvar_4 = (tmpvar_4 - 3.141593);\n      };\n    };\n  } else {\n    tmpvar_4 = (sign(tmpvar_2.x) * 1.570796);\n  };\n  vec4 tmpvar_7;\n  tmpvar_7 = (((0.6 + \n    (0.6 * cos(((tmpvar_4 - \n      (time * tmpvar_3)\n    ) + vec4(0.0, 23.0, 21.0, 0.0))))\n  ) * 0.03) / abs((\n    (sqrt(dot (tmpvar_2, tmpvar_2)) / texsize.y)\n   - 0.5)));\n  color_1.w = tmpvar_7.w;\n  color_1.xyz = (tmpvar_7.xyz * (1.0 + (0.3 * bass_att)));\n  vec4 tmpvar_8;\n  tmpvar_8.w = 1.0;\n  tmpvar_8.xyz = clamp (color_1, 0.0, 1.0).xyz;\n  ret = tmpvar_8.xyz;\n }",
+  "comp": " shader_body { \n  vec3 ret_1;\n  ret_1 = (texture (sampler_main, uv).xyz * 1.2);\n  ret_1 = (ret_1 - 0.1);\n  vec4 tmpvar_2;\n  tmpvar_2.w = 1.0;\n  tmpvar_2.xyz = ret_1;\n  ret = tmpvar_2.xyz;\n }",
+  "presetParts": {
+    "presetVersion": 2,
+    "baseVals": {
+      "rating": 4,
+      "gammaadj": 1.46,
+      "decay": 0.935,
+      "echo_zoom": 1.007,
+      "echo_alpha": 0.5,
+      "echo_orient": 2,
+      "wave_mode": 5,
+      "wave_dots": 1,
+      "wave_brighten": 0,
+      "brighten": 1,
+      "darken": 1,
+      "wave_a": 0.001,
+      "wave_scale": 0.012,
+      "wave_smoothing": 0.9,
+      "warpanimspeed": 0.498,
+      "warpscale": 100,
+      "zoomexp": 1.00183,
+      "fshader": 1,
+      "zoom": 0.99815,
+      "warp": 0.01,
+      "sx": 1.0018,
+      "sy": 0.9999,
+      "wave_r": 0.5,
+      "wave_g": 0.4,
+      "wave_b": 0.3,
+      "ob_size": 0,
+      "ob_r": 0.36,
+      "ob_g": 0.29,
+      "ob_b": 0.29,
+      "ob_a": 1,
+      "ib_size": 0,
+      "ib_r": 1,
+      "ib_g": 0,
+      "ib_b": 1,
+      "ib_a": 1,
+      "mv_x": 64,
+      "mv_y": 48,
+      "mv_l": 1,
+      "mv_r": 0.39,
+      "mv_g": 0.44,
+      "mv_b": 0.9,
+      "mv_a": 0
+    },
+    "presetInit": "",
+    "perFrame": "decay=.6;\nwave_a=0;\nzoom=1;\nwarp=0;\n\nq5=aspectx;\nq6=aspecty;\n\n\nbt=bt+bass/fps;\nq1=bt;",
+    "perVertex": "",
+    "waves": [
+      {
+        "baseVals": {
+          "enabled": 1,
+          "usedots": 1,
+          "thick": 1,
+          "additive": 1,
+          "r": 0.3,
+          "g": 0.7
+        },
+        "init_eqs_str": "",
+        "frame_eqs_str": "advance=advance+ 0.005;\nadvance=if( above(advance,2) , 0, advance);\nt1=advance",
+        "point_eqs_str": "s=sample*6.28;\n\n//plot random x position via function of sample pos;\nxp=sin(s)+sin(s*0.34)+sin(s*24.3)+sin(s*13.8);\nxp=xp*0.20;\n\n//plot random y position via function of sample pos;\nyp=cos(s)+sin(s*0.24)+cos(s*17.4)+sin(s*37.7);\nyp=yp*0.20;\n\n//plot random z position via function of sample pos;\nzp=cos(s)+cos(s*5.24)+cos(s*47.4)+cos(s*27.7);\nzp=zp*0.25;\n\n//pull stars toward screen\nzp=zp + 1 - t1;\n\n//correct when below 0\nzp=if( below(zp,0) , zp+2 , zp );\n\n//darken far stars\na=(1 - zp*0.5);\n\nzp=zp*0.7;\n\nx_screen=xp/zp + 0.5;\ny_screen=yp/zp + 0.5;\n\nx=x_screen;\ny=y_screen;\n\nr=1;\ng=1;\nb=1;\n\n"
+      },
+      {
+        "baseVals": {
+          "enabled": 1,
+          "usedots": 1,
+          "thick": 1
+        },
+        "init_eqs_str": "",
+        "frame_eqs_str": "advance=advance+ 0.005;\nadvance=if( above(advance,2) , 0, advance);\nt1=advance",
+        "point_eqs_str": "s=sample*6.28;\n\n//plot random x position via function of sample pos;\nxp=sin(s)+sin(s*0.34)+sin(s*24.3)+sin(s*13.8);\nxp=xp*0.20;\n\n//plot random y position via function of sample pos;\nyp=cos(s)+sin(s*0.24)+cos(s*17.4)+sin(s*37.7);\nyp=yp*0.20;\n\n//plot random z position via function of sample pos;\nzp=cos(s)+cos(s*5.24)+cos(s*47.4)+cos(s*27.7);\nzp=zp*0.25;\n\n//pull stars toward screen\nzp=zp + 1 - t1;\n\n//correct when below 0\nzp=if( below(zp,0) , zp+2 , zp );\n\n//darken far stars\na=(1 - zp*0.5);\n\nzp=zp*0.7;\n\nx_screen=-xp/zp + 0.5;\ny_screen=-yp/zp + 0.5;\n\nx=x_screen;\ny=y_screen;\n\nr=1;\ng=1;\nb=1;\n\n"
+      },
+      {
+        "baseVals": {},
+        "init_eqs_str": "",
+        "frame_eqs_str": "",
+        "point_eqs_str": ""
+      },
+      {
+        "baseVals": {},
+        "init_eqs_str": "",
+        "frame_eqs_str": "",
+        "point_eqs_str": ""
+      }
+    ],
+    "shapes": [
+      {
+        "baseVals": {},
+        "init_eqs_str": "",
+        "frame_eqs_str": ""
+      },
+      {
+        "baseVals": {},
+        "init_eqs_str": "",
+        "frame_eqs_str": ""
+      },
+      {
+        "baseVals": {},
+        "init_eqs_str": "",
+        "frame_eqs_str": ""
+      },
+      {
+        "baseVals": {},
+        "init_eqs_str": "",
+        "frame_eqs_str": ""
+      }
+    ],
+    "warp": "shader_body\n{\n    // Calculate polar coordinates\n    float2 R = float2(texsize.x, texsize.y);\n    float2 p = uv_orig * R * 2.0 - R;\n    \n    // Dynamic rotation speed based on bass (cubic easing for stronger response)\n    float bassBoost = pow(bass_att, 3.0); // More aggressive acceleration\n    float rotationSpeed = 0.79 * (1.0 + bassBoost/32);\n    \n    // Angle calculation with bass-accelerated animation\n    float angle = atan2(p.x, p.y) - time * rotationSpeed;\n    \n    // Enhanced color wave pattern with bass-reactive intensity\n    float4 color = (0.6 + 0.6 * cos(angle + float4(0, 23, 21, 0))) \n                 * (0.02 + 0.01) / abs(length(p)/R.y - 0.5);\n    \n    // Boosted audio reactivity - affects both brightness and saturation\n    color.rgb *= 1.0 + 0.3 * bass_att;\n    //color.rgb = lerp(color.rgb, color.rgb * 1.5, bass_att); // Extra punch\n    \n    ret = saturate(color); // Ensure colors stay in valid range\n}",
+    "comp": "shader_body\n{\nret = tex2D(sampler_main, uv).xyz;\nret*=1.2;\nret-=0.1;\n}"
+  }
+}

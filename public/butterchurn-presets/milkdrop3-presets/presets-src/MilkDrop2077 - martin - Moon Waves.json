@@ -1,0 +1,177 @@
+{
+  "shapes": [
+    {
+      "baseVals": {
+        "enabled": 0
+      }
+    },
+    {
+      "baseVals": {
+        "enabled": 0
+      }
+    },
+    {
+      "baseVals": {
+        "enabled": 0
+      }
+    },
+    {
+      "baseVals": {
+        "enabled": 0
+      }
+    }
+  ],
+  "waves": [
+    {
+      "baseVals": {
+        "enabled": 0
+      }
+    },
+    {
+      "baseVals": {
+        "enabled": 0
+      }
+    },
+    {
+      "baseVals": {
+        "enabled": 0
+      }
+    },
+    {
+      "baseVals": {
+        "enabled": 0
+      }
+    }
+  ],
+  "init_eqs_str": "",
+  "frame_eqs_str": "",
+  "pixel_eqs_str": "",
+  "baseVals": {
+    "rating": 4,
+    "gammaadj": 1.46,
+    "decay": 0.935,
+    "echo_zoom": 1.007,
+    "echo_alpha": 0.5,
+    "echo_orient": 2,
+    "wave_mode": 7,
+    "wave_thick": 1,
+    "modwavealphabyvolume": 1,
+    "wrap": 0,
+    "brighten": 1,
+    "darken": 1,
+    "wave_a": 0.303,
+    "wave_scale": 2.911,
+    "wave_smoothing": 0.9,
+    "modwavealphastart": 1.11,
+    "modwavealphaend": 1.23,
+    "warpanimspeed": 0.01,
+    "warpscale": 0.009,
+    "fshader": 1,
+    "cx": 0.465,
+    "warp": 0.0096,
+    "wave_r": 0.5,
+    "wave_g": 0.5,
+    "wave_b": 0.8,
+    "ob_size": 0,
+    "ob_r": 0.123,
+    "ob_b": 0.1,
+    "ib_size": 0,
+    "ib_r": 0,
+    "ib_g": 0,
+    "ib_b": 0,
+    "mv_a": 0
+  },
+  "warp": " shader_body { \n  float tmpvar_1;\n  tmpvar_1 = sin(time);\n  float tmpvar_2;\n  tmpvar_2 = (1.0 - pow (abs(\n    (vec2(((uv_orig.y - 0.5) + (tmpvar_1 / 15.0))) + (sin((\n      ((uv_orig.x * (5.0 + cos(time))) + time)\n     + \n      (tmpvar_1 / 3.0)\n    )) / 5.0))\n  ), vec2(0.13, 0.13))).x;\n  vec3 tmpvar_3;\n  tmpvar_3.x = (tmpvar_2 * 1.8);\n  tmpvar_3.y = tmpvar_2;\n  tmpvar_3.z = tmpvar_2;\n  vec4 tmpvar_4;\n  tmpvar_4.w = 1.0;\n  tmpvar_4.xyz = pow (tmpvar_3, vec3(2.5, 2.5, 2.5));\n  vec4 tmpvar_5;\n  tmpvar_5.w = 1.0;\n  tmpvar_5.xyz = tmpvar_4.xyz;\n  ret = tmpvar_5.xyz;\n }",
+  "comp": "vec2 xlat_mutableuv1;\nvec2 xlat_mutableuvw;\n shader_body { \n  vec3 ret_1;\n  mat2 tmpvar_2;\n  float tmpvar_3;\n  tmpvar_3 = cos(q5);\n  tmpvar_2[uint(0)].x = tmpvar_3;\n  float tmpvar_4;\n  tmpvar_4 = sin(q5);\n  tmpvar_2[uint(0)].y = tmpvar_4;\n  tmpvar_2[1u].x = -(tmpvar_4);\n  tmpvar_2[1u].y = tmpvar_3;\n  xlat_mutableuv1 = ((uv - 0.5) * tmpvar_2);\n  float tmpvar_5;\n  tmpvar_5 = (1.0/(xlat_mutableuv1.y));\n  vec2 tmpvar_6;\n  tmpvar_6.x = (xlat_mutableuv1.x * tmpvar_5);\n  tmpvar_6.y = tmpvar_5;\n  vec2 tmpvar_7;\n  tmpvar_7.x = 0.0;\n  tmpvar_7.y = (time / 2.0);\n  xlat_mutableuvw = (((xlat_mutableuv1 * vec2(1.0, 0.5)) + 0.5) + ((\n    (texture (sampler_noise_mq, (((tmpvar_6 * 0.25) / 2.0) + tmpvar_7)) / tmpvar_5)\n  .xy * 0.2) * float(\n    (tmpvar_5 > 0.0)\n  )));\n  vec2 tmpvar_8;\n  tmpvar_8 = fract(xlat_mutableuvw);\n  xlat_mutableuvw = tmpvar_8;\n  ret_1 = (texture (sampler_main, uv).xyz + ((\n    (texture (sampler_blur3, uv).xyz * scale3)\n   + bias3) * (0.5 + \n    (abs(xlat_mutableuv1.y) * 3.0)\n  )));\n  vec3 tmpvar_9;\n  tmpvar_9 = ((texture (sampler_blur1, tmpvar_8).xyz * scale1) + bias1);\n  ret_1 = (ret_1 + ((\n    ((clamp ((1.0 - \n      (2.0 * dot (ret_1, vec3(0.32, 0.49, 0.29)))\n    ), 0.0, 1.0) * (tmpvar_9 * tmpvar_9)) * clamp ((0.4 / tmpvar_5), 0.0, 1.0))\n   * 64.0) * clamp (\n    (1.0 - rad)\n  , 0.0, 1.0)));\n  ret_1 = (ret_1 * 1.1);\n  xlat_mutableuv1 = (((1.0 - uv) - 0.5) * aspect.xy);\n  vec2 x_10;\n  x_10 = (xlat_mutableuv1 - 0.25);\n  ret_1 = (ret_1 + (0.01 + (\n    (bass_att / 64.0)\n   / \n    sqrt(dot (x_10, x_10))\n  )));\n  ret_1 = (ret_1 - 0.05);\n  vec4 tmpvar_11;\n  tmpvar_11.w = 1.0;\n  tmpvar_11.xyz = ret_1;\n  ret = tmpvar_11.xyz;\n }",
+  "presetParts": {
+    "presetVersion": 2,
+    "baseVals": {
+      "rating": 4,
+      "gammaadj": 1.46,
+      "decay": 0.935,
+      "echo_zoom": 1.007,
+      "echo_alpha": 0.5,
+      "echo_orient": 2,
+      "wave_mode": 7,
+      "wave_thick": 1,
+      "modwavealphabyvolume": 1,
+      "wrap": 0,
+      "brighten": 1,
+      "darken": 1,
+      "wave_a": 0.303,
+      "wave_scale": 2.911,
+      "wave_smoothing": 0.9,
+      "modwavealphastart": 1.11,
+      "modwavealphaend": 1.23,
+      "warpanimspeed": 0.01,
+      "warpscale": 0.009,
+      "fshader": 1,
+      "cx": 0.465,
+      "warp": 0.0096,
+      "wave_r": 0.5,
+      "wave_g": 0.5,
+      "wave_b": 0.8,
+      "ob_size": 0,
+      "ob_r": 0.123,
+      "ob_b": 0.1,
+      "ib_size": 0,
+      "ib_r": 0,
+      "ib_g": 0,
+      "ib_b": 0,
+      "mv_a": 0
+    },
+    "presetInit": "",
+    "perFrame": "",
+    "perVertex": "",
+    "waves": [
+      {
+        "baseVals": {},
+        "init_eqs_str": "",
+        "frame_eqs_str": "",
+        "point_eqs_str": ""
+      },
+      {
+        "baseVals": {},
+        "init_eqs_str": "",
+        "frame_eqs_str": "",
+        "point_eqs_str": ""
+      },
+      {
+        "baseVals": {},
+        "init_eqs_str": "",
+        "frame_eqs_str": "",
+        "point_eqs_str": ""
+      },
+      {
+        "baseVals": {},
+        "init_eqs_str": "",
+        "frame_eqs_str": "",
+        "point_eqs_str": ""
+      }
+    ],
+    "shapes": [
+      {
+        "baseVals": {},
+        "init_eqs_str": "",
+        "frame_eqs_str": ""
+      },
+      {
+        "baseVals": {},
+        "init_eqs_str": "",
+        "frame_eqs_str": ""
+      },
+      {
+        "baseVals": {},
+        "init_eqs_str": "",
+        "frame_eqs_str": ""
+      },
+      {
+        "baseVals": {},
+        "init_eqs_str": "",
+        "frame_eqs_str": ""
+      }
+    ],
+    "warp": "shader_body\n{\n    //MilkDrop2077  \n    float2 uvTrue = uv_orig;\n    uv = uvTrue.y - 0.5+(sin(time)/15);\n    \n    // Create the glowing wave pattern\n    float glowWidth = 1.0 - pow(abs(uv + sin(uvTrue.x * (5.0+(cos(time))) + time+(sin(time)/3))/5.0), 0.13);\n    \n    // Color with red emphasis\n    float3 color = float3(glowWidth * 1.8, glowWidth, glowWidth);\n    \n    // Apply gamma correction and output\n    ret = float4(pow(color, 2.5), 1.0);\n}",
+    "comp": "sampler sampler_pw_noise_lq;\nfloat2 uv1,uv2,uv4,dz,uvw;\n\nshader_body\n{\nuv1=mul (uv-0.5, float2x2(cos(q5),-sin(q5),sin(q5),cos(q5)));\nfloat z=1/(uv1.y);\nfloat2 uv2 = float2 (uv1.x*z,z)*.25;\nfloat2 water = tex2D(sampler_noise_mq,uv2/2+float2(0,time/2))/z;\n\nuvw= uv1*float2 (1,.5)+0.5+water*0.2*(z>0);\nuvw = frac (uvw);\n\nret = (GetPixel(uv) + GetBlur3(uv) * (0.5+abs(uv1.y)*3));\nret += saturate (1-2*lum(ret)) * pow(GetBlur1(uvw),2)*saturate(.4/z)*64*saturate(1-rad);\nret *= 1.1;\n\nuv=1-uv;\nuv1=(uv-.5)*aspect.xy;\nret += 0.01+(bass_att/64)/length(uv1-0.25);\nret-=0.05;\n}"
+  }
+}
