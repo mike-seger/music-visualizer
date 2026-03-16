@@ -88,10 +88,14 @@
       }
     }
   ],
-  "init_eqs_str": "a['n'] = 0; a['z2'] = 0; a['index'] = 0; a['q22'] = 0; a['q13'] = 0; a['q1'] = 0; a['trel'] = 0; a['flen'] = 0; a['dec_s'] = 0; a['dec_xs'] = 0; a['my'] = 0; a['beat_'] = 0; a['is_beat'] = 0; a['q31'] = 0; a['betr'] = 0; a['value'] = 0; a['dec_m'] = 0; a['q4'] = 0; a['shapes'] = 0; a['k'] = 0; a['trig'] = 0; a['mx'] = 0; a['beat'] = 0; a['vol'] = 0; a['peak'] = 0; a['q2'] = 0; a['bbase'] = 0; a['q27'] = 0; a['reduce'] = 0; a['q14'] = 0; a['dist'] = 0; a['z1'] = 0; a['q3'] = 0; a['t0'] = 0; a['vol_'] = 0; a['dec'] = 0; a['m'] = 0; a['q32'] = 0; a['index']=0; for(var mdparser_idx309=0;mdparser_idx309<300000;mdparser_idx309++){a['megabuf'][Math.floor(a['index'])]=0.1; a['gmegabuf'][Math.floor(a['index'])]=0; a['index']=(a['index']+1);} a['vol_']=1; a['q10']=((rand(100)>=30)?1:0); a['q11']=((rand(100)>=30)?1:0); a['q12']=((((rand(100)>=30)?1:0)*9)+3); a['q13']=Math.min(Math.max((div(rand(100),50)-0.5), 0.2), 1); a['q14']=0;",
-  "frame_eqs_str": "a['dec_m']=Math.exp(div(-3,a['fps'])); a['dec_s']=Math.exp(div(-0.6,a['fps'])); a['dec_xs']=Math.exp(div(-0.4,a['fps'])); a['flen']=128; a['shapes']=16; a['beat']=div(((a['bass']+a['treb'])+a['mid']),3); a['beat_']=((a['beat_']*a['dec_m'])+((1-a['dec_m'])*a['beat'])); a['is_beat']=(above(a['beat'], (a['peak']*8))*above(a['time'], (a['t0']+0.2))); a['t0']=((a['is_beat']*a['time'])+((1-a['is_beat'])*a['t0'])); a['peak']=((a['is_beat']*a['beat'])+(((1-a['is_beat'])*a['peak'])*a['dec_m'])); a['index']=mod((a['index']+a['is_beat']),8); a['q22']=a['peak']; a['q27']=a['index']; a['n']=0; a['vol']=0.5; a['bbase']=5000; for(var mdparser_idx310=0;mdparser_idx310<a['flen'];mdparser_idx310++){a['value']=(a['gmegabuf'][Math.floor(a['n'])]*(1+div(1,(a['n']+0.5)))); a['trig']=((a['value']>=a['megabuf'][Math.floor(a['n'])])?1:0); a['dec']=((Math.abs(a['trig'])>0.00001)?(0.2):(pow((0.98-div((0.1*a['n']),a['flen'])), div(30,a['fps'])))); a['megabuf'][Math.floor(a['n'])]=((a['megabuf'][Math.floor(a['n'])]*a['dec'])+((1-a['dec'])*a['value'])); a['vol']=(a['vol']+pow(a['megabuf'][Math.floor(a['n'])], 2)); a['n']=(a['n']+1);} a['vol']=sqrt(a['vol']); a['vol_']=((a['dec_m']*a['vol_'])+((1-a['dec_m'])*a['vol'])); a['n']=0; for(var mdparser_idx311=0;mdparser_idx311<a['flen'];mdparser_idx311++){a['value']=a['megabuf'][Math.floor(a['n'])]; a['dec']=((Math.abs(((a['megabuf'][Math.floor((1000+a['n']))]<=a['value'])?1:0))>0.00001)?(0.9):((0.95-div((0.1*a['n']),a['flen'])))); a['dec']=pow(a['dec'], div(30,a['fps'])); a['megabuf'][Math.floor((a['n']+1000))]=((a['megabuf'][Math.floor((a['n']+1000))]*a['dec'])+div(((1-a['dec'])*a['value']),a['vol_'])); a['n']=(a['n']+1);} a['dist']=2; a['reduce']=div(a['flen'],a['shapes']); a['n']=2000; a['m']=(1000+a['dist']); a['k']=0; for(var mdparser_idx312=0;mdparser_idx312<a['shapes'];mdparser_idx312++){a['betr']=div(((a['megabuf'][Math.floor(a['m'])]+a['megabuf'][Math.floor((a['m']-a['dist']))])+a['megabuf'][Math.floor((a['m']+a['dist']))]),3); a['megabuf'][Math.floor(a['n'])]=(a['megabuf'][Math.floor(a['m'])]-a['megabuf'][Math.floor((a['m']+a['dist']))]); a['megabuf'][Math.floor((a['n']+1))]=(a['megabuf'][Math.floor(a['m'])]-a['megabuf'][Math.floor((a['m']-a['dist']))]); a['z1']=Math.max(div(0.03,a['betr']), 0.05); a['z2']=(div(mod(((a['k']+(a['q22']*a['q14']))+(a['time']*2)),a['shapes']),a['shapes'])+0.06); a['megabuf'][Math.floor((a['n']+2))]=((a['q13']*a['z1'])+((1-a['q13'])*a['z2'])); a['m']=(a['m']+a['reduce']); a['n']=(a['n']+8); a['k']=(a['k']+1);} a['n']=1000; a['m']=2000; for(var mdparser_idx313=0;mdparser_idx313<a['shapes'];mdparser_idx313++){a['gmegabuf'][Math.floor(a['n'])]=div(a['megabuf'][Math.floor(a['m'])],a['megabuf'][Math.floor((a['m']+2))]); a['gmegabuf'][Math.floor((a['n']+1))]=div(a['megabuf'][Math.floor((a['m']+1))],a['megabuf'][Math.floor((a['m']+2))]); a['gmegabuf'][Math.floor((a['n']+2))]=a['megabuf'][Math.floor((a['m']+2))]; a['mx']=(a['mx']+div(div(a['gmegabuf'][Math.floor(a['n'])],a['shapes']),a['fps'])); a['my']=(a['my']+div(div(a['gmegabuf'][Math.floor((a['n']+1))],a['shapes']),a['fps'])); a['n']=(a['n']+8); a['m']=(a['m']+8);} a['q1']=div(Math.sin(((8*a['mx'])+(a['time']*0.1))),2); a['q2']=Math.sin(((-8*a['my'])+(a['time']*0.03))); a['q3']=Math.atan2(a['gmegabuf'][Math.floor((1000+8))], a['gmegabuf'][Math.floor(((1000+8)+1))]); a['trel']=(a['trel']+div(a['bass_att'],a['fps'])); a['q4']=a['trel']; a['monitor']=a['q13']; a['q32']=a['aspecty']; a['q31']=Math.min(0.996, a['dec_xs']);",
+  "init_eqs_str": "a['n'] = 0; a['z2'] = 0; a['index'] = 0; a['q22'] = 0; a['q13'] = 0; a['q1'] = 0; a['trel'] = 0; a['flen'] = 0; a['dec_s'] = 0; a['dec_xs'] = 0; a['my'] = 0; a['beat_'] = 0; a['is_beat'] = 0; a['q31'] = 0; a['betr'] = 0; a['value'] = 0; a['dec_m'] = 0; a['q4'] = 0; a['shapes'] = 0; a['k'] = 0; a['trig'] = 0; a['mx'] = 0; a['beat'] = 0; a['vol'] = 0; a['peak'] = 0; a['q2'] = 0; a['bbase'] = 0; a['q27'] = 0; a['reduce'] = 0; a['q14'] = 0; a['dist'] = 0; a['z1'] = 0; a['q3'] = 0; a['t0'] = 0; a['vol_'] = 0; a['dec'] = 0; a['m'] = 0; a['q32'] = 0; a['index']=0; for(var mdparser_idx447=0;mdparser_idx447<300000;mdparser_idx447++){a['megabuf'][Math.floor(a['index'])]=0.1; a['gmegabuf'][Math.floor(a['index'])]=0; a['index']=(a['index']+1);} a['vol_']=1; a['q10']=((rand(100)>=30)?1:0); a['q11']=((rand(100)>=30)?1:0); a['q12']=((((rand(100)>=30)?1:0)*9)+3); a['q13']=Math.min(Math.max((div(rand(100),50)-0.5), 0.2), 1); a['q14']=0;",
+  "frame_eqs_str": "a['dec_m']=Math.exp(div(-3,a['fps'])); a['dec_s']=Math.exp(div(-0.6,a['fps'])); a['dec_xs']=Math.exp(div(-0.4,a['fps'])); a['flen']=128; a['shapes']=16; a['beat']=div(((a['bass']+a['treb'])+a['mid']),3); a['beat_']=((a['beat_']*a['dec_m'])+((1-a['dec_m'])*a['beat'])); a['is_beat']=(above(a['beat'], (a['peak']*8))*above(a['time'], (a['t0']+0.2))); a['t0']=((a['is_beat']*a['time'])+((1-a['is_beat'])*a['t0'])); a['peak']=((a['is_beat']*a['beat'])+(((1-a['is_beat'])*a['peak'])*a['dec_m'])); a['index']=mod((a['index']+a['is_beat']),8); a['q22']=a['peak']; a['q27']=a['index']; a['n']=0; a['vol']=0.5; a['bbase']=5000; for(var mdparser_idx448=0;mdparser_idx448<a['flen'];mdparser_idx448++){a['value']=(a['gmegabuf'][Math.floor(a['n'])]*(1+div(1,(a['n']+0.5)))); a['trig']=((a['value']>=a['megabuf'][Math.floor(a['n'])])?1:0); a['dec']=((Math.abs(a['trig'])>0.00001)?(0.2):(pow((0.98-div((0.1*a['n']),a['flen'])), div(30,a['fps'])))); a['megabuf'][Math.floor(a['n'])]=((a['megabuf'][Math.floor(a['n'])]*a['dec'])+((1-a['dec'])*a['value'])); a['vol']=(a['vol']+pow(a['megabuf'][Math.floor(a['n'])], 2)); a['n']=(a['n']+1);} a['vol']=sqrt(a['vol']); a['vol_']=((a['dec_m']*a['vol_'])+((1-a['dec_m'])*a['vol'])); a['n']=0; for(var mdparser_idx449=0;mdparser_idx449<a['flen'];mdparser_idx449++){a['value']=a['megabuf'][Math.floor(a['n'])]; a['dec']=((Math.abs(((a['megabuf'][Math.floor((1000+a['n']))]<=a['value'])?1:0))>0.00001)?(0.9):((0.95-div((0.1*a['n']),a['flen'])))); a['dec']=pow(a['dec'], div(30,a['fps'])); a['megabuf'][Math.floor((a['n']+1000))]=((a['megabuf'][Math.floor((a['n']+1000))]*a['dec'])+div(((1-a['dec'])*a['value']),a['vol_'])); a['n']=(a['n']+1);} a['dist']=2; a['reduce']=div(a['flen'],a['shapes']); a['n']=2000; a['m']=(1000+a['dist']); a['k']=0; for(var mdparser_idx450=0;mdparser_idx450<a['shapes'];mdparser_idx450++){a['betr']=div(((a['megabuf'][Math.floor(a['m'])]+a['megabuf'][Math.floor((a['m']-a['dist']))])+a['megabuf'][Math.floor((a['m']+a['dist']))]),3); a['megabuf'][Math.floor(a['n'])]=(a['megabuf'][Math.floor(a['m'])]-a['megabuf'][Math.floor((a['m']+a['dist']))]); a['megabuf'][Math.floor((a['n']+1))]=(a['megabuf'][Math.floor(a['m'])]-a['megabuf'][Math.floor((a['m']-a['dist']))]); a['z1']=Math.max(div(0.03,a['betr']), 0.05); a['z2']=(div(mod(((a['k']+(a['q22']*a['q14']))+(a['time']*2)),a['shapes']),a['shapes'])+0.06); a['megabuf'][Math.floor((a['n']+2))]=((a['q13']*a['z1'])+((1-a['q13'])*a['z2'])); a['m']=(a['m']+a['reduce']); a['n']=(a['n']+8); a['k']=(a['k']+1);} a['n']=1000; a['m']=2000; for(var mdparser_idx451=0;mdparser_idx451<a['shapes'];mdparser_idx451++){a['gmegabuf'][Math.floor(a['n'])]=div(a['megabuf'][Math.floor(a['m'])],a['megabuf'][Math.floor((a['m']+2))]); a['gmegabuf'][Math.floor((a['n']+1))]=div(a['megabuf'][Math.floor((a['m']+1))],a['megabuf'][Math.floor((a['m']+2))]); a['gmegabuf'][Math.floor((a['n']+2))]=a['megabuf'][Math.floor((a['m']+2))]; a['mx']=(a['mx']+div(div(a['gmegabuf'][Math.floor(a['n'])],a['shapes']),a['fps'])); a['my']=(a['my']+div(div(a['gmegabuf'][Math.floor((a['n']+1))],a['shapes']),a['fps'])); a['n']=(a['n']+8); a['m']=(a['m']+8);} a['q1']=div(Math.sin(((8*a['mx'])+(a['time']*0.1))),2); a['q2']=Math.sin(((-8*a['my'])+(a['time']*0.03))); a['q3']=Math.atan2(a['gmegabuf'][Math.floor((1000+8))], a['gmegabuf'][Math.floor(((1000+8)+1))]); a['trel']=(a['trel']+div(a['bass_att'],a['fps'])); a['q4']=a['trel']; a['monitor']=a['q13']; a['q32']=a['aspecty']; a['q31']=Math.min(0.996, a['dec_xs']);",
   "pixel_eqs_str": "a['rot']=0.0; a['zoom']=1.04; a['warp']=0; a['dx']=0; a['dy']=0;",
   "baseVals": {
+    "milkdrop_preset_version": 201,
+    "psversion": 2,
+    "psversion_warp": 2,
+    "psversion_comp": 2,
     "rating": 3,
     "gammaadj": 1.98,
     "decay": 0.5,
@@ -131,11 +135,15 @@
     "b2x": 0.5,
     "b1ed": 0
   },
-  "warp": " shader_body { \u0002 }",
-  "comp": "float sw1;\nvec2 xlat_mutableuv2;\n shader_body { \n  sw1 = float((rand_preset.x >= 0.4));\n  vec2 uv_1;\n  vec3 ret_2;\n  vec2 tmpvar_3;\n  tmpvar_3.x = ((0.2 / rad) + (time / 4.0));\n  tmpvar_3.y = (ang / 3.14);\n  xlat_mutableuv2 = (tmpvar_3 * 2.0);\n  vec2 tmpvar_4;\n  tmpvar_4 = sin(((\n    (xlat_mutableuv2 * 3.141)\n   / 2.0) + (time * 0.1)));\n  vec4 tmpvar_5;\n  tmpvar_5 = texture (sampler_noise_hq, (xlat_mutableuv2 + sqrt(dot (tmpvar_4, tmpvar_4))));\n  vec2 tmpvar_6;\n  tmpvar_6.x = (1.0 - uv.x);\n  tmpvar_6.y = uv.y;\n  ret_2 = (texture (sampler_main, uv).xyz + texture (sampler_main, tmpvar_6).xyz);\n  uv_1 = (uv + ((\n    (((sw1 * rad) * (tmpvar_5.xy - 0.5)) / 2.0)\n   * \n    float((tmpvar_5.x <= rand_preset.y))\n  ) * sw1));\n  vec2 tmpvar_7;\n  tmpvar_7.x = (1.0 - uv_1.x);\n  tmpvar_7.y = uv_1.y;\n  ret_2 = (ret_2 + ((\n    ((((texture (sampler_blur2, uv_1).xyz * scale2) + bias2) + ((texture (sampler_blur2, tmpvar_7).xyz * scale2) + bias2)) * min ((0.5 + (treb_att / 4.0)), 2.0))\n   * \n    (1.0 + sw1)\n  ) * clamp (\n    (1.0 - (dot (ret_2, vec3(0.32, 0.49, 0.29)) / 2.0))\n  , 0.0, 1.0)));\n  ret_2 = (ret_2 + (float(\n    !(bool(sw1))\n  ) * vec3((0.2 * \n    ((0.5 + ((uv.x - 0.5) * q1)) + ((uv.y - 0.5) * q2))\n  ))));\n  vec3 tmpvar_8;\n  tmpvar_8 = mix ((ret_2 * (\n    (hue_shader * 2.0)\n   - 1.0)), ret_2, vec3(dot (ret_2, vec3(0.32, 0.49, 0.29))));\n  ret_2 = tmpvar_8;\n  vec4 tmpvar_9;\n  tmpvar_9.w = 1.0;\n  tmpvar_9.xyz = tmpvar_8;\n  ret = tmpvar_9.xyz;\n }",
+  "warp": " shader_body {  \n  vec3 ret_1;\n  ret_1 = (((\n    (texture (sampler_blur2, uv).xyz * scale2)\n   + bias2) * exp(\n    (-2.0 * dot (((texture (sampler_blur2, uv_orig).xyz * scale2) + bias2), vec3(0.32, 0.49, 0.29)))\n  )) - 0.003);\n  vec3 tmpvar_2;\n  tmpvar_2 = max (ret_1, (texture (sampler_main, uv).xyz * 0.3));\n  ret_1 = tmpvar_2;\n  vec4 tmpvar_3;\n  tmpvar_3.w = 1.0;\n  tmpvar_3.xyz = tmpvar_2;\n  ret = tmpvar_3.xyz;\n  }",
+  "comp": "float sw1;\nvec2 xlat_mutableuv2;\n shader_body {  \n  sw1 = float((rand_preset.x >= 0.4));\n  vec2 uv_1;\n  vec3 ret_2;\n  vec2 tmpvar_3;\n  tmpvar_3.x = ((0.2 / rad) + (time / 4.0));\n  tmpvar_3.y = (ang / 3.14);\n  xlat_mutableuv2 = (tmpvar_3 * 2.0);\n  vec2 tmpvar_4;\n  tmpvar_4 = sin(((\n    (xlat_mutableuv2 * 3.141)\n   / 2.0) + (time * 0.1)));\n  vec4 tmpvar_5;\n  tmpvar_5 = texture (sampler_noise_hq, (xlat_mutableuv2 + sqrt(dot (tmpvar_4, tmpvar_4))));\n  vec2 tmpvar_6;\n  tmpvar_6.x = (1.0 - uv.x);\n  tmpvar_6.y = uv.y;\n  ret_2 = (texture (sampler_main, uv).xyz + texture (sampler_main, tmpvar_6).xyz);\n  uv_1 = (uv + ((\n    (((sw1 * rad) * (tmpvar_5.xy - 0.5)) / 2.0)\n   * \n    float((tmpvar_5.x <= rand_preset.y))\n  ) * sw1));\n  vec2 tmpvar_7;\n  tmpvar_7.x = (1.0 - uv_1.x);\n  tmpvar_7.y = uv_1.y;\n  ret_2 = (ret_2 + ((\n    ((((texture (sampler_blur2, uv_1).xyz * scale2) + bias2) + ((texture (sampler_blur2, tmpvar_7).xyz * scale2) + bias2)) * min ((0.5 + (treb_att / 4.0)), 2.0))\n   * \n    (1.0 + sw1)\n  ) * clamp (\n    (1.0 - (dot (ret_2, vec3(0.32, 0.49, 0.29)) / 2.0))\n  , 0.0, 1.0)));\n  ret_2 = (ret_2 + (float(\n    !(bool(sw1))\n  ) * vec3((0.2 * \n    ((0.5 + ((uv.x - 0.5) * q1)) + ((uv.y - 0.5) * q2))\n  ))));\n  vec3 tmpvar_8;\n  tmpvar_8 = mix ((ret_2 * (\n    (hue_shader * 2.0)\n   - 1.0)), ret_2, vec3(dot (ret_2, vec3(0.32, 0.49, 0.29))));\n  ret_2 = tmpvar_8;\n  vec4 tmpvar_9;\n  tmpvar_9.w = 1.0;\n  tmpvar_9.xyz = tmpvar_8;\n  ret = tmpvar_9.xyz;\n  }",
   "presetParts": {
     "presetVersion": 2,
     "baseVals": {
+      "milkdrop_preset_version": 201,
+      "psversion": 2,
+      "psversion_warp": 2,
+      "psversion_comp": 2,
       "rating": 3,
       "gammaadj": 1.98,
       "decay": 0.5,
@@ -208,45 +216,20 @@
       },
       {
         "baseVals": {
-          "usedots": 1,
-          "scaling": 0.89152,
-          "smoothing": 0.82,
-          "a": 0.4,
           "enabled": 0
-        },
-        "init_eqs_str": "",
-        "frame_eqs_str": "",
-        "point_eqs_str": ""
+        }
       },
       {
         "baseVals": {
-          "spectrum": 1,
-          "usedots": 1,
           "enabled": 0
-        },
-        "init_eqs_str": "",
-        "frame_eqs_str": "",
-        "point_eqs_str": ""
+        }
       }
     ],
     "shapes": [
       {
         "baseVals": {
-          "sides": 14,
-          "num_inst": 32,
-          "rad": 0.03632,
-          "tex_ang": 1.00531,
-          "tex_zoom": 1.53117,
-          "b": 1,
-          "a": 0,
-          "g2": 0,
-          "a2": 0.6,
-          "border_b": 0,
-          "border_a": 0.3,
           "enabled": 0
-        },
-        "init_eqs_str": "",
-        "frame_eqs_str": "k1 = instance/num_inst;\nn = instance*4+2000;\nx = gmegabuf(n);\ny = gmegabuf(n+1);\nz = gmegabuf(n+2);\n\nrad = .02/z;\na = 0; a2 = 0;"
+        }
       },
       {
         "baseVals": {
@@ -288,27 +271,8 @@
       },
       {
         "baseVals": {
-          "sides": 12,
-          "additive": 1,
-          "thickoutline": 1,
-          "textured": 1,
-          "num_inst": 32,
-          "x": 0.6,
-          "y": 0.55,
-          "rad": 0.97237,
-          "ang": 1.25664,
-          "tex_zoom": 0.34933,
-          "g": 0.6,
-          "g2": 0,
-          "b2": 1,
-          "border_r": 0.2,
-          "border_g": 0.7,
-          "border_b": 0.5,
-          "border_a": 0,
           "enabled": 0
-        },
-        "init_eqs_str": "",
-        "frame_eqs_str": "copies = int(num_inst/16);\n\nn = int(instance/copies)*8+1000;\nfrac = (instance%copies)/(copies);\n\nk1 = 1;\nx0 = gmegabuf(n)*frac + megabuf(n)*(1-frac)*k1;\ny0 = gmegabuf(n+1)*frac+ megabuf(n+1)*(1-frac)*k1;\nz0 = gmegabuf(n+2)*frac+ megabuf(n+2)*(1-frac);\nang = frac*3.14 + atan2(x0,y0);\n\nmegabuf(n) = x0;\nmegabuf(n+1) = y0;\nmegabuf(n+2) = z0;\n\nx = x0 + .5;\ny = y0*q32 + .5;\nz = z0;\n\na =  0 ;\na2 = 0;\n\nrad = (.012)/z;\n\nborder_a = .02;"
+        }
       }
     ],
     "warp": "sampler sampler_pw_noise_lq;\nfloat dx,dy,rad1,mask1;\nfloat2 uv0, uv1,uv4,rsk, Kugel1,dz1;\n\nshader_body {\nuv0 = uv;\n\nfloat2 uv1 = float2(uv.x,uv.y+texsize.w*3);\nret = GetPixel(uv1);\n\nfloat fak = exp(-2*lum(GetBlur2(uv_orig)));\nret = (GetBlur2(uv))*fak-.003 ;\n\nfloat3 add = GetPixel(uv)*.3;\nret = max(ret,add);\n//ret = 0;\n}",

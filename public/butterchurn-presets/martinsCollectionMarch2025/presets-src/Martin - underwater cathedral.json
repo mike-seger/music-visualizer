@@ -61,6 +61,10 @@
   "frame_eqs_str": "a['dec_med']=Math.exp(div(-2,a['fps'])); a['dec_slow']=Math.exp(div(-0.6,a['fps'])); a['beat']=Math.max(Math.max(a['bass'], a['mid']), a['treb']); a['avg']=((a['avg']*a['dec_slow'])+(a['beat']*(1-a['dec_slow']))); a['is_beat']=(above(a['beat'], ((0.2+a['avg'])+a['peak']))*above(a['time'], (a['t0']+0.2))); a['t0']=((a['is_beat']*a['time'])+((1-a['is_beat'])*a['t0'])); a['peak']=((a['is_beat']*a['beat'])+(((1-a['is_beat'])*a['peak'])*a['dec_med'])); a['index']=mod((a['index']+a['is_beat']),64); a['index2']=mod((a['index2']+(a['is_beat']*bnot(a['index']))),3); a['q20']=a['avg']; a['q21']=a['beat']; a['q22']=a['peak']; a['ps']=((a['dec_slow']*a['ps'])+((1-a['dec_slow'])*a['q22'])); a['q23']=a['ps']; a['q24']=a['is_beat']; a['q26']=((a['bass_att']+a['mid_att'])+a['treb_att']); a['q27']=(a['index']+1); a['q28']=a['index2']; a['k1']=(a['is_beat']*bnot(mod(a['index'],20))); a['p1']=((a['k1']*(a['p1']+1))+((1-a['k1'])*a['p1'])); a['p2']=((a['dec_med']*a['p2'])+((1-a['dec_med'])*a['p1'])); a['p3']=((a['dec_med']*a['p3'])+((1-a['dec_med'])*a['p2'])); a['rott']=div((a['p3']*3.1416),4); a['q1']=Math.cos(a['rott']); a['q2']=Math.sin(a['rott']); a['q3']=-a['q2']; a['q4']=a['q1']; a['dirx']=((a['dirx']*a['dec_med'])+((1-a['dec_med'])*a['index2'])); a['movx']=(a['movx']+div((0.02*a['dirx']),a['fps'])); a['movy']=(a['movy']+div((0.04*a['q1']),a['fps'])); a['q15']=a['movx']; a['q16']=a['movy']; a['movp']=(a['movp']+div((0.02*a['q23']),a['fps'])); a['q17']=a['movp']; a['trig1']=((a['q24']*bnot(mod(a['index'],4)))*above(a['t1'], 1.9)); a['t1']=((Math.abs(a['trig1'])>0.00001)?(0):((a['t1']+div(0.3,a['fps'])))); a['t1']=Math.min(a['t1'], 2); a['radi']=0.7; a['q10']=(((-1+a['t1'])*a['radi'])*1.5); a['q11']=(((1-(2*sqr((a['t1']-1))))*a['radi'])-0.4); a['q12']=0; a['q5']=(0.03+(0.1*(1+Math.sin((div(a['time'],27)+a['rand1']))))); a['q6']=(2+Math.sin((div(a['time'],27)+(a['rand2']*2.5)))); a['q8']=Math.sin(div(a['time'],16)); a['q19']=(a['rand2']*0.002); a['monitor']=a['index'];",
   "pixel_eqs_str": "",
   "baseVals": {
+    "milkdrop_preset_version": 201,
+    "psversion": 3,
+    "psversion_warp": 3,
+    "psversion_comp": 3,
     "rating": 2,
     "gammaadj": 1.98,
     "decay": 0.5,
@@ -99,11 +103,15 @@
     "mv_a": 0,
     "b1ed": 0
   },
-  "warp": "float iter6;\nfloat xlat_mutablerill;\n shader_body { \n  iter6 = float((rand_preset.z > 0.5));\n  float k2_1;\n  float k1_3;\n  float ky_4;\n  vec2 uv3_5;\n  uv3_5 = ((43.0 + (18.0 * iter6)) * (uv - vec2(0.5, 0.5)));\n  ky_4 = clamp ((0.04 - (uv3_5.y / 40.0)), 0.0, 1.0);\n  float tmpvar_6;\n  tmpvar_6 = (uv3_5.x * 0.8);\n  k1_3 = (tmpvar_6 - (sign(tmpvar_6) * 14.0));\n  k1_3 = (k1_3 - (sign(k1_3) * 11.0));\n  k1_3 = (k1_3 - (sign(k1_3) * (2.0 + \n    (rand_preset.y * 8.0)\n  )));\n  for (int n_2 = 1; float(n_2) <= (4.0 + (2.0 * iter6)); n_2++) {\n    k1_3 = (k1_3 + ((\n      (float((-16 * n_2)) * sign(k1_3))\n     * ky_4) * ky_4));\n    ky_4 = clamp ((ky_4 - 0.1), 0.0, 1.0);\n  };\n  k2_1 = k1_3;\n  float tmpvar_7;\n  tmpvar_7 = clamp (k1_3, -1.6, 1.6);\n  k1_3 = tmpvar_7;\n  float tmpvar_8;\n  tmpvar_8 = clamp ((cos(tmpvar_7) - 0.1), 0.0, 1.0);\n  xlat_mutablerill = (((rand_preset - 0.3) * clamp (\n    cos((8.0 * k2_1))\n  , 0.0, 1.0)).xyz * vec3(tmpvar_8)).x;\n  vec2 tmpvar_9;\n  tmpvar_9.x = -(q15);\n  tmpvar_9.y = q16;\n  vec4 tmpvar_10;\n  tmpvar_10.w = 1.0;\n  tmpvar_10.xyz = ((max (\n    (vec3(tmpvar_8) / 2.0)\n  , \n    (texture (sampler_main, (((uv - 0.5) * 2.0) + tmpvar_9)).xyz * 0.66)\n  ) - (0.2 * xlat_mutablerill)) - 0.01);\n  ret = tmpvar_10.xyz;\n }",
-  "comp": "float cstretch;\nvec2 xlat_mutabledz;\n shader_body { \n  vec2 tmpvar_1;\n  tmpvar_1.y = 0.0;\n  tmpvar_1.x = texsize.z;\n  vec2 tmpvar_2;\n  tmpvar_2.x = 0.0;\n  tmpvar_2.y = texsize.w;\n  cstretch = (0.7 * sqrt((\n    (2.0 * rand_preset.x)\n   - 1.0)));\n  vec3 mus_3;\n  vec2 uv1_4;\n  vec3 ret_5;\n  vec2 tmpvar_6;\n  tmpvar_6.x = (uv.x + (time * 0.06));\n  tmpvar_6.y = ((uv.y / 4.0) + (time * 0.02));\n  uv1_4 = ((uv - 0.5) + (texture (sampler_noise_lq, tmpvar_6).x * q19));\n  uv1_4.x = (uv1_4.x * (1.0/((\n    ((uv1_4.y * (rand_preset.x - 0.5)) * 2.0)\n   + 1.0))));\n  vec2 tmpvar_7;\n  float tmpvar_8;\n  tmpvar_8 = (q15 * 2.0);\n  tmpvar_7.x = tmpvar_8;\n  tmpvar_7.y = (-2.0 * q16);\n  vec2 tmpvar_9;\n  tmpvar_9 = fract(((\n    (2.0 * uv1_4)\n   + 0.5) + tmpvar_7));\n  xlat_mutabledz.x = ((2.0 * dot (texture (sampler_main, \n    (tmpvar_9 + tmpvar_1)\n  ).xyz, vec3(0.32, 0.49, 0.29))) - (2.0 * dot (texture (sampler_main, \n    (tmpvar_9 - tmpvar_1)\n  ).xyz, vec3(0.32, 0.49, 0.29))));\n  xlat_mutabledz.y = ((2.0 * dot (texture (sampler_main, \n    (tmpvar_9 + tmpvar_2)\n  ).xyz, vec3(0.32, 0.49, 0.29))) - (2.0 * dot (texture (sampler_main, \n    (tmpvar_9 - tmpvar_2)\n  ).xyz, vec3(0.32, 0.49, 0.29))));\n  vec4 tmpvar_10;\n  tmpvar_10 = texture (sampler_main, tmpvar_9);\n  xlat_mutabledz = (xlat_mutabledz * 1.5);\n  vec2 tmpvar_11;\n  tmpvar_11.x = sin(tmpvar_8);\n  tmpvar_11.y = sin((q16 * 2.0));\n  vec2 tmpvar_12;\n  tmpvar_12 = (tmpvar_11 * 0.6);\n  vec2 tmpvar_13;\n  tmpvar_13 = ((uv1_4 - tmpvar_12) + (xlat_mutabledz * (1.0 - cstretch)));\n  vec2 tmpvar_14;\n  tmpvar_14 = ((uv1_4 - tmpvar_12) + xlat_mutabledz);\n  vec2 tmpvar_15;\n  tmpvar_15 = ((uv1_4 - tmpvar_12) + (xlat_mutabledz * (1.0 + cstretch)));\n  vec3 tmpvar_16;\n  tmpvar_16.x = (q5 / sqrt(dot (tmpvar_13, tmpvar_13)));\n  tmpvar_16.y = (q5 / sqrt(dot (tmpvar_14, tmpvar_14)));\n  tmpvar_16.z = (q5 / sqrt(dot (tmpvar_15, tmpvar_15)));\n  mus_3 = (tmpvar_16 + 0.04);\n  mus_3 = (mus_3 * (0.75 + mus_3));\n  ret_5 = (clamp (mus_3, 0.0, 1.0) * clamp ((1.0 - \n    (q6 * dot (tmpvar_10.xyz, vec3(0.32, 0.49, 0.29)))\n  ), 0.0, 1.0));\n  vec3 tmpvar_17;\n  tmpvar_17 = (clamp ((1.0 - \n    (2.0 * sqrt(mus_3))\n  ), 0.0, 1.0) * tmpvar_10.xyz);\n  ret_5 = (ret_5 + ((\n    ((tmpvar_17 * tmpvar_17) / q5)\n   / 2.0) * q8));\n  vec4 tmpvar_18;\n  tmpvar_18.w = 1.0;\n  tmpvar_18.xyz = ret_5;\n  ret = tmpvar_18.xyz;\n }",
+  "warp": "float iter6;\nfloat xlat_mutablerill;\n shader_body {  \n  iter6 = float((rand_preset.z > 0.5));\n  float k2_1;\n  float k1_3;\n  float ky_4;\n  vec2 uv3_5;\n  uv3_5 = ((43.0 + (18.0 * iter6)) * (uv - vec2(0.5, 0.5)));\n  ky_4 = clamp ((0.04 - (uv3_5.y / 40.0)), 0.0, 1.0);\n  float tmpvar_6;\n  tmpvar_6 = (uv3_5.x * 0.8);\n  k1_3 = (tmpvar_6 - (sign(tmpvar_6) * 14.0));\n  k1_3 = (k1_3 - (sign(k1_3) * 11.0));\n  k1_3 = (k1_3 - (sign(k1_3) * (2.0 + \n    (rand_preset.y * 8.0)\n  )));\n  for (int n_2 = 1; float(n_2) <= (4.0 + (2.0 * iter6)); n_2++) {\n    k1_3 = (k1_3 + ((\n      (float((-16 * n_2)) * sign(k1_3))\n     * ky_4) * ky_4));\n    ky_4 = clamp ((ky_4 - 0.1), 0.0, 1.0);\n  };\n  k2_1 = k1_3;\n  float tmpvar_7;\n  tmpvar_7 = clamp (k1_3, -1.6, 1.6);\n  k1_3 = tmpvar_7;\n  float tmpvar_8;\n  tmpvar_8 = clamp ((cos(tmpvar_7) - 0.1), 0.0, 1.0);\n  xlat_mutablerill = (((rand_preset - 0.3) * clamp (\n    cos((8.0 * k2_1))\n  , 0.0, 1.0)).xyz * vec3(tmpvar_8)).x;\n  vec2 tmpvar_9;\n  tmpvar_9.x = -(q15);\n  tmpvar_9.y = q16;\n  vec4 tmpvar_10;\n  tmpvar_10.w = 1.0;\n  tmpvar_10.xyz = ((max (\n    (vec3(tmpvar_8) / 2.0)\n  , \n    (texture (sampler_main, (((uv - 0.5) * 2.0) + tmpvar_9)).xyz * 0.66)\n  ) - (0.2 * xlat_mutablerill)) - 0.01);\n  ret = tmpvar_10.xyz;\n  }",
+  "comp": "float cstretch;\nvec2 xlat_mutabledz;\n shader_body {  \n  vec2 tmpvar_1;\n  tmpvar_1.y = 0.0;\n  tmpvar_1.x = texsize.z;\n  vec2 tmpvar_2;\n  tmpvar_2.x = 0.0;\n  tmpvar_2.y = texsize.w;\n  cstretch = (0.7 * sqrt((\n    (2.0 * rand_preset.x)\n   - 1.0)));\n  vec3 mus_3;\n  vec2 uv1_4;\n  vec3 ret_5;\n  vec2 tmpvar_6;\n  tmpvar_6.x = (uv.x + (time * 0.06));\n  tmpvar_6.y = ((uv.y / 4.0) + (time * 0.02));\n  uv1_4 = ((uv - 0.5) + (texture (sampler_noise_lq, tmpvar_6).x * q19));\n  uv1_4.x = (uv1_4.x * (1.0/((\n    ((uv1_4.y * (rand_preset.x - 0.5)) * 2.0)\n   + 1.0))));\n  vec2 tmpvar_7;\n  float tmpvar_8;\n  tmpvar_8 = (q15 * 2.0);\n  tmpvar_7.x = tmpvar_8;\n  tmpvar_7.y = (-2.0 * q16);\n  vec2 tmpvar_9;\n  tmpvar_9 = fract(((\n    (2.0 * uv1_4)\n   + 0.5) + tmpvar_7));\n  xlat_mutabledz.x = ((2.0 * dot (texture (sampler_main, \n    (tmpvar_9 + tmpvar_1)\n  ).xyz, vec3(0.32, 0.49, 0.29))) - (2.0 * dot (texture (sampler_main, \n    (tmpvar_9 - tmpvar_1)\n  ).xyz, vec3(0.32, 0.49, 0.29))));\n  xlat_mutabledz.y = ((2.0 * dot (texture (sampler_main, \n    (tmpvar_9 + tmpvar_2)\n  ).xyz, vec3(0.32, 0.49, 0.29))) - (2.0 * dot (texture (sampler_main, \n    (tmpvar_9 - tmpvar_2)\n  ).xyz, vec3(0.32, 0.49, 0.29))));\n  vec4 tmpvar_10;\n  tmpvar_10 = texture (sampler_main, tmpvar_9);\n  xlat_mutabledz = (xlat_mutabledz * 1.5);\n  vec2 tmpvar_11;\n  tmpvar_11.x = sin(tmpvar_8);\n  tmpvar_11.y = sin((q16 * 2.0));\n  vec2 tmpvar_12;\n  tmpvar_12 = (tmpvar_11 * 0.6);\n  vec2 tmpvar_13;\n  tmpvar_13 = ((uv1_4 - tmpvar_12) + (xlat_mutabledz * (1.0 - cstretch)));\n  vec2 tmpvar_14;\n  tmpvar_14 = ((uv1_4 - tmpvar_12) + xlat_mutabledz);\n  vec2 tmpvar_15;\n  tmpvar_15 = ((uv1_4 - tmpvar_12) + (xlat_mutabledz * (1.0 + cstretch)));\n  vec3 tmpvar_16;\n  tmpvar_16.x = (q5 / sqrt(dot (tmpvar_13, tmpvar_13)));\n  tmpvar_16.y = (q5 / sqrt(dot (tmpvar_14, tmpvar_14)));\n  tmpvar_16.z = (q5 / sqrt(dot (tmpvar_15, tmpvar_15)));\n  mus_3 = (tmpvar_16 + 0.04);\n  mus_3 = (mus_3 * (0.75 + mus_3));\n  ret_5 = (clamp (mus_3, 0.0, 1.0) * clamp ((1.0 - \n    (q6 * dot (tmpvar_10.xyz, vec3(0.32, 0.49, 0.29)))\n  ), 0.0, 1.0));\n  vec3 tmpvar_17;\n  tmpvar_17 = (clamp ((1.0 - \n    (2.0 * sqrt(mus_3))\n  ), 0.0, 1.0) * tmpvar_10.xyz);\n  ret_5 = (ret_5 + ((\n    ((tmpvar_17 * tmpvar_17) / q5)\n   / 2.0) * q8));\n  vec4 tmpvar_18;\n  tmpvar_18.w = 1.0;\n  tmpvar_18.xyz = ret_5;\n  ret = tmpvar_18.xyz;\n  }",
   "presetParts": {
     "presetVersion": 2,
     "baseVals": {
+      "milkdrop_preset_version": 201,
+      "psversion": 3,
+      "psversion_warp": 3,
+      "psversion_comp": 3,
       "rating": 2,
       "gammaadj": 1.98,
       "decay": 0.5,
@@ -148,74 +156,30 @@
     "waves": [
       {
         "baseVals": {
-          "samples": 128,
-          "thick": 1,
-          "additive": 1,
-          "scaling": 0.89152,
-          "smoothing": 0,
           "enabled": 0
-        },
-        "init_eqs_str": "",
-        "frame_eqs_str": "",
-        "point_eqs_str": ""
+        }
       },
       {
         "baseVals": {
-          "samples": 100,
-          "usedots": 1,
-          "thick": 1,
-          "scaling": 0.89152,
-          "smoothing": 0,
-          "a": 0.1,
           "enabled": 0
-        },
-        "init_eqs_str": "",
-        "frame_eqs_str": "",
-        "point_eqs_str": ""
+        }
       },
       {
         "baseVals": {
-          "thick": 1,
-          "scaling": 0.89152,
-          "smoothing": 0.82,
-          "a": 0.1,
           "enabled": 0
-        },
-        "init_eqs_str": "",
-        "frame_eqs_str": "",
-        "point_eqs_str": ""
+        }
       },
       {
         "baseVals": {
-          "spectrum": 1,
-          "usedots": 1,
           "enabled": 0
-        },
-        "init_eqs_str": "",
-        "frame_eqs_str": "",
-        "point_eqs_str": ""
+        }
       }
     ],
     "shapes": [
       {
         "baseVals": {
-          "sides": 64,
-          "thickoutline": 1,
-          "textured": 1,
-          "rad": 0.53526,
-          "tex_zoom": 1.35028,
-          "g": 1,
-          "b": 1,
-          "a": 0.4,
-          "r2": 1,
-          "b2": 1,
-          "a2": 0.5,
-          "border_b": 0,
-          "border_a": 0,
           "enabled": 0
-        },
-        "init_eqs_str": "",
-        "frame_eqs_str": ""
+        }
       },
       {
         "baseVals": {
@@ -238,43 +202,13 @@
       },
       {
         "baseVals": {
-          "sides": 63,
-          "x": 0.503,
-          "y": 0.67,
-          "rad": 0.05033,
-          "tex_zoom": 0.49981,
-          "r": 0,
-          "g": 1,
-          "b": 1,
-          "g2": 0,
-          "a2": 1,
-          "border_r": 0.5,
-          "border_g": 0.5,
-          "border_b": 0.5,
-          "border_a": 0,
           "enabled": 0
-        },
-        "init_eqs_str": "",
-        "frame_eqs_str": ""
+        }
       },
       {
         "baseVals": {
-          "y": 0.51,
-          "rad": 0.19869,
-          "tex_ang": 1.00531,
-          "tex_zoom": 0.49981,
-          "g": 0.4,
-          "a": 0.7,
-          "r2": 1,
-          "b2": 1,
-          "border_r": 0.5,
-          "border_g": 0.5,
-          "border_b": 0.5,
-          "border_a": 0,
           "enabled": 0
-        },
-        "init_eqs_str": "",
-        "frame_eqs_str": ""
+        }
       }
     ],
     "warp": "sampler sampler_pw_noise_lq;\n\nfloat3 ret1, stone, window;\nfloat2 rsk, uv1, uv2, uv3, uv4, dz1, Kugel1;\nfloat mask1, rad1, rill;\nstatic float iter6 = (rand_preset.z > .5);\nshader_body {\n\nfloat dx = abs(.5-frac(uv.x*88))*0;\nfloat dy = abs(.5-frac(uv.y*88))*1;\nuv += float2(dx,dy)*.0;\n\nuv1 = float2(uv.x-.5,uv.y-0.5);\n\nfloat2 uv3 = uv1;float dist = 43+18*iter6;\nuv3 = dist * uv1;\n\nfloat ky = saturate(.04-uv3.y/40);\nfloat k1 = uv3.x*.8 ;;\n\nk1 = k1 - sign (k1)*14; //Verdoppelung\nk1 = k1 - sign (k1)*11; //Verdoppelung\nk1 = k1 - sign (k1)*(2+rand_preset.y*8); //Verdoppelung\n\nint n = 1 ;\nfloat delta = .1;\nwhile (n <= 4+2*iter6) \n{\n  k1 += (-16*n*sign(k1))*ky*ky;\n  ky = saturate (ky - delta);\n  delta *= 1;\n  n++; \n}\nfloat k2 = k1;\nk1 = clamp(k1,-1.6,1.6);\nstone = saturate(cos(k1) -.1);\n\nrill = (rand_preset-.3)*saturate(cos(8*k2))*stone;\n\nret = max(stone/2, GetPixel((uv-.5)*2\n+float2(-q15,q16))*(.66)) -.2*rill - 0.01;\n}",

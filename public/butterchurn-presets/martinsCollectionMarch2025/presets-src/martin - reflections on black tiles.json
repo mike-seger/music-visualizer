@@ -83,6 +83,10 @@
   "frame_eqs_str": "a['dec_med']=Math.exp(div(-3,a['fps'])); a['dec_slow']=Math.exp(div(-0.3,a['fps'])); a['beat']=Math.max(Math.max(a['bass'], a['mid']), a['treb']); a['avg']=((a['avg']*a['dec_slow'])+(a['beat']*(1-a['dec_slow']))); a['is_beat']=(above(a['beat'], ((0.5+a['avg'])+a['peak']))*above(a['time'], (a['t0']+0.2))); a['t0']=((a['is_beat']*a['time'])+((1-a['is_beat'])*a['t0'])); a['peak']=((a['is_beat']*a['beat'])+(((1-a['is_beat'])*a['peak'])*a['dec_med'])); a['index']=mod((a['index']+a['is_beat']),8); a['q20']=a['avg']; a['q21']=a['beat']; a['q22']=a['peak']; a['q23']=a['index']; a['q24']=a['is_beat']; a['q26']=((a['bass']+a['mid'])+a['treb']); a['k1']=(a['is_beat']*equal(a['index'], 0)); a['p1']=((a['k1']*(a['p1']+1))+((1-a['k1'])*a['p1'])); a['p2']=((a['dec_med']*a['p2'])+((1-a['dec_med'])*a['p1'])); a['rott']=div((a['p2']*3.14159265358),2); a['q27']=(a['index']+1); a['q1']=Math.cos(a['rott']); a['q2']=Math.sin(a['rott']); a['q3']=-a['q2']; a['q4']=a['q1']; a['zoom']=1.0; a['rot']=(-0.00*a['index']); a['fade']=((a['fade']*a['dec_med'])+(pow(0.996, div(30,a['fps']))*(1-a['dec_med']))); a['q32']=a['fade']; a['monitor']=a['reg99'];",
   "pixel_eqs_str": "",
   "baseVals": {
+    "milkdrop_preset_version": 201,
+    "psversion": 2,
+    "psversion_warp": 2,
+    "psversion_comp": 2,
     "rating": 3,
     "gammaadj": 1.98,
     "decay": 0.5,
@@ -118,11 +122,15 @@
     "mv_a": 0,
     "b1ed": 0
   },
-  "warp": " shader_body { \n  vec2 zz_1;\n  mat2 tmpvar_2;\n  tmpvar_2[uint(0)] = _qa.xy;\n  tmpvar_2[1u] = _qa.zw;\n  zz_1 = (((\n    (uv - vec2(0.5, 0.5))\n   * texsize.xy) * (0.015 * q27)) * tmpvar_2);\n  vec4 tmpvar_3;\n  tmpvar_3.w = 1.0;\n  tmpvar_3.xyz = (((q32 * texture (sampler_main, \n    (uv + ((clamp (\n      (sin(zz_1) / cos(zz_1))\n    , vec2(-20.0, -20.0), vec2(20.0, 20.0)) * texsize.zw) * 8.0))\n  ).xyz) + (\n    (0.03 * texture (sampler_noise_lq, ((uv * 0.3) + (0.01 * rand_frame).xy)))\n  .xyz * \n    (1.0 - ((texture (sampler_blur1, uv).xyz * scale1) + bias1))\n  )) - 0.02);\n  ret = tmpvar_3.xyz;\n }",
-  "comp": " shader_body { \n  vec4 tmpvar_1;\n  tmpvar_1 = texture (sampler_main, uv);\n  vec4 tmpvar_2;\n  tmpvar_2.w = 1.0;\n  tmpvar_2.xyz = ((tmpvar_1.xyz + clamp (\n    (3.0 * (((texture (sampler_blur1, \n      (uv - (0.01 * tmpvar_1.xyz).xy)\n    ).xyz * scale1) + bias1) - vec3(0.1, 0.1, 0.2)))\n  , 0.0, 1.0)) * 1.3);\n  ret = tmpvar_2.xyz;\n }",
+  "warp": " shader_body {  \n  vec2 zz_1;\n  mat2 tmpvar_2;\n  tmpvar_2[uint(0)] = _qa.xy;\n  tmpvar_2[1u] = _qa.zw;\n  zz_1 = (((\n    (uv - vec2(0.5, 0.5))\n   * texsize.xy) * (0.015 * q27)) * tmpvar_2);\n  vec4 tmpvar_3;\n  tmpvar_3.w = 1.0;\n  tmpvar_3.xyz = (((q32 * texture (sampler_main, \n    (uv + ((clamp (\n      (sin(zz_1) / cos(zz_1))\n    , vec2(-20.0, -20.0), vec2(20.0, 20.0)) * texsize.zw) * 8.0))\n  ).xyz) + (\n    (0.03 * texture (sampler_noise_lq, ((uv * 0.3) + (0.01 * rand_frame).xy)))\n  .xyz * \n    (1.0 - ((texture (sampler_blur1, uv).xyz * scale1) + bias1))\n  )) - 0.02);\n  ret = tmpvar_3.xyz;\n  }",
+  "comp": " shader_body {  \n  vec4 tmpvar_1;\n  tmpvar_1 = texture (sampler_main, uv);\n  vec4 tmpvar_2;\n  tmpvar_2.w = 1.0;\n  tmpvar_2.xyz = ((tmpvar_1.xyz + clamp (\n    (3.0 * (((texture (sampler_blur1, \n      (uv - (0.01 * tmpvar_1.xyz).xy)\n    ).xyz * scale1) + bias1) - vec3(0.1, 0.1, 0.2)))\n  , 0.0, 1.0)) * 1.3);\n  ret = tmpvar_2.xyz;\n  }",
   "presetParts": {
     "presetVersion": 2,
     "baseVals": {
+      "milkdrop_preset_version": 201,
+      "psversion": 2,
+      "psversion_warp": 2,
+      "psversion_comp": 2,
       "rating": 3,
       "gammaadj": 1.98,
       "decay": 0.5,
@@ -178,40 +186,18 @@
       },
       {
         "baseVals": {
-          "usedots": 1,
-          "thick": 1,
-          "scaling": 0.89152,
-          "smoothing": 0.82,
-          "a": 0.1,
           "enabled": 0
-        },
-        "init_eqs_str": "t1 = 1 + (rand(101)*.01 - rand(101)*.01)*.3;\nt2 = 1 + (rand(101)*.01 - rand(101)*.01)*.3;\nt3 = 1 + (rand(101)*.01 - rand(101)*.01)*.3;\nt4 = 1 + (rand(101)*.01 - rand(101)*.01)*.3;\nt5 = 1 + (rand(101)*.01 - rand(101)*.01)*.3;\nt6 = 1 + (rand(101)*.01 - rand(101)*.01)*.3;\nt7 = 1 + (rand(101)*.01 - rand(101)*.01)*.3;\nt8 = 1 + (rand(101)*.01 - rand(101)*.01)*.3;\n",
-        "frame_eqs_str": "tm = time*.1;\nt1 = t1*sin(tm*t4) + (1-t1)*sin(tm*t7);\nt2 = t2*sin(tm*t5) + (1-t2)*sin(tm*t8);\nt3 = t3*sin(tm*t6) + (1-t3)*sin(tm*1);\n\ntic = min(time - tin,1);\ntin = time;\n\ntva = (tic*q1*.5);\ntvb = (tic*q2*.5);\ntvc = (tic*q3*.5);\n\nq1 = tva;\nq2 = tvb;\nq3 = tvc;\n\nsz = .5;\nlen = q4;\nt4 = len;",
-        "point_eqs_str": "xi = rand(100)/100;\nyi = rand(100)/100;\n\nx = xi; y = yi;\n\na = q21/15;"
+        }
       },
       {
         "baseVals": {
-          "thick": 1,
-          "scaling": 0.89152,
-          "smoothing": 0.82,
-          "r": 0,
-          "g": 0.2,
-          "b": 0,
           "enabled": 0
-        },
-        "init_eqs_str": "t1 = 1 + (rand(101)*.01 - rand(101)*.01)*.3;\nt2 = 1 + (rand(101)*.01 - rand(101)*.01)*.3;\nt3 = 1 + (rand(101)*.01 - rand(101)*.01)*.3;\nt4 = 1 + (rand(101)*.01 - rand(101)*.01)*.3;\nt5 = 1 + (rand(101)*.01 - rand(101)*.01)*.3;\nt6 = 1 + (rand(101)*.01 - rand(101)*.01)*.3;\nt7 = 1 + (rand(101)*.01 - rand(101)*.01)*.3;\nt8 = 1 + (rand(101)*.01 - rand(101)*.01)*.3;\n",
-        "frame_eqs_str": "tm = time*.1;\nt1 = t1*sin(tm*t4) + (1-t1)*sin(tm*t7);\nt2 = t2*sin(tm*t5) + (1-t2)*sin(tm*t8);\nt3 = t3*sin(tm*t6) + (1-t3)*sin(tm*1);\n\ntic = min(time - tin,1);\ntin = time;\n\ntva = (tic*q1*.5);\ntvb = (tic*q2*.5);\ntvc = (tic*q3*.5);\n\nq1 = tva;\nq2 = tvb;\nq3 = tvc;\n\nsz = .5;\nlen = 1;\nt4 = len;",
-        "point_eqs_str": ""
+        }
       },
       {
         "baseVals": {
-          "spectrum": 1,
-          "usedots": 1,
           "enabled": 0
-        },
-        "init_eqs_str": "",
-        "frame_eqs_str": "",
-        "point_eqs_str": ""
+        }
       }
     ],
     "shapes": [
@@ -236,24 +222,8 @@
       },
       {
         "baseVals": {
-          "thickoutline": 1,
-          "x": 0.4,
-          "rad": 2.36696,
-          "tex_ang": 3.45575,
-          "tex_zoom": 0.99305,
-          "r": 0.5,
-          "b": 1,
-          "a": 0.2,
-          "r2": 0.7,
-          "g2": 0.4,
-          "border_r": 0.5,
-          "border_g": 0.5,
-          "border_b": 0.5,
-          "border_a": 0,
           "enabled": 0
-        },
-        "init_eqs_str": "",
-        "frame_eqs_str": "a2 =0;a = 0;\na = q24/2;"
+        }
       },
       {
         "baseVals": {
@@ -275,23 +245,8 @@
       },
       {
         "baseVals": {
-          "sides": 63,
-          "textured": 1,
-          "y": 1,
-          "rad": 0.54822,
-          "tex_zoom": 0.49981,
-          "g": 1,
-          "b": 1,
-          "r2": 1,
-          "b2": 1,
-          "border_r": 0.5,
-          "border_g": 0.5,
-          "border_b": 0.5,
-          "border_a": 0,
           "enabled": 0
-        },
-        "init_eqs_str": "",
-        "frame_eqs_str": ""
+        }
       }
     ],
     "warp": "shader_body {\nfloat corr = texsize.xy*texsize_noise_lq.zw;\nfloat2 uv1 = float2(uv.x-0.5,uv.y-0.5);//*aspect.xy;\n\nfloat3 noiseVal =.03*(tex2D(sampler_noise_lq, uv*.3+.01*rand_frame));\nfloat3 Feedback = GetBlur1(uv);\n\nfloat2 zz = uv1 *texsize.xy *.015*q27;\nzz =mul(zz,float2x2(_qa));\n\nfloat2 h1 = clamp(tan(zz),-20,20);\n\nuv.xy += h1*texsize.zw * 8;\n\nfloat3 crisp = tex2D(sampler_main,uv);\n\nret = q32*crisp+noiseVal*(1-Feedback*1)-.02;\n}",

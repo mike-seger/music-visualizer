@@ -97,6 +97,10 @@
   "frame_eqs_str": "a['dec_med']=Math.exp(div(-3,a['fps'])); a['dec_slow']=Math.exp(div(-0.3,a['fps'])); a['beat']=Math.max(Math.max(a['bass'], a['mid']), a['treb']); a['avg']=((a['avg']*a['dec_slow'])+(a['beat']*(1-a['dec_slow']))); a['is_beat']=(above(a['beat'], ((0.5+a['avg'])+a['peak']))*above(a['time'], (a['t0']+0.2))); a['t0']=((a['is_beat']*a['time'])+((1-a['is_beat'])*a['t0'])); a['peak']=((a['is_beat']*a['beat'])+(((1-a['is_beat'])*a['peak'])*a['dec_med'])); a['index']=mod((a['index']+a['is_beat']),8); a['q20']=a['avg']; a['q21']=a['beat']; a['q22']=a['peak']; a['q23']=a['index']; a['q24']=a['is_beat']; a['q26']=((a['bass']+a['mid'])+a['treb']); a['k1']=(a['is_beat']*equal(a['index'], 0)); a['p1']=((a['k1']*(a['p1']+1))+((1-a['k1'])*a['p1'])); a['p2']=((a['dec_med']*a['p2'])+((1-a['dec_med'])*a['p1'])); a['p3']=((a['dec_med']*a['p3'])+((1-a['dec_med'])*a['p2'])); a['rott']=div((a['p3']*3.1416),2); a['q27']=(a['index']+1); a['movz']=(a['movz']+(div((0.001*30),a['fps'])*(1.5+Math.sin(a['rott'])))); a['q29']=a['movz']; a['movx']=(a['movx']+(div((0.001*30),a['fps'])*(1+Math.sin(div(a['time'],7))))); a['q28']=a['movx']; a['q30']=(0.5*(Math.sin(div(a['time'],19))+1)); a['q31']=(3*(Math.sin(div(a['time'],23))+2)); a['q32']=(Math.sin(div(a['time'],17))+1); a['fade']=((a['fade']*a['dec_med'])+(0.98*(1-a['dec_med']))); a['q10']=a['fade'];",
   "pixel_eqs_str": "a['warp']=0.02;",
   "baseVals": {
+    "milkdrop_preset_version": 201,
+    "psversion": 3,
+    "psversion_warp": 2,
+    "psversion_comp": 3,
     "rating": 1,
     "gammaadj": 1.98,
     "decay": 0.5,
@@ -135,11 +139,15 @@
     "mv_a": 0,
     "b1ed": 0.7
   },
-  "warp": "vec3 xlat_mutablemus;\n shader_body { \n  vec3 crisp_1;\n  vec2 uv6_2;\n  vec2 tmpvar_3;\n  tmpvar_3 = (uv - 0.5);\n  float tmpvar_4;\n  tmpvar_4 = (dot (texture (sampler_noise_hq, (uv / 4.0)), vec4(0.32, 0.49, 0.29, 0.0)) * q31);\n  mat2 tmpvar_5;\n  tmpvar_5[uint(0)].x = cos(tmpvar_4);\n  tmpvar_5[uint(0)].y = sin(tmpvar_4);\n  tmpvar_5[1u].x = -(sin(tmpvar_4));\n  tmpvar_5[1u].y = cos(tmpvar_4);\n  uv6_2 = (tmpvar_3 * tmpvar_5);\n  uv6_2 = (uv6_2 + sin((q32 * tmpvar_3)));\n  xlat_mutablemus = (vec3((0.2 / (\n    sqrt(uv6_2.x)\n   + 0.2))) * vec3(1.1, 1.0, 0.95));\n  xlat_mutablemus = (xlat_mutablemus * (0.9 + (0.1 * texture (sampler_noise_hq, uv))).xyz);\n  vec3 tmpvar_6;\n  tmpvar_6 = ((texture (sampler_blur1, fract(uv)).xyz * scale1) + bias1);\n  vec2 tmpvar_7;\n  tmpvar_7.x = dot ((texture (sampler_main, (uv + vec2(0.005, 0.0))) - texture (sampler_main, (uv - vec2(0.005, 0.0)))), vec4(0.32, 0.49, 0.29, 0.0));\n  tmpvar_7.y = dot ((texture (sampler_main, (uv + vec2(0.0, 0.005))) - texture (sampler_main, (uv - vec2(0.0, 0.005)))), vec4(0.32, 0.49, 0.29, 0.0));\n  crisp_1 = (texture (sampler_main, (uv + (tmpvar_7 * 0.02))).xyz + (texture (sampler_main, uv).xyz / 2.0));\n  crisp_1 = (crisp_1 * 0.67);\n  crisp_1 = (crisp_1 + ((0.08 * xlat_mutablemus) - (\n    sqrt(dot (tmpvar_7, tmpvar_7))\n   * tmpvar_6)));\n  vec4 tmpvar_8;\n  tmpvar_8.w = 1.0;\n  tmpvar_8.xyz = (((crisp_1 - \n    (dot (tmpvar_6, vec3(0.32, 0.49, 0.29)) * 0.04)\n  ) * q10) - 0.04);\n  ret = tmpvar_8.xyz;\n }",
-  "comp": "float xlat_mutabledist;\nfloat xlat_mutabledist2;\nvec3 xlat_mutableglow;\nfloat xlat_mutableinten;\nfloat xlat_mutablem;\nfloat xlat_mutablemask;\nvec3 xlat_mutableret1;\nvec2 xlat_mutableuv1;\nvec2 xlat_mutableuv2;\n shader_body { \n  vec2 uv_1;\n  vec3 ret_2;\n  uv_1 = (uv - 0.5);\n  uv_1 = (uv_1 * aspect.xy);\n  int tmpvar_3;\n  tmpvar_3 = int(q29);\n  xlat_mutablem = (1.0 - float(tmpvar_3));\n  float tmpvar_4;\n  tmpvar_4 = -(q29);\n  xlat_mutabledist = (1.0 - fract((0.3333333 - \n    (fract(tmpvar_4) / 3.0)\n  )));\n  xlat_mutabledist2 = (xlat_mutabledist * xlat_mutabledist);\n  xlat_mutableinten = (pow (xlat_mutabledist, 0.3) * (1.0 - xlat_mutabledist2));\n  xlat_mutableuv2 = (((2.0 * xlat_mutabledist) * (uv_1 - 0.4)) - 0.1);\n  vec2 tmpvar_5;\n  tmpvar_5 = fract((xlat_mutableuv2 + (\n    (xlat_mutablem + q28)\n   * vec2(0.4, 1.0))));\n  vec2 tmpvar_6;\n  tmpvar_6.x = dot ((texture (sampler_main, (tmpvar_5 + vec2(0.004, 0.0))).xyz - texture (sampler_main, (tmpvar_5 - vec2(0.004, 0.0))).xyz), vec3(0.32, 0.49, 0.29));\n  tmpvar_6.y = dot ((texture (sampler_main, (tmpvar_5 + vec2(0.0, 0.004))).xyz - texture (sampler_main, (tmpvar_5 - vec2(0.0, 0.004))).xyz), vec3(0.32, 0.49, 0.29));\n  xlat_mutableglow = (((texture (sampler_blur1, tmpvar_5).xyz * scale1) + bias1) * vec3(0.5, 1.0, 1.0));\n  xlat_mutableret1 = ((texture (sampler_main, (tmpvar_5 + \n    (0.5 * tmpvar_6)\n  )).xyz + (2.0 * xlat_mutableglow)) * xlat_mutableinten);\n  xlat_mutablem = (2.0 - float(tmpvar_3));\n  xlat_mutabledist = (1.0 - fract((0.6666667 - \n    (fract(tmpvar_4) / 3.0)\n  )));\n  xlat_mutabledist2 = (xlat_mutabledist * xlat_mutabledist);\n  xlat_mutableinten = (pow (xlat_mutabledist, 0.3) * (1.0 - xlat_mutabledist2));\n  xlat_mutableuv2 = (((2.0 * xlat_mutabledist) * (uv_1 - 0.4)) - 0.1);\n  vec2 tmpvar_7;\n  tmpvar_7 = fract((xlat_mutableuv2 + (\n    (xlat_mutablem + q28)\n   * vec2(0.4, 1.0))));\n  vec2 tmpvar_8;\n  tmpvar_8.x = dot ((texture (sampler_main, (tmpvar_7 + vec2(0.004, 0.0))).xyz - texture (sampler_main, (tmpvar_7 - vec2(0.004, 0.0))).xyz), vec3(0.32, 0.49, 0.29));\n  tmpvar_8.y = dot ((texture (sampler_main, (tmpvar_7 + vec2(0.0, 0.004))).xyz - texture (sampler_main, (tmpvar_7 - vec2(0.0, 0.004))).xyz), vec3(0.32, 0.49, 0.29));\n  vec4 tmpvar_9;\n  tmpvar_9 = texture (sampler_main, (tmpvar_7 + (0.5 * tmpvar_8)));\n  xlat_mutableglow = (((texture (sampler_blur1, tmpvar_7).xyz * scale1) + bias1) * vec3(0.5, 1.0, 1.0));\n  xlat_mutablemask = (1.0 - clamp ((8.0 * tmpvar_9.xyz), 0.0, 1.0)).x;\n  xlat_mutableret1 = ((xlat_mutableret1 * xlat_mutablemask) + ((tmpvar_9.xyz + \n    (2.0 * xlat_mutableglow)\n  ) * xlat_mutableinten));\n  xlat_mutablem = (3.0 - float(tmpvar_3));\n  xlat_mutabledist = (1.0 - fract((1.0 - \n    (fract(tmpvar_4) / 3.0)\n  )));\n  xlat_mutabledist2 = (xlat_mutabledist * xlat_mutabledist);\n  xlat_mutableinten = (pow (xlat_mutabledist, 0.3) * (1.0 - xlat_mutabledist2));\n  xlat_mutableuv2 = (((2.0 * xlat_mutabledist) * (uv_1 - 0.4)) - 0.1);\n  vec2 tmpvar_10;\n  tmpvar_10 = fract((xlat_mutableuv2 + (\n    (xlat_mutablem + q28)\n   * vec2(0.4, 1.0))));\n  vec2 tmpvar_11;\n  tmpvar_11.x = dot ((texture (sampler_main, (tmpvar_10 + vec2(0.004, 0.0))).xyz - texture (sampler_main, (tmpvar_10 - vec2(0.004, 0.0))).xyz), vec3(0.32, 0.49, 0.29));\n  tmpvar_11.y = dot ((texture (sampler_main, (tmpvar_10 + vec2(0.0, 0.004))).xyz - texture (sampler_main, (tmpvar_10 - vec2(0.0, 0.004))).xyz), vec3(0.32, 0.49, 0.29));\n  vec4 tmpvar_12;\n  tmpvar_12 = texture (sampler_main, (tmpvar_10 + (0.5 * tmpvar_11)));\n  xlat_mutableglow = (((texture (sampler_blur1, tmpvar_10).xyz * scale1) + bias1) * vec3(0.5, 1.0, 1.0));\n  xlat_mutablemask = (1.0 - clamp ((8.0 * tmpvar_12.xyz), 0.0, 1.0)).x;\n  xlat_mutableret1 = ((xlat_mutableret1 * xlat_mutablemask) + ((tmpvar_12.xyz + \n    (2.0 * xlat_mutableglow)\n  ) * xlat_mutableinten));\n  vec2 tmpvar_13;\n  tmpvar_13.y = 0.25;\n  tmpvar_13.x = ((2.0 * fract(\n    (0.003 * time)\n  )) - 0.55);\n  xlat_mutableuv1 = ((uv_1 + tmpvar_13) - (xlat_mutableret1 / 8.0).xy);\n  ret_2 = ((xlat_mutableret1 * vec3(0.0, 1.0, 1.0)) + ((vec3(0.08000001, 0.12, 0.4) * \n    clamp ((0.4 - uv_1.y), 0.0, 1.0)\n  ) * clamp (\n    (1.0 - (2.0 * xlat_mutableret1.x))\n  , 0.0, 1.0)));\n  ret_2 = (ret_2 + ((8.0 * ret_2) * clamp (\n    (0.01 / sqrt(dot (xlat_mutableuv1, xlat_mutableuv1)))\n  , 0.0, 1.0)));\n  vec4 tmpvar_14;\n  tmpvar_14.w = 1.0;\n  tmpvar_14.xyz = ret_2;\n  ret = tmpvar_14.xyz;\n }",
+  "warp": "vec3 xlat_mutablemus;\n shader_body {  \n  vec3 crisp_1;\n  vec2 uv6_2;\n  vec2 tmpvar_3;\n  tmpvar_3 = (uv - 0.5);\n  float tmpvar_4;\n  tmpvar_4 = (dot (texture (sampler_noise_hq, (uv / 4.0)), vec4(0.32, 0.49, 0.29, 0.0)) * q31);\n  mat2 tmpvar_5;\n  tmpvar_5[uint(0)].x = cos(tmpvar_4);\n  tmpvar_5[uint(0)].y = sin(tmpvar_4);\n  tmpvar_5[1u].x = -(sin(tmpvar_4));\n  tmpvar_5[1u].y = cos(tmpvar_4);\n  uv6_2 = (tmpvar_3 * tmpvar_5);\n  uv6_2 = (uv6_2 + sin((q32 * tmpvar_3)));\n  xlat_mutablemus = (vec3((0.2 / (\n    sqrt(uv6_2.x)\n   + 0.2))) * vec3(1.1, 1.0, 0.95));\n  xlat_mutablemus = (xlat_mutablemus * (0.9 + (0.1 * texture (sampler_noise_hq, uv))).xyz);\n  vec3 tmpvar_6;\n  tmpvar_6 = ((texture (sampler_blur1, fract(uv)).xyz * scale1) + bias1);\n  vec2 tmpvar_7;\n  tmpvar_7.x = dot ((texture (sampler_main, (uv + vec2(0.005, 0.0))) - texture (sampler_main, (uv - vec2(0.005, 0.0)))), vec4(0.32, 0.49, 0.29, 0.0));\n  tmpvar_7.y = dot ((texture (sampler_main, (uv + vec2(0.0, 0.005))) - texture (sampler_main, (uv - vec2(0.0, 0.005)))), vec4(0.32, 0.49, 0.29, 0.0));\n  crisp_1 = (texture (sampler_main, (uv + (tmpvar_7 * 0.02))).xyz + (texture (sampler_main, uv).xyz / 2.0));\n  crisp_1 = (crisp_1 * 0.67);\n  crisp_1 = (crisp_1 + ((0.08 * xlat_mutablemus) - (\n    sqrt(dot (tmpvar_7, tmpvar_7))\n   * tmpvar_6)));\n  vec4 tmpvar_8;\n  tmpvar_8.w = 1.0;\n  tmpvar_8.xyz = (((crisp_1 - \n    (dot (tmpvar_6, vec3(0.32, 0.49, 0.29)) * 0.04)\n  ) * q10) - 0.04);\n  ret = tmpvar_8.xyz;\n  }",
+  "comp": "float xlat_mutabledist;\nfloat xlat_mutabledist2;\nvec3 xlat_mutableglow;\nfloat xlat_mutableinten;\nfloat xlat_mutablem;\nfloat xlat_mutablemask;\nvec3 xlat_mutableret1;\nvec2 xlat_mutableuv1;\nvec2 xlat_mutableuv2;\n shader_body {  \n  vec2 uv_1;\n  vec3 ret_2;\n  uv_1 = (uv - 0.5);\n  uv_1 = (uv_1 * aspect.xy);\n  int tmpvar_3;\n  tmpvar_3 = int(q29);\n  xlat_mutablem = (1.0 - float(tmpvar_3));\n  float tmpvar_4;\n  tmpvar_4 = -(q29);\n  xlat_mutabledist = (1.0 - fract((0.3333333 - \n    (fract(tmpvar_4) / 3.0)\n  )));\n  xlat_mutabledist2 = (xlat_mutabledist * xlat_mutabledist);\n  xlat_mutableinten = (pow (xlat_mutabledist, 0.3) * (1.0 - xlat_mutabledist2));\n  xlat_mutableuv2 = (((2.0 * xlat_mutabledist) * (uv_1 - 0.4)) - 0.1);\n  vec2 tmpvar_5;\n  tmpvar_5 = fract((xlat_mutableuv2 + (\n    (xlat_mutablem + q28)\n   * vec2(0.4, 1.0))));\n  vec2 tmpvar_6;\n  tmpvar_6.x = dot ((texture (sampler_main, (tmpvar_5 + vec2(0.004, 0.0))).xyz - texture (sampler_main, (tmpvar_5 - vec2(0.004, 0.0))).xyz), vec3(0.32, 0.49, 0.29));\n  tmpvar_6.y = dot ((texture (sampler_main, (tmpvar_5 + vec2(0.0, 0.004))).xyz - texture (sampler_main, (tmpvar_5 - vec2(0.0, 0.004))).xyz), vec3(0.32, 0.49, 0.29));\n  xlat_mutableglow = (((texture (sampler_blur1, tmpvar_5).xyz * scale1) + bias1) * vec3(0.5, 1.0, 1.0));\n  xlat_mutableret1 = ((texture (sampler_main, (tmpvar_5 + \n    (0.5 * tmpvar_6)\n  )).xyz + (2.0 * xlat_mutableglow)) * xlat_mutableinten);\n  xlat_mutablem = (2.0 - float(tmpvar_3));\n  xlat_mutabledist = (1.0 - fract((0.6666667 - \n    (fract(tmpvar_4) / 3.0)\n  )));\n  xlat_mutabledist2 = (xlat_mutabledist * xlat_mutabledist);\n  xlat_mutableinten = (pow (xlat_mutabledist, 0.3) * (1.0 - xlat_mutabledist2));\n  xlat_mutableuv2 = (((2.0 * xlat_mutabledist) * (uv_1 - 0.4)) - 0.1);\n  vec2 tmpvar_7;\n  tmpvar_7 = fract((xlat_mutableuv2 + (\n    (xlat_mutablem + q28)\n   * vec2(0.4, 1.0))));\n  vec2 tmpvar_8;\n  tmpvar_8.x = dot ((texture (sampler_main, (tmpvar_7 + vec2(0.004, 0.0))).xyz - texture (sampler_main, (tmpvar_7 - vec2(0.004, 0.0))).xyz), vec3(0.32, 0.49, 0.29));\n  tmpvar_8.y = dot ((texture (sampler_main, (tmpvar_7 + vec2(0.0, 0.004))).xyz - texture (sampler_main, (tmpvar_7 - vec2(0.0, 0.004))).xyz), vec3(0.32, 0.49, 0.29));\n  vec4 tmpvar_9;\n  tmpvar_9 = texture (sampler_main, (tmpvar_7 + (0.5 * tmpvar_8)));\n  xlat_mutableglow = (((texture (sampler_blur1, tmpvar_7).xyz * scale1) + bias1) * vec3(0.5, 1.0, 1.0));\n  xlat_mutablemask = (1.0 - clamp ((8.0 * tmpvar_9.xyz), 0.0, 1.0)).x;\n  xlat_mutableret1 = ((xlat_mutableret1 * xlat_mutablemask) + ((tmpvar_9.xyz + \n    (2.0 * xlat_mutableglow)\n  ) * xlat_mutableinten));\n  xlat_mutablem = (3.0 - float(tmpvar_3));\n  xlat_mutabledist = (1.0 - fract((1.0 - \n    (fract(tmpvar_4) / 3.0)\n  )));\n  xlat_mutabledist2 = (xlat_mutabledist * xlat_mutabledist);\n  xlat_mutableinten = (pow (xlat_mutabledist, 0.3) * (1.0 - xlat_mutabledist2));\n  xlat_mutableuv2 = (((2.0 * xlat_mutabledist) * (uv_1 - 0.4)) - 0.1);\n  vec2 tmpvar_10;\n  tmpvar_10 = fract((xlat_mutableuv2 + (\n    (xlat_mutablem + q28)\n   * vec2(0.4, 1.0))));\n  vec2 tmpvar_11;\n  tmpvar_11.x = dot ((texture (sampler_main, (tmpvar_10 + vec2(0.004, 0.0))).xyz - texture (sampler_main, (tmpvar_10 - vec2(0.004, 0.0))).xyz), vec3(0.32, 0.49, 0.29));\n  tmpvar_11.y = dot ((texture (sampler_main, (tmpvar_10 + vec2(0.0, 0.004))).xyz - texture (sampler_main, (tmpvar_10 - vec2(0.0, 0.004))).xyz), vec3(0.32, 0.49, 0.29));\n  vec4 tmpvar_12;\n  tmpvar_12 = texture (sampler_main, (tmpvar_10 + (0.5 * tmpvar_11)));\n  xlat_mutableglow = (((texture (sampler_blur1, tmpvar_10).xyz * scale1) + bias1) * vec3(0.5, 1.0, 1.0));\n  xlat_mutablemask = (1.0 - clamp ((8.0 * tmpvar_12.xyz), 0.0, 1.0)).x;\n  xlat_mutableret1 = ((xlat_mutableret1 * xlat_mutablemask) + ((tmpvar_12.xyz + \n    (2.0 * xlat_mutableglow)\n  ) * xlat_mutableinten));\n  vec2 tmpvar_13;\n  tmpvar_13.y = 0.25;\n  tmpvar_13.x = ((2.0 * fract(\n    (0.003 * time)\n  )) - 0.55);\n  xlat_mutableuv1 = ((uv_1 + tmpvar_13) - (xlat_mutableret1 / 8.0).xy);\n  ret_2 = ((xlat_mutableret1 * vec3(0.0, 1.0, 1.0)) + ((vec3(0.08000001, 0.12, 0.4) * \n    clamp ((0.4 - uv_1.y), 0.0, 1.0)\n  ) * clamp (\n    (1.0 - (2.0 * xlat_mutableret1.x))\n  , 0.0, 1.0)));\n  ret_2 = (ret_2 + ((8.0 * ret_2) * clamp (\n    (0.01 / sqrt(dot (xlat_mutableuv1, xlat_mutableuv1)))\n  , 0.0, 1.0)));\n  vec4 tmpvar_14;\n  tmpvar_14.w = 1.0;\n  tmpvar_14.xyz = ret_2;\n  ret = tmpvar_14.xyz;\n  }",
   "presetParts": {
     "presetVersion": 2,
     "baseVals": {
+      "milkdrop_preset_version": 201,
+      "psversion": 3,
+      "psversion_warp": 2,
+      "psversion_comp": 3,
       "rating": 1,
       "gammaadj": 1.98,
       "decay": 0.5,
@@ -184,53 +192,23 @@
     "waves": [
       {
         "baseVals": {
-          "samples": 128,
-          "sep": 49,
-          "usedots": 1,
-          "thick": 1,
-          "scaling": 0.06708,
-          "smoothing": 0.82,
-          "r": 0,
-          "b": 0.5,
           "enabled": 0
-        },
-        "init_eqs_str": "",
-        "frame_eqs_str": "",
-        "point_eqs_str": ""
+        }
       },
       {
         "baseVals": {
-          "scaling": 0.89152,
-          "smoothing": 0.82,
-          "a": 0.1,
           "enabled": 0
-        },
-        "init_eqs_str": "",
-        "frame_eqs_str": "",
-        "point_eqs_str": ""
+        }
       },
       {
         "baseVals": {
-          "samples": 100,
-          "thick": 1,
-          "scaling": 0.01,
-          "smoothing": 0.82,
-          "a": 0.1,
           "enabled": 0
-        },
-        "init_eqs_str": "",
-        "frame_eqs_str": "",
-        "point_eqs_str": ""
+        }
       },
       {
         "baseVals": {
-          "spectrum": 1,
-          "usedots": 1,
           "enabled": 0
-        },
-        "init_eqs_str": "",
-        "frame_eqs_str": "",
-        "point_eqs_str": ""
+        }
       }
     ],
     "shapes": [
@@ -301,29 +279,8 @@
       },
       {
         "baseVals": {
-          "sides": 63,
-          "additive": 1,
-          "textured": 1,
-          "x": 0.76,
-          "y": 0.75,
-          "rad": 0.68636,
-          "ang": 0.43982,
-          "tex_ang": 0.50266,
-          "tex_zoom": 0.6159,
-          "r": 0.7,
-          "g": 0.7,
-          "b": 0.7,
-          "a": 0.15,
-          "r2": 1,
-          "b2": 1,
-          "border_r": 0.5,
-          "border_g": 0.5,
-          "border_b": 0.5,
-          "border_a": 0,
           "enabled": 0
-        },
-        "init_eqs_str": "",
-        "frame_eqs_str": "x = .5+.3*cos(time/59);\ny = .5+.3 *sin(time/59);"
+        }
       }
     ],
     "warp": "float3 color, mus;\nfloat dx,dy;\n\nshader_body {\nfloat corr = texsize.xy*texsize_noise_lq.zw;\n\nfloat2 uv1 = (uv-.5);\nfloat2 uv6 = uv1;\n\nfloat rota = lum(tex2D (sampler_noise_hq,uv/4))*q31;\n\nuv6 = mul(uv1,float2x2(cos(rota),-sin(rota),sin(rota),cos(rota)));\nuv6 += sin(q32*uv1);\nmus = .2/(sqrt(uv6.x)+.2);\n\nmus *= float3 (1.1,1,.95);\nmus *= .9+.1*tex2D (sampler_noise_hq,uv);\n\nfloat3 blur = GetBlur1(frac(uv));\n\nfloat2 hor = float2 (0.005,0);\nfloat2 ver = float2 (0,.005);\n\nfloat dx = lum(tex2D(sampler_main,uv+hor) \n         - tex2D(sampler_main,uv-hor));\nfloat dy = lum(tex2D(sampler_main,uv+ver) \n         - tex2D(sampler_main,uv-ver));\n\n\nfloat2 zz = float2 (dx,dy);\n\nfloat3 crisp= tex2D(sampler_main,uv+zz*.02);\nfloat3 crisp2 = tex2D(sampler_main,uv);\ncrisp += crisp2/2;\ncrisp *= .67;\ncrisp +=.08 * mus - length(zz)*blur;\n\nfloat3 ret1 = crisp - lum(blur)*.04;\nret = ret1 * q10 -  .04 ;\n}",
