@@ -88,7 +88,7 @@
     }
   ],
   "init_eqs_str": "a['q1'] = 0; a['q2'] = 0; a['bs'] = 0;",
-  "frame_eqs_str": "a['wave_a']=0; a['decay']=1; a['warp']=0; a['dx']=0; a['dy']=0; a['sx']=1; a['sy']=1; a['zoom']=0.9; a['q1']=0.5; ((Math.sin(a['time'])*2)+2) a['q2']=((Math.cos((a['time']+(a['bs']*0.8)))*12.56)+12.56);",
+  "frame_eqs_str": "a['wave_a']=0; a['decay']=1; a['warp']=0; a['dx']=0; a['dy']=0; a['sx']=1; a['sy']=1; a['zoom']=0.9; a['q1']=0.5; ((Math.sin(a['time'])*2)+2); a['q2']=((Math.cos((a['time']+(a['bs']*0.8)))*12.56)+12.56);",
   "pixel_eqs_str": "",
   "baseVals": {
     "rating": 5,
@@ -185,18 +185,41 @@
       },
       {
         "baseVals": {
+          "spectrum": 1,
+          "usedots": 1,
+          "thick": 1,
+          "scaling": 0.999996,
+          "smoothing": 0,
           "enabled": 0
-        }
+        },
+        "init_eqs_str": "",
+        "frame_eqs_str": "vol = (bass_att + mid_att + treb_att)*.333333;\nvol_avg = .1*(vol_avg*9 + vol);\nvg = vol_avg*.1;\n//t1 = if(above(vg,1.8),1.8,vg);\nt1=time*.3;\n//t2=sin(time)*1.5+2;\n//t3=.25;\n//t2=sin(time*.071)*1.2+4.1;\nt2=2;\nt3=0;\nt4=0;",
+        "point_eqs_str": "tm=if(above(yp,0.98),t1,tm);\nex=if(above(yp,0.98),t2,ex);\n//ex=2;\nsp=.01;\nyp=if(above(xp,0.9998),yp+sp,yp);\nxp=if(above(xp,0.9998),0,xp+sp);\nyp=if(above(yp,0.9998),0,yp);\nx=((xp*ex)*.1+.5)-(.05*ex)-t3+.001;\ny=((yp*ex)*.1+.5)-(.05*ex)-t4+.001;\n\n//g=sin(xp*yp*1.506+tm);\n//b=sin(xp*yp*3.142+tm);\n//r=cos(xp*yp*1.506+tm);\n\nr=sin(xp*3.14+tm)*sin(yp*3.14+tm);\ng=sin(xp*6.28+tm)*sin(yp*6.28+tm);\nb=.4;\n\n\n\n\n"
       },
       {
         "baseVals": {
+          "spectrum": 1,
+          "usedots": 1,
+          "thick": 1,
+          "scaling": 0.999996,
+          "smoothing": 0,
           "enabled": 0
-        }
+        },
+        "init_eqs_str": "",
+        "frame_eqs_str": "vol = (bass_att + mid_att + treb_att)*.333333;\nvol_avg = .1*(vol_avg*9 + vol);\nvg = vol_avg*.1;\n//t1 = if(above(vg,1.8),1.8,vg);\nt1=time*.3;\n//t2=sin(time)*1.5+2;\n//t3=.25;\n//t2=sin(time*.071)*1.2+4.1;\nt2=2;\nt3=0;\nt4=0;",
+        "point_eqs_str": "tm=if(above(yp,0.98),t1,tm);\nex=if(above(yp,0.98),t2,ex);\n//ex=2;\nsp=.01;\nyp=if(above(xp,0.9998),yp+sp,yp);\nxp=if(above(xp,0.9998),0,xp+sp);\nyp=if(above(yp,0.9998),0,yp);\nx=((xp*ex)*.1+.5)-(.05*ex)-t3;\ny=((yp*ex)*.1+.5)-(.05*ex)-t4;\n\n//g=sin(xp*yp*1.506+tm);\n//b=sin(xp*yp*3.142+tm);\n//r=cos(xp*yp*1.506+tm);\n\nr=sin(xp*3.14+tm)*sin(yp*3.14+tm);\ng=sin(xp*6.28+tm)*sin(yp*6.28+tm);\nb=.4;\n\n\n\n\n"
       },
       {
         "baseVals": {
+          "spectrum": 1,
+          "usedots": 1,
+          "thick": 1,
+          "smoothing": 0,
           "enabled": 0
-        }
+        },
+        "init_eqs_str": "",
+        "frame_eqs_str": "vol = (bass_att + mid_att + treb_att)*.333333;\nvol_avg = .1*(vol_avg*9 + vol);\nvg = vol_avg*.1;\nt1 = if(above(vg,1.8),1.8,vg);",
+        "point_eqs_str": "tm = q1;\nsp = sample*6.28*8*6;\n\nvol = (value1+value2)*.5;\nit = it*above(sample,0);\nit = it + 1;\nrad = .5 + vol;\nra = rad*sin(sample*3.14);\nox = ra*sin(sp);\noy = sin(sample*3.14-1.57)*rad;\noz = ra*cos(sp);\n\nxang = tm*.132;\nsxang = 0;\nyang = tm*.153;\nayang = 0;\nzang = tm*.110;\nazang = 0;\nfov = 0.6 + 0.2*sin(tm);\nfov = .5;\n\nmx = ox*cos(zang) - oy*sin(zang);\nmy = ox*sin(zang) + oy*cos(zang);\nox = mx;\noy = my;\nmx = ox*cos(yang) + oz*sin(yang);\nmz = - ox*sin(yang) + oz*cos(yang);\nox = mx;\noz = mz;\nmy = oy*cos(xang) - oz*sin(xang);\nmz = oy*sin(xang) + oz*cos(xang);\noy = my;\noz = mz;\n\noz = oz - 2;\nx = ox*fov/oz + 0.5;\nx = (x-.5)*0.75 + 0.5;\ny = oy*fov/oz + 0.5;\n\nr = 1;\ng = .25+.25*sin(sp);\nb = 0;\na = .5 + (oz+2)*.5;\na = a*below(z,2);\nminrgb = min(r,min(g,b));\nmaxrgb = max(r,max(g,b));\nl = (maxrgb-minrgb)*.5;\ndiff = maxrgb-minrgb;\nsum = maxrgb+minrgb;\ns = if(above(l,0.5),diff/(2-sum),diff/sum)*(1-equal(l,0));\nh = if(equal(r,maxrgb),(g-b)/diff,if(equal(g,maxrgb),2+(b-r)/diff,4+(r-g)/diff));\nh = h*0.1666666;\nh = if(below(h,0),0,if(above(h,1),1,h));\n\nh = h + time*0.05*1.324;\nh = h - int(h);\n\ntmpb = if(below(l,0.5),l*(1+s),(l+s)-(s*l));\ntmpa = 2*l - tmpb;\nhvr = h + .333333;\nhvr = if(below(hvr,0),hvr+1,if(above(hvr,1),hvr-1,hvr));\nhvg = h;\nhvg = if(below(hvg,0),hvg+1,if(above(hvg,1),hvg-1,hvg));\nhvb = h - .333333;\nhvb = if(below(hvb,0),hvb+1,if(above(hvb,1),hvb-1,hvb));\n\nr = if(below(6*hvr,1),tmpa+(tmpb-tmpa)*6*hvr, if(below(2*hvr,1),tmpb, if(below(hvr*3,2),tmpa+(tmpb-tmpa)*(.666666-hvr)*6,tmpa)));\ng = if(below(6*hvg,1),tmpa+(tmpb-tmpa)*6*hvg, if(below(2*hvg,1),tmpb, if(below(hvg*3,2),tmpa+(tmpb-tmpa)*(.666666-hvg)*6,tmpa)));\nb = if(below(6*hvb,1),tmpa+(tmpb-tmpa)*6*hvb, if(below(2*hvb,1),tmpb, if(below(hvb*3,2),tmpa+(tmpb-tmpa)*(.666666-hvb)*6,tmpa)));"
       }
     ],
     "shapes": [
@@ -250,13 +273,20 @@
       },
       {
         "baseVals": {
+          "textured": 1,
+          "rad": 0.986086,
+          "border_a": 0,
           "enabled": 0
-        }
+        },
+        "init_eqs_str": "",
+        "frame_eqs_str": "r=if(above(treb,.4),1,.8);\ng=if(above(mid,.4),1,.8);\nb=if(above(bass,.4),1,.8);\nr2=r;\ng2=g;\nb2=b;\nz=if(above(bass,1.2),z*.95,3.14);\nz=if(above(mid,1.2),-z,z);\ntex_ang=z;\na=.2;"
       },
       {
         "baseVals": {
           "enabled": 0
-        }
+        },
+        "init_eqs_str": "",
+        "frame_eqs_str": ""
       }
     ],
     "warp": "",

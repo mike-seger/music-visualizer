@@ -111,10 +111,10 @@
     "mv_g": 0.8,
     "mv_a": 0.18
   },
-  "warp": " shader_body { \n  vec2 uvm_1;\n  vec3 ret_2;\n  ret_2 = ((texture (sampler_fw_main, uv).xyz * 0.9) - 0.03);\n  vec2 tmpvar_3;\n  vec2 tmpvar_4;\n  tmpvar_4 = (uv - vec2(0.5, 0.5));\n  tmpvar_3 = (tmpvar_4 * 1.2);\n  uvm_1 = (((\n    (q1 * tmpvar_3)\n   + \n    ((vec2(1.0, -1.0) * q2) * tmpvar_3.yx)\n  ) * vec2(1.0, 1.6)) + vec2(0.3, 0.5));\n  ret_2 = max (ret_2, ((texture (sampler_fw_main, uvm_1).xyz * 0.9) - 0.01));\n  uvm_1 = (tmpvar_4 * 1.1);\n  uvm_1 = (((\n    (q3 * uvm_1)\n   + \n    ((vec2(1.0, -1.0) * q4) * uvm_1.yx)\n  ) * vec2(1.0, 1.6)) + vec2(0.5, 0.8));\n  ret_2 = max (ret_2, ((texture (sampler_fw_main, uvm_1).xyz * 0.9) - 0.01));\n  uvm_1 = (tmpvar_4 * 1.5);\n  uvm_1 = (((\n    (q4 * uvm_1)\n   + \n    ((vec2(1.0, -1.0) * q5) * uvm_1.yx)\n  ) * vec2(1.0, 1.6)) + vec2(0.6, 0.4));\n  ret_2 = max (ret_2, ((texture (sampler_fw_main, uvm_1).xyz * 0.9) - 0.01));\n  vec4 tmpvar_5;\n  tmpvar_5.w = 1.0;\n  tmpvar_5.xyz = ret_2;\n  ret = tmpvar_5.xyz;\n }",
-  "comp": " shader_body { \n  vec3 bird_1;\n  vec3 ret_2;\n  vec2 tmpvar_3;\n  tmpvar_3 = (texsize.zw * 2.0);\n  vec3 tmpvar_4;\n  tmpvar_4 = (((texture (sampler_blur1, \n    (uv + (vec2(1.0, 0.0) * tmpvar_3))\n  ).xyz * scale1) + bias1) - ((texture (sampler_blur1, \n    (uv - (vec2(1.0, 0.0) * tmpvar_3))\n  ).xyz * scale1) + bias1));\n  vec3 tmpvar_5;\n  tmpvar_5 = (((texture (sampler_blur1, \n    (uv + (vec2(0.0, 1.0) * tmpvar_3))\n  ).xyz * scale1) + bias1) - ((texture (sampler_blur1, \n    (uv - (vec2(0.0, 1.0) * tmpvar_3))\n  ).xyz * scale1) + bias1));\n  vec2 tmpvar_6;\n  tmpvar_6.x = tmpvar_4.y;\n  tmpvar_6.y = tmpvar_5.y;\n  vec2 tmpvar_7;\n  tmpvar_7 = (uv + (tmpvar_6 * 0.05));\n  vec2 x_8;\n  x_8 = (tmpvar_7 - uv);\n  vec2 tmpvar_9;\n  tmpvar_9.x = tmpvar_4.y;\n  tmpvar_9.y = tmpvar_5.y;\n  bird_1 = (pow (vec3(max (texture (sampler_main, tmpvar_7).x, texture (sampler_main, \n    ((0.5 + ((uv - 0.5) * vec2(-1.0, 1.0))) + (tmpvar_9 * 0.05))\n  ).x)), vec3(1.4, 1.4, 1.4)) * (hue_shader * hue_shader));\n  vec2 tmpvar_10;\n  tmpvar_10.x = tmpvar_4.y;\n  tmpvar_10.y = tmpvar_5.y;\n  ret_2 = (((\n    ((((\n      (((tmpvar_4.y + tmpvar_5.y) * 4.0) + 0.5)\n     * vec3(0.0, 0.0, 1.0)) + (\n      sqrt(dot (x_8, x_8))\n     * vec3(64.0, 96.0, 0.0))) + (vec3(1.0, 0.0, 0.0) * texture (sampler_main, uv).y)) - vec3(0.0, 0.0, 0.3))\n   * 0.6) * clamp (\n    (1.0 - (bird_1.x * 4.0))\n  , 0.0, 1.0)) + bird_1);\n  vec3 tmpvar_11;\n  tmpvar_11 = mix (ret_2, vec3(1.0, 1.0, 1.0), ((\n    (((texture (sampler_blur1, (uv + \n      (tmpvar_10 * 0.1)\n    )).xyz * scale1) + bias1) * clamp (1.0, 0.0, 1.0))\n  .z * 6.0) * (1.0 - \n    (bird_1 * 3.0)\n  )));\n  ret_2 = tmpvar_11;\n  vec4 tmpvar_12;\n  tmpvar_12.w = 1.0;\n  tmpvar_12.xyz = tmpvar_11;\n  ret = tmpvar_12.xyz;\n }",
+  "warp": " shader_body {  \n  vec2 uvm_1;\n  vec3 ret_2;\n  ret_2 = ((texture (sampler_fw_main, uv).xyz * 0.9) - 0.03);\n  vec2 tmpvar_3;\n  vec2 tmpvar_4;\n  tmpvar_4 = (uv - vec2(0.5, 0.5));\n  tmpvar_3 = (tmpvar_4 * 1.2);\n  uvm_1 = (((\n    (q1 * tmpvar_3)\n   + \n    ((vec2(1.0, -1.0) * q2) * tmpvar_3.yx)\n  ) * vec2(1.0, 1.6)) + vec2(0.3, 0.5));\n  ret_2 = max (ret_2, ((texture (sampler_fw_main, uvm_1).xyz * 0.9) - 0.01));\n  uvm_1 = (tmpvar_4 * 1.1);\n  uvm_1 = (((\n    (q3 * uvm_1)\n   + \n    ((vec2(1.0, -1.0) * q4) * uvm_1.yx)\n  ) * vec2(1.0, 1.6)) + vec2(0.5, 0.8));\n  ret_2 = max (ret_2, ((texture (sampler_fw_main, uvm_1).xyz * 0.9) - 0.01));\n  uvm_1 = (tmpvar_4 * 1.5);\n  uvm_1 = (((\n    (q4 * uvm_1)\n   + \n    ((vec2(1.0, -1.0) * q5) * uvm_1.yx)\n  ) * vec2(1.0, 1.6)) + vec2(0.6, 0.4));\n  ret_2 = max (ret_2, ((texture (sampler_fw_main, uvm_1).xyz * 0.9) - 0.01));\n  vec4 tmpvar_5;\n  tmpvar_5.w = 1.0;\n  tmpvar_5.xyz = ret_2;\n  ret = tmpvar_5.xyz;\n  }",
+  "comp": " shader_body {  \n  vec3 bird_1;\n  vec3 ret_2;\n  vec2 tmpvar_3;\n  tmpvar_3 = (texsize.zw * 2.0);\n  vec3 tmpvar_4;\n  tmpvar_4 = (((texture (sampler_blur1, \n    (uv + (vec2(1.0, 0.0) * tmpvar_3))\n  ).xyz * scale1) + bias1) - ((texture (sampler_blur1, \n    (uv - (vec2(1.0, 0.0) * tmpvar_3))\n  ).xyz * scale1) + bias1));\n  vec3 tmpvar_5;\n  tmpvar_5 = (((texture (sampler_blur1, \n    (uv + (vec2(0.0, 1.0) * tmpvar_3))\n  ).xyz * scale1) + bias1) - ((texture (sampler_blur1, \n    (uv - (vec2(0.0, 1.0) * tmpvar_3))\n  ).xyz * scale1) + bias1));\n  vec2 tmpvar_6;\n  tmpvar_6.x = tmpvar_4.y;\n  tmpvar_6.y = tmpvar_5.y;\n  vec2 tmpvar_7;\n  tmpvar_7 = (uv + (tmpvar_6 * 0.05));\n  vec2 x_8;\n  x_8 = (tmpvar_7 - uv);\n  vec2 tmpvar_9;\n  tmpvar_9.x = tmpvar_4.y;\n  tmpvar_9.y = tmpvar_5.y;\n  bird_1 = (pow (vec3(max (texture (sampler_main, tmpvar_7).x, texture (sampler_main, \n    ((0.5 + ((uv - 0.5) * vec2(-1.0, 1.0))) + (tmpvar_9 * 0.05))\n  ).x)), vec3(1.4, 1.4, 1.4)) * (hue_shader * hue_shader));\n  vec2 tmpvar_10;\n  tmpvar_10.x = tmpvar_4.y;\n  tmpvar_10.y = tmpvar_5.y;\n  ret_2 = (((\n    ((((\n      (((tmpvar_4.y + tmpvar_5.y) * 4.0) + 0.5)\n     * vec3(0.0, 0.0, 1.0)) + (\n      sqrt(dot (x_8, x_8))\n     * vec3(64.0, 96.0, 0.0))) + (vec3(1.0, 0.0, 0.0) * texture (sampler_main, uv).y)) - vec3(0.0, 0.0, 0.3))\n   * 0.6) * clamp (\n    (1.0 - (bird_1.x * 4.0))\n  , 0.0, 1.0)) + bird_1);\n  vec3 tmpvar_11;\n  tmpvar_11 = mix (ret_2, vec3(1.0, 1.0, 1.0), ((\n    (((texture (sampler_blur1, (uv + \n      (tmpvar_10 * 0.1)\n    )).xyz * scale1) + bias1) * clamp (1.0, 0.0, 1.0))\n  .z * 6.0) * (1.0 - \n    (bird_1 * 3.0)\n  )));\n  ret_2 = tmpvar_11;\n  vec4 tmpvar_12;\n  tmpvar_12.w = 1.0;\n  tmpvar_12.xyz = tmpvar_11;\n  ret = tmpvar_12.xyz;\n  }",
   "presetParts": {
-    "presetVersion": 1,
+    "presetVersion": 2,
     "baseVals": {
       "rating": 5,
       "gammaadj": 1,
@@ -179,8 +179,12 @@
       },
       {
         "baseVals": {
+          "thick": 1,
           "enabled": 0
-        }
+        },
+        "init_eqs_str": "",
+        "frame_eqs_str": "",
+        "point_eqs_str": "ma=ma+(above(mid,1)*3.1415*.01*mid);\nma=ma-(above(treb,1)*3.1415*.01*treb);\n\nmx=mx+(.0004*cos(ma));\nmy=my+(.0004*sin(ma));\n\nmx=if(above(mx,.9),(.9-mx),mx);\nmy=if(above(my,.9),(.9-my),my);\nmx=if(below(mx,.1),(.9+mx),mx);\nmy=if(below(my,.1),(.9+my),my);\n\nx=mx;\ny=my;\n\na=(above(bass+mid+treb,.3));"
       },
       {
         "baseVals": {
@@ -195,8 +199,19 @@
     "shapes": [
       {
         "baseVals": {
+          "textured": 1,
+          "rad": 1.79142,
+          "tex_ang": 0.62832,
+          "g": 1,
+          "b": 1,
+          "a": 0,
+          "g2": 0,
+          "a2": 1,
+          "border_a": 0,
           "enabled": 0
-        }
+        },
+        "init_eqs_str": "",
+        "frame_eqs_str": ""
       },
       {
         "baseVals": {
@@ -219,12 +234,16 @@
       {
         "baseVals": {
           "enabled": 0
-        }
+        },
+        "init_eqs_str": "",
+        "frame_eqs_str": ""
       },
       {
         "baseVals": {
           "enabled": 0
-        }
+        },
+        "init_eqs_str": "",
+        "frame_eqs_str": ""
       }
     ],
     "warp": "shader_body\n{\nret.xyz = tex2D( sampler_fw_main,uv).xyz*.9 - .03;\n\nfloat2 uvm = (uv - float2(.5,.5))*1.2;\nuvm = (q1*uvm.xy + float2(1,-1)*q2*uvm.yx)*float2(1,1.6) + float2(.3,.5);\nret.xyz = max(ret.xyz, tex2D( sampler_fw_main,uvm).xyz*.9 - .01);\n\nuvm = (uv - float2(.5,.5))*1.1;\nuvm = (q3*uvm.xy + float2(1,-1)*q4*uvm.yx)*float2(1,1.6) + float2(.5,.8);\nret.xyz = max(ret.xyz, tex2D( sampler_fw_main,uvm).xyz*.9 - .01);\n\nuvm = (uv - float2(.5,.5))*1.5;\nuvm = (q4*uvm.xy + float2(1,-1)*q5*uvm.yx)*float2(1,1.6) + float2(.6,.4);\nret.xyz = max(ret.xyz, tex2D( sampler_fw_main,uvm).xyz*.9 - .01);\n\n}",

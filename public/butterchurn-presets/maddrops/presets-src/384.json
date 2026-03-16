@@ -86,10 +86,10 @@
     "b1x": 0.7,
     "b1ed": 0
   },
-  "warp": " shader_body { \n  vec2 uv_1;\n  vec2 uv6_2;\n  vec2 tmpvar_3;\n  tmpvar_3 = ((uv - 0.5) * aspect.xy);\n  float x_4;\n  x_4 = (tmpvar_3.x * tmpvar_3.y);\n  float tmpvar_5;\n  tmpvar_5 = ((q10 * 48.0) * sqrt((x_4 * x_4)));\n  uv_1 = (uv + (vec2(0.0, 0.1) * dot (\n    ((texture (sampler_blur1, uv).xyz * scale1) + bias1)\n  , vec3(0.32, 0.49, 0.29))));\n  uv_1 = (uv_1 - (clamp (\n    ((sin(tmpvar_5) / cos(tmpvar_5)) * normalize(tmpvar_3))\n  , vec2(-2.0, -2.0), vec2(2.0, 2.0)) / 450.0));\n  uv6_2 = (0.4 * sin((\n    (uv_1 * 6.0)\n   + \n    (rand_frame * 6.0)\n  .xy)));\n  vec4 tmpvar_6;\n  tmpvar_6.w = 1.0;\n  tmpvar_6.xyz = (((\n    (texture (sampler_main, uv_1).xyz - (((texture (sampler_blur2, \n      fract(uv_1)\n    ).xyz * scale2) + bias2) * 0.12))\n   + \n    (0.1 * (vec3((0.1 / sqrt(\n      dot (uv6_2, uv6_2)\n    ))) * (0.5 * (1.0 + roam_cos)).xyz))\n  ) * 0.99) - 0.028);\n  ret = tmpvar_6.xyz;\n }",
-  "comp": " shader_body { \n  vec2 uv_1;\n  vec3 ret_2;\n  uv_1 = (((uv - 0.5) * aspect.xy) + 0.5);\n  vec2 tmpvar_3;\n  tmpvar_3 = (1.0 - uv_1);\n  ret_2 = ((texture (sampler_main, uv_1).xyz + (2.0 * \n    ((texture (sampler_blur2, uv_1).xyz * scale2) + bias2)\n  )) + (texture (sampler_main, tmpvar_3).xyz + (2.0 * \n    ((texture (sampler_blur2, tmpvar_3).xyz * scale2) + bias2)\n  )));\n  ret_2 = (ret_2 * 1.4);\n  vec4 tmpvar_4;\n  tmpvar_4.w = 1.0;\n  tmpvar_4.xyz = ret_2;\n  ret = tmpvar_4.xyz;\n }",
+  "warp": " shader_body {  \n  vec2 uv_1;\n  vec2 uv6_2;\n  vec2 tmpvar_3;\n  tmpvar_3 = ((uv - 0.5) * aspect.xy);\n  float x_4;\n  x_4 = (tmpvar_3.x * tmpvar_3.y);\n  float tmpvar_5;\n  tmpvar_5 = ((q10 * 48.0) * sqrt((x_4 * x_4)));\n  uv_1 = (uv + (vec2(0.0, 0.1) * dot (\n    ((texture (sampler_blur1, uv).xyz * scale1) + bias1)\n  , vec3(0.32, 0.49, 0.29))));\n  uv_1 = (uv_1 - (clamp (\n    ((sin(tmpvar_5) / cos(tmpvar_5)) * normalize(tmpvar_3))\n  , vec2(-2.0, -2.0), vec2(2.0, 2.0)) / 450.0));\n  uv6_2 = (0.4 * sin((\n    (uv_1 * 6.0)\n   + \n    (rand_frame * 6.0)\n  .xy)));\n  vec4 tmpvar_6;\n  tmpvar_6.w = 1.0;\n  tmpvar_6.xyz = (((\n    (texture (sampler_main, uv_1).xyz - (((texture (sampler_blur2, \n      fract(uv_1)\n    ).xyz * scale2) + bias2) * 0.12))\n   + \n    (0.1 * (vec3((0.1 / sqrt(\n      dot (uv6_2, uv6_2)\n    ))) * (0.5 * (1.0 + roam_cos)).xyz))\n  ) * 0.99) - 0.028);\n  ret = tmpvar_6.xyz;\n  }",
+  "comp": " shader_body {  \n  vec2 uv_1;\n  vec3 ret_2;\n  uv_1 = (((uv - 0.5) * aspect.xy) + 0.5);\n  vec2 tmpvar_3;\n  tmpvar_3 = (1.0 - uv_1);\n  ret_2 = ((texture (sampler_main, uv_1).xyz + (2.0 * \n    ((texture (sampler_blur2, uv_1).xyz * scale2) + bias2)\n  )) + (texture (sampler_main, tmpvar_3).xyz + (2.0 * \n    ((texture (sampler_blur2, tmpvar_3).xyz * scale2) + bias2)\n  )));\n  ret_2 = (ret_2 * 1.4);\n  vec4 tmpvar_4;\n  tmpvar_4.w = 1.0;\n  tmpvar_4.xyz = ret_2;\n  ret = tmpvar_4.xyz;\n  }",
   "presetParts": {
-    "presetVersion": 1,
+    "presetVersion": 2,
     "baseVals": {
       "rating": 5,
       "gammaadj": 1.78,
@@ -129,13 +129,24 @@
     "waves": [
       {
         "baseVals": {
+          "usedots": 1,
+          "additive": 1,
           "enabled": 0
-        }
+        },
+        "init_eqs_str": "",
+        "frame_eqs_str": "q8=1.5",
+        "point_eqs_str": "masterspeed=104*q1;\nmasterspeed=30;\nrotation1=time*0.01;\n\ntm=time*masterspeed*0.1;// + t1*0.002*masterspeed;\nperspective=0.7;\n\n//error bump\nerror = sin(time*128.5)*8 - 7;\nerror = error * above(error,0);\nerror=error+1;\nerror=1;\n\n//plot x,y,z to point on sphere\nflx=sin(tm*14);\nfly=cos(tm*14);\nsmp=sample*6.283;\n\npinch=sin(smp*6 + q8)*0.3 + 0.7;\n\nxp=sin(smp )*0.65 * error;\nxp=xp*pinch;\nyp=cos(smp )*0.65 * error;\nyp=yp*pinch;\nzp=0;\n\n\n\n//rotate on y axis;\nangy=time*33;\nangy=q1*10 + sample*0;\nxq=xp*cos(angy) - zp*sin(angy);\nzq=xp*sin(angy) + zp*cos(angy);\nxp=xq;\nzp=zq;\n\nt2=xp;\nt3=yp;\nt4=zp;\n\n//rotate on x axis\naxs1 = sin(time*0.9) + 1.6;\nyq= yp*cos(axs1) - zp*sin(axs1);\nzq= yp*sin(axs1) + zp*cos(axs1);\nyp=yq;\nzp=zq;\n\n//rotate on y axis again\naxs2 = sin(time*0.45)*3.3;\nxq=xp*cos(axs2) - zp*sin(axs2);\nzq=xp*sin(axs2) + zp*cos(axs2);\nxp=xq;\nzp=zq;\n\n//stretch y axis to compensate for aspect ratio\nyp=yp*1.2;\n\n//push forward into viewpace\nzp=zp+2.1;\n\n//project x,y,z into screenspace\nxs=xp/zp;\nys=yp/zp;\n\n//center 0,0 in middle of screen\nx=xs+0.5;\ny=ys+0.5;\n\nr=(value1+0.5)*0.50;\ng=(value1+0.5)*0.16;\nb=(value1+0.5)*0.08;"
       },
       {
         "baseVals": {
+          "usedots": 1,
+          "thick": 1,
+          "additive": 1,
           "enabled": 0
-        }
+        },
+        "init_eqs_str": "",
+        "frame_eqs_str": "",
+        "point_eqs_str": "masterspeed=104*q1;\nmasterspeed=30;\nrotation1=time*0.01;\n\ntm=time*masterspeed*0.1;// + t1*0.002*masterspeed;\nperspective=0.7;\n\n//error bump\nerror = sin(time*128.5)*8 - 7;\nerror = error * above(error,0);\nerror=error+1;\nerror=1;\n\n//plot x,y,z to point on sphere\nflx=sin(tm*14);\nfly=cos(tm*14);\nsmp=sample*6.283;\n\npinch=cos(smp*6 + q8)*0.3 + 0.7;\n\nxp=sin(smp )*0.65 * error;\nxp=xp*pinch;\nyp=cos(smp )*0.65 * error;\nyp=yp*pinch;\nzp=0;\n\n\n\n//rotate on y axis;\nangy=time*33;\nangy=q1*10 + sample*0;\nangy=angy+1.5;\nxq=xp*cos(angy) - zp*sin(angy);\nzq=xp*sin(angy) + zp*cos(angy);\nxp=xq;\nzp=zq;\n\nt2=xp;\nt3=yp;\nt4=zp;\n\n//rotate on x axis\naxs1 = sin(time*0.9) + 1.6;\nyq= yp*cos(axs1) - zp*sin(axs1);\nzq= yp*sin(axs1) + zp*cos(axs1);\nyp=yq;\nzp=zq;\n\n//rotate on y axis again\naxs2 = sin(time*0.45)*3.3;\nxq=xp*cos(axs2) - zp*sin(axs2);\nzq=xp*sin(axs2) + zp*cos(axs2);\nxp=xq;\nzp=zq;\n\n//stretch y axis to compensate for aspect ratio\nyp=yp*1.2;\n\n//push forward into viewpace\nzp=zp+2.1;\n\n//project x,y,z into screenspace\nxs=xp/zp;\nys=yp/zp;\n\n//center 0,0 in middle of screen\nx=xs+0.5;\ny=ys+0.5;\n\nr=(value1+0.5)*0.50;\ng=(value1+0.5)*0.16;\nb=(value1+0.5)*0.08;"
       },
       {
         "baseVals": {
@@ -151,30 +162,44 @@
       },
       {
         "baseVals": {
+          "usedots": 1,
+          "thick": 1,
+          "additive": 1,
           "enabled": 0
-        }
+        },
+        "init_eqs_str": "",
+        "frame_eqs_str": "",
+        "point_eqs_str": "masterspeed=104*q1;\nmasterspeed=30;\nrotation1=time*0.01;\n\ntm=time*masterspeed*0.1;// + t1*0.002*masterspeed;\nperspective=0.7;\n\n//error bump\nerror = sin(time*128.5)*8 - 7;\nerror = error * above(error,0);\nerror=error+1;\nerror=1;\n\n//plot x,y,z to point on sphere\nflx=sin(tm*14);\nfly=cos(tm*14);\nsmp=sample*6.283;\n\npinch=sin(smp*6)*0.3 + 0.7;\n\nxp=sin(smp )*0.65 * error;\nxp=xp*pinch;\nyp=cos(smp )*0.65 * error;\nyp=yp*pinch;\nzp=0;\n\n\n\n//rotate on y axis;\nangy=time*33;\nangy=q1*10 + sample*0;\nxq=xp*cos(angy) - zp*sin(angy);\nzq=xp*sin(angy) + zp*cos(angy);\nxp=xq;\nzp=zq;\n\nt2=xp;\nt3=yp;\nt4=zp;\n\n//rotate on x axis\naxs1 = sin(time*0.9) + 1.6;\nyq= yp*cos(axs1) - zp*sin(axs1);\nzq= yp*sin(axs1) + zp*cos(axs1);\nyp=yq;\nzp=zq;\n\n//rotate on y axis again\naxs2 = sin(time*0.45)*3.3;\nxq=xp*cos(axs2) - zp*sin(axs2);\nzq=xp*sin(axs2) + zp*cos(axs2);\nxp=xq;\nzp=zq;\n\n//stretch y axis to compensate for aspect ratio\nyp=yp*1.2;\n\n//push forward into viewpace\nzp=zp+2.1;\n\n//project x,y,z into screenspace\nxs=xp/zp;\nys=yp/zp;\n\n//center 0,0 in middle of screen\nx=xs+0.5;\ny=ys+0.5;\n\nr=(value1+0.5)*0.50;\ng=(value1+0.5)*0.16;\nb=(value1+0.5)*0.08;"
       }
     ],
     "shapes": [
       {
         "baseVals": {
           "enabled": 0
-        }
+        },
+        "init_eqs_str": "",
+        "frame_eqs_str": ""
       },
       {
         "baseVals": {
           "enabled": 0
-        }
+        },
+        "init_eqs_str": "",
+        "frame_eqs_str": ""
       },
       {
         "baseVals": {
           "enabled": 0
-        }
+        },
+        "init_eqs_str": "",
+        "frame_eqs_str": ""
       },
       {
         "baseVals": {
           "enabled": 0
-        }
+        },
+        "init_eqs_str": "",
+        "frame_eqs_str": ""
       }
     ],
     "warp": "sampler sampler_worms;\nfloat3 color, mus;\nfloat dx,dy;\nshader_body {\n\n\nfloat2 uv1 = (uv-.5) * aspect.xy;\n\nfloat2 uv6 = uv1;\nfloat z = q10*48*length(((uv1.x)*(uv1.y)));\nfloat2 d = normalize(uv1);\nfloat2 rs = clamp(tan(z)*d,-2,2);\nuv += .1*lum(GetBlur1(uv))*float2 (0,1);\nuv -= rs/450;\n\nuv6 = .4*sin(uv*6+rand_frame*6);\nmus = .1/(length(uv6));\nmus *= .5*(1+roam_cos);\n\nfloat3 blur = GetBlur2(frac(uv));\n\nfloat3 crisp= tex2D(sampler_main,uv);\n\nfloat3 ret1 = crisp - blur*.12 + .1*mus;\n\nq25 = 1;\nret = q25*(ret1*.99-.028) + (1-q25)* GetPixel(uv_orig);\n\n}",

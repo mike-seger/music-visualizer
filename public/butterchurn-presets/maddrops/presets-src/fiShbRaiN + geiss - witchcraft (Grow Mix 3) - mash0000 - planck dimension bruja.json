@@ -94,10 +94,10 @@
     "mv_l": 0,
     "mv_a": 0
   },
-  "warp": " shader_body { \n  vec2 my_uv_1;\n  vec2 tmpvar_2;\n  tmpvar_2 = ((uv - 0.5) * vec2((1.0 + q1)));\n  vec2 tmpvar_3;\n  tmpvar_3.x = ((tmpvar_2.x * tmpvar_2.x) - (tmpvar_2.y * tmpvar_2.y));\n  tmpvar_3.y = ((2.0 * tmpvar_2.x) * tmpvar_2.y);\n  vec2 tmpvar_4;\n  tmpvar_4.x = ((tmpvar_3.x * -0.12) - (tmpvar_3.y * 0.74));\n  tmpvar_4.y = ((tmpvar_3.x * 0.74) + (-0.12 * tmpvar_3.y));\n  vec2 tmpvar_5;\n  tmpvar_5.x = ((tmpvar_3.x * (tmpvar_4.x + 1.0)) + (tmpvar_3.y * tmpvar_4.y));\n  tmpvar_5.y = ((tmpvar_3.y * (tmpvar_4.x + 1.0)) - (tmpvar_3.x * tmpvar_4.y));\n  my_uv_1 = (tmpvar_5 * (1.0/((\n    ((tmpvar_4.x + 1.0) * (tmpvar_4.x + 1.0))\n   + \n    (tmpvar_4.y * tmpvar_4.y)\n  ))));\n  vec4 tmpvar_6;\n  tmpvar_6.w = 1.0;\n  tmpvar_6.xyz = (texture (sampler_fc_main, (my_uv_1 - floor(my_uv_1))) * 0.94).xyz;\n  ret = tmpvar_6.xyz;\n }",
-  "comp": " shader_body { \n  vec3 ret_1;\n  ret_1 = ((texture (sampler_main, uv).xyz * 1.5) - 0.1);\n  ret_1.y = (ret_1 * 0.7).y;\n  ret_1.x = (((texture (sampler_blur1, uv).xyz * scale1) + bias1).x * 2.0);\n  ret_1.z = (((texture (sampler_blur2, uv).xyz * scale2) + bias2).z * 3.0);\n  vec4 tmpvar_2;\n  tmpvar_2.w = 1.0;\n  tmpvar_2.xyz = ret_1;\n  ret = tmpvar_2.xyz;\n }",
+  "warp": " shader_body {  \n  vec2 my_uv_1;\n  vec2 tmpvar_2;\n  tmpvar_2 = ((uv - 0.5) * vec2((1.0 + q1)));\n  vec2 tmpvar_3;\n  tmpvar_3.x = ((tmpvar_2.x * tmpvar_2.x) - (tmpvar_2.y * tmpvar_2.y));\n  tmpvar_3.y = ((2.0 * tmpvar_2.x) * tmpvar_2.y);\n  vec2 tmpvar_4;\n  tmpvar_4.x = ((tmpvar_3.x * -0.12) - (tmpvar_3.y * 0.74));\n  tmpvar_4.y = ((tmpvar_3.x * 0.74) + (-0.12 * tmpvar_3.y));\n  vec2 tmpvar_5;\n  tmpvar_5.x = ((tmpvar_3.x * (tmpvar_4.x + 1.0)) + (tmpvar_3.y * tmpvar_4.y));\n  tmpvar_5.y = ((tmpvar_3.y * (tmpvar_4.x + 1.0)) - (tmpvar_3.x * tmpvar_4.y));\n  my_uv_1 = (tmpvar_5 * (1.0/((\n    ((tmpvar_4.x + 1.0) * (tmpvar_4.x + 1.0))\n   + \n    (tmpvar_4.y * tmpvar_4.y)\n  ))));\n  vec4 tmpvar_6;\n  tmpvar_6.w = 1.0;\n  tmpvar_6.xyz = (texture (sampler_fc_main, (my_uv_1 - floor(my_uv_1))) * 0.94).xyz;\n  ret = tmpvar_6.xyz;\n  }",
+  "comp": " shader_body {  \n  vec3 ret_1;\n  ret_1 = ((texture (sampler_main, uv).xyz * 1.5) - 0.1);\n  ret_1.y = (ret_1 * 0.7).y;\n  ret_1.x = (((texture (sampler_blur1, uv).xyz * scale1) + bias1).x * 2.0);\n  ret_1.z = (((texture (sampler_blur2, uv).xyz * scale2) + bias2).z * 3.0);\n  vec4 tmpvar_2;\n  tmpvar_2.w = 1.0;\n  tmpvar_2.xyz = ret_1;\n  ret = tmpvar_2.xyz;\n  }",
   "presetParts": {
-    "presetVersion": 1,
+    "presetVersion": 2,
     "baseVals": {
       "rating": 5,
       "gammaadj": 1,
@@ -174,23 +174,40 @@
     "shapes": [
       {
         "baseVals": {
+          "textured": 1,
+          "rad": 1.79142,
+          "tex_ang": 0.62832,
+          "g": 1,
+          "b": 1,
+          "a": 0,
+          "g2": 0,
+          "a2": 1,
+          "border_a": 0,
           "enabled": 0
-        }
+        },
+        "init_eqs_str": "",
+        "frame_eqs_str": ""
       },
       {
         "baseVals": {
           "enabled": 0
-        }
+        },
+        "init_eqs_str": "",
+        "frame_eqs_str": ""
       },
       {
         "baseVals": {
           "enabled": 0
-        }
+        },
+        "init_eqs_str": "",
+        "frame_eqs_str": ""
       },
       {
         "baseVals": {
           "enabled": 0
-        }
+        },
+        "init_eqs_str": "",
+        "frame_eqs_str": ""
       }
     ],
     "warp": "shader_body\n{\nfloat2 zoom = 1+q1;\nfloat2 cntr = float2(0,0);\nfloat2 c = float2(-0.12,0.74);\nfloat2 my_uv = (uv-0.5-cntr)*zoom;\nfloat2 u2 = float2(my_uv.x*my_uv.x - my_uv.y*my_uv.y, 2*my_uv.x*my_uv.y);\nfloat2 cu2 = float2(u2.x*c.x - u2.y*c.y, u2.x*c.y + c.x*u2.y);\nfloat denom = 1/((cu2.x+1)*(cu2.x+1)+cu2.y*cu2.y);\nmy_uv = float2(u2.x*(cu2.x+1)+u2.y*cu2.y,u2.y*(cu2.x+1)-u2.x*cu2.y)*denom;\n\n\nret = tex2D( sampler_fc_main, my_uv - floor(my_uv) )*0.94;\n}",

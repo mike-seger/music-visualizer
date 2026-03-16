@@ -16,7 +16,7 @@
         "border_a": 0
       },
       "init_eqs_str": "",
-      "frame_eqs_str": "a['ang']=1.571; a['x']=(Math.floor(randint(11))*0.1); a['y']=(Math.floor(randint(11))*0.13); a['r']=(Math.floor(randint(100))*0.01); a['g']=(Math.floor(randint(100))*0.01); a['b']=(Math.floor(randint(100))*0.01); a['r2']=a['r']; a['g2']=a['g']; a['b2']=a['b'];"
+      "frame_eqs_str": "a['ang']=1.571; a['x']=(Math.floor(rand(11))*0.1); a['y']=(Math.floor(rand(11))*0.13); a['r']=(Math.floor(rand(100))*0.01); a['g']=(Math.floor(rand(100))*0.01); a['b']=(Math.floor(rand(100))*0.01); a['r2']=a['r']; a['g2']=a['g']; a['b2']=a['b'];"
     },
     {
       "baseVals": {
@@ -30,7 +30,7 @@
         "border_a": 0
       },
       "init_eqs_str": "",
-      "frame_eqs_str": "a['ang']=1.571; a['x']=(Math.floor(randint(11))*0.1); a['y']=(Math.floor(randint(11))*0.13); a['r']=(Math.floor(randint(100))*0.01); a['g']=(Math.floor(randint(100))*0.01); a['b']=(Math.floor(randint(100))*0.01); a['r2']=(Math.floor(randint(100))*0.01); a['g2']=(Math.floor(randint(100))*0.01); a['b2']=(Math.floor(randint(100))*0.01);"
+      "frame_eqs_str": "a['ang']=1.571; a['x']=(Math.floor(rand(11))*0.1); a['y']=(Math.floor(rand(11))*0.13); a['r']=(Math.floor(rand(100))*0.01); a['g']=(Math.floor(rand(100))*0.01); a['b']=(Math.floor(rand(100))*0.01); a['r2']=(Math.floor(rand(100))*0.01); a['g2']=(Math.floor(rand(100))*0.01); a['b2']=(Math.floor(rand(100))*0.01);"
     },
     {
       "baseVals": {
@@ -43,7 +43,7 @@
         "border_a": 0
       },
       "init_eqs_str": "",
-      "frame_eqs_str": "a['rad']=0.158; a['ang']=1.571; a['x']=(Math.floor(randint(11))*0.1); a['y']=(Math.floor(randint(11))*0.13); a['r']=(Math.floor(randint(100))*0.01); a['g']=(Math.floor(randint(100))*0.01); a['b']=(Math.floor(randint(100))*0.01); a['r2']=a['b']; a['g2']=a['r']; a['b2']=a['g'];"
+      "frame_eqs_str": "a['rad']=0.158; a['ang']=1.571; a['x']=(Math.floor(rand(11))*0.1); a['y']=(Math.floor(rand(11))*0.13); a['r']=(Math.floor(rand(100))*0.01); a['g']=(Math.floor(rand(100))*0.01); a['b']=(Math.floor(rand(100))*0.01); a['r2']=a['b']; a['g2']=a['r']; a['b2']=a['g'];"
     },
     {
       "baseVals": {
@@ -51,7 +51,7 @@
         "a2": 1
       },
       "init_eqs_str": "",
-      "frame_eqs_str": "a['rad']=0.158; a['ang']=1.571; a['x']=(Math.floor(randint(11))*0.1); a['y']=(Math.floor(randint(11))*0.13); a['r']=(Math.floor(randint(100))*0.01); a['g']=(Math.floor(randint(100))*0.01); a['b']=(Math.floor(randint(100))*0.01); a['r2']=a['g']; a['g2']=a['b']; a['b2']=a['r'];"
+      "frame_eqs_str": "a['rad']=0.158; a['ang']=1.571; a['x']=(Math.floor(rand(11))*0.1); a['y']=(Math.floor(rand(11))*0.13); a['r']=(Math.floor(rand(100))*0.01); a['g']=(Math.floor(rand(100))*0.01); a['b']=(Math.floor(rand(100))*0.01); a['r2']=a['g']; a['g2']=a['b']; a['b2']=a['r'];"
     }
   ],
   "waves": [
@@ -112,9 +112,9 @@
     "mv_a": 0
   },
   "warp": "",
-  "comp": " shader_body { \n  vec2 uv2_1;\n  vec3 ret_2;\n  uv2_1 = (uv + (vec2(1.0, 0.0) * texsize.zw));\n  float tmpvar_3;\n  tmpvar_3 = (((texture (sampler_main, uv2_1).xyz + \n    (((texture (sampler_blur1, uv2_1).xyz * scale1) + bias1) * 0.4)\n  ) + (\n    ((texture (sampler_blur2, uv2_1).xyz * scale2) + bias2)\n   * 0.15)) + ((\n    (texture (sampler_blur3, uv2_1).xyz * scale3)\n   + bias3) * 0.1)).x;\n  uv2_1 = (uv + (vec2(-1.0, 0.0) * texsize.zw));\n  float tmpvar_4;\n  tmpvar_4 = (((texture (sampler_main, uv2_1).xyz + \n    (((texture (sampler_blur1, uv2_1).xyz * scale1) + bias1) * 0.4)\n  ) + (\n    ((texture (sampler_blur2, uv2_1).xyz * scale2) + bias2)\n   * 0.15)) + ((\n    (texture (sampler_blur3, uv2_1).xyz * scale3)\n   + bias3) * 0.1)).x;\n  uv2_1 = (uv + (vec2(0.0, 1.0) * texsize.zw));\n  float tmpvar_5;\n  tmpvar_5 = (((texture (sampler_main, uv2_1).xyz + \n    (((texture (sampler_blur1, uv2_1).xyz * scale1) + bias1) * 0.4)\n  ) + (\n    ((texture (sampler_blur2, uv2_1).xyz * scale2) + bias2)\n   * 0.15)) + ((\n    (texture (sampler_blur3, uv2_1).xyz * scale3)\n   + bias3) * 0.1)).x;\n  uv2_1 = (uv + (vec2(0.0, -1.0) * texsize.zw));\n  vec3 tmpvar_6;\n  tmpvar_6.z = 0.14;\n  tmpvar_6.x = (tmpvar_3 - tmpvar_4);\n  tmpvar_6.y = (tmpvar_5 - ((\n    (texture (sampler_main, uv2_1).xyz + (((texture (sampler_blur1, uv2_1).xyz * scale1) + bias1) * 0.4))\n   + \n    (((texture (sampler_blur2, uv2_1).xyz * scale2) + bias2) * 0.15)\n  ) + (\n    ((texture (sampler_blur3, uv2_1).xyz * scale3) + bias3)\n   * 0.1)).x);\n  ret_2 = (0.5 + (0.5 * normalize(tmpvar_6)));\n  vec2 x_7;\n  x_7 = (ret_2.xy - 0.5);\n  ret_2 = (ret_2 * clamp ((\n    sqrt(dot (x_7, x_7))\n   * 5.0), 0.0, 1.0));\n  ret_2 = ret_2.xxy;\n  ret_2 = (ret_2 + 1.15);\n  ret_2 = (ret_2 * mix (ret_2, (ret_2 * \n    (((texture (sampler_blur3, uv).xyz * scale3) + bias3) - (((texture (sampler_blur1, uv).xyz * scale1) + bias1) * treb_att))\n  ), pow (hue_shader.xzy, vec3(bass_att))));\n  ret_2 = (ret_2 * ret_2);\n  vec4 tmpvar_8;\n  tmpvar_8.w = 1.0;\n  tmpvar_8.xyz = ret_2;\n  ret = tmpvar_8.xyz;\n }",
+  "comp": " shader_body {  \n  vec2 uv2_1;\n  vec3 ret_2;\n  uv2_1 = (uv + (vec2(1.0, 0.0) * texsize.zw));\n  float tmpvar_3;\n  tmpvar_3 = (((texture (sampler_main, uv2_1).xyz + \n    (((texture (sampler_blur1, uv2_1).xyz * scale1) + bias1) * 0.4)\n  ) + (\n    ((texture (sampler_blur2, uv2_1).xyz * scale2) + bias2)\n   * 0.15)) + ((\n    (texture (sampler_blur3, uv2_1).xyz * scale3)\n   + bias3) * 0.1)).x;\n  uv2_1 = (uv + (vec2(-1.0, 0.0) * texsize.zw));\n  float tmpvar_4;\n  tmpvar_4 = (((texture (sampler_main, uv2_1).xyz + \n    (((texture (sampler_blur1, uv2_1).xyz * scale1) + bias1) * 0.4)\n  ) + (\n    ((texture (sampler_blur2, uv2_1).xyz * scale2) + bias2)\n   * 0.15)) + ((\n    (texture (sampler_blur3, uv2_1).xyz * scale3)\n   + bias3) * 0.1)).x;\n  uv2_1 = (uv + (vec2(0.0, 1.0) * texsize.zw));\n  float tmpvar_5;\n  tmpvar_5 = (((texture (sampler_main, uv2_1).xyz + \n    (((texture (sampler_blur1, uv2_1).xyz * scale1) + bias1) * 0.4)\n  ) + (\n    ((texture (sampler_blur2, uv2_1).xyz * scale2) + bias2)\n   * 0.15)) + ((\n    (texture (sampler_blur3, uv2_1).xyz * scale3)\n   + bias3) * 0.1)).x;\n  uv2_1 = (uv + (vec2(0.0, -1.0) * texsize.zw));\n  vec3 tmpvar_6;\n  tmpvar_6.z = 0.14;\n  tmpvar_6.x = (tmpvar_3 - tmpvar_4);\n  tmpvar_6.y = (tmpvar_5 - ((\n    (texture (sampler_main, uv2_1).xyz + (((texture (sampler_blur1, uv2_1).xyz * scale1) + bias1) * 0.4))\n   + \n    (((texture (sampler_blur2, uv2_1).xyz * scale2) + bias2) * 0.15)\n  ) + (\n    ((texture (sampler_blur3, uv2_1).xyz * scale3) + bias3)\n   * 0.1)).x);\n  ret_2 = (0.5 + (0.5 * normalize(tmpvar_6)));\n  vec2 x_7;\n  x_7 = (ret_2.xy - 0.5);\n  ret_2 = (ret_2 * clamp ((\n    sqrt(dot (x_7, x_7))\n   * 5.0), 0.0, 1.0));\n  ret_2 = ret_2.xxy;\n  ret_2 = (ret_2 + 1.15);\n  ret_2 = (ret_2 * mix (ret_2, (ret_2 * \n    (((texture (sampler_blur3, uv).xyz * scale3) + bias3) - (((texture (sampler_blur1, uv).xyz * scale1) + bias1) * treb_att))\n  ), pow (hue_shader.xzy, vec3(bass_att))));\n  ret_2 = (ret_2 * ret_2);\n  vec4 tmpvar_8;\n  tmpvar_8.w = 1.0;\n  tmpvar_8.xyz = ret_2;\n  ret = tmpvar_8.xyz;\n  }",
   "presetParts": {
-    "presetVersion": 1,
+    "presetVersion": 2,
     "baseVals": {
       "rating": 5,
       "gammaadj": 1,
@@ -153,23 +153,36 @@
     "waves": [
       {
         "baseVals": {
+          "scaling": 33.46945,
           "enabled": 0
-        }
+        },
+        "init_eqs_str": "t1 = 1;\nt2 = 1;",
+        "frame_eqs_str": "t2 = if(above(t1,200),if(equal(t2,1),2,t2),if(below(t1,10),if(equal(t2,2),1,t2),t2));\nt1 = if(equal(t2,1),t1 + .1,t1 - .1);",
+        "point_eqs_str": "fvar = sample*512;\nsvar = fvar/16;\ntvar = 0&svar;\nnewsample = tvar/3.2;\n\n\nx = newsample*.1;\ny = .5+value1;\nr = abs(y-.5)*10;\ng = -.6 + sin(sample*5+time*5);\nb = bass*.3;"
       },
       {
         "baseVals": {
           "enabled": 0
-        }
+        },
+        "init_eqs_str": "",
+        "frame_eqs_str": "",
+        "point_eqs_str": ""
       },
       {
         "baseVals": {
           "enabled": 0
-        }
+        },
+        "init_eqs_str": "",
+        "frame_eqs_str": "",
+        "point_eqs_str": ""
       },
       {
         "baseVals": {
           "enabled": 0
-        }
+        },
+        "init_eqs_str": "",
+        "frame_eqs_str": "",
+        "point_eqs_str": ""
       }
     ],
     "shapes": [

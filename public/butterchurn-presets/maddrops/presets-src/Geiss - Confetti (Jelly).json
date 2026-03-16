@@ -64,10 +64,10 @@
     "wave_b": 0.3,
     "mv_a": 0
   },
-  "warp": " shader_body { \n  vec4 tmpvar_1;\n  tmpvar_1.w = 1.0;\n  tmpvar_1.xyz = (texture (sampler_main, (uv + (\n    (cos(((texture (sampler_main, uv).xy * 27.9) + (time * vec2(0.13, 0.25)))) * texsize.zw)\n   * 0.3))).xyz - 0.005);\n  ret = tmpvar_1.xyz;\n }",
-  "comp": " shader_body { \n  vec2 uv2_1;\n  vec3 ret_2;\n  uv2_1 = (uv + (vec2(1.0, 0.0) * texsize.zw));\n  float tmpvar_3;\n  tmpvar_3 = (((texture (sampler_main, uv2_1).xyz + \n    (((texture (sampler_blur1, uv2_1).xyz * scale1) + bias1) * 0.4)\n  ) + (\n    ((texture (sampler_blur2, uv2_1).xyz * scale2) + bias2)\n   * 0.15)) + ((\n    (texture (sampler_blur3, uv2_1).xyz * scale3)\n   + bias3) * 0.1)).x;\n  uv2_1 = (uv + (vec2(-1.0, 0.0) * texsize.zw));\n  float tmpvar_4;\n  tmpvar_4 = (((texture (sampler_main, uv2_1).xyz + \n    (((texture (sampler_blur1, uv2_1).xyz * scale1) + bias1) * 0.4)\n  ) + (\n    ((texture (sampler_blur2, uv2_1).xyz * scale2) + bias2)\n   * 0.15)) + ((\n    (texture (sampler_blur3, uv2_1).xyz * scale3)\n   + bias3) * 0.1)).x;\n  uv2_1 = (uv + (vec2(0.0, 1.0) * texsize.zw));\n  float tmpvar_5;\n  tmpvar_5 = (((texture (sampler_main, uv2_1).xyz + \n    (((texture (sampler_blur1, uv2_1).xyz * scale1) + bias1) * 0.4)\n  ) + (\n    ((texture (sampler_blur2, uv2_1).xyz * scale2) + bias2)\n   * 0.15)) + ((\n    (texture (sampler_blur3, uv2_1).xyz * scale3)\n   + bias3) * 0.1)).x;\n  uv2_1 = (uv + (vec2(0.0, -1.0) * texsize.zw));\n  vec3 tmpvar_6;\n  tmpvar_6.z = 0.14;\n  tmpvar_6.x = (tmpvar_3 - tmpvar_4);\n  tmpvar_6.y = (tmpvar_5 - ((\n    (texture (sampler_main, uv2_1).xyz + (((texture (sampler_blur1, uv2_1).xyz * scale1) + bias1) * 0.4))\n   + \n    (((texture (sampler_blur2, uv2_1).xyz * scale2) + bias2) * 0.15)\n  ) + (\n    ((texture (sampler_blur3, uv2_1).xyz * scale3) + bias3)\n   * 0.1)).x);\n  ret_2 = (0.5 + (0.5 * normalize(tmpvar_6)));\n  vec2 x_7;\n  x_7 = (ret_2.xy - 0.5);\n  ret_2 = (ret_2 * clamp ((\n    sqrt(dot (x_7, x_7))\n   * 5.0), 0.0, 1.0));\n  ret_2 = ret_2.xxy;\n  ret_2 = (ret_2 + 1.15);\n  ret_2 = (ret_2 * mix (ret_2, (ret_2 * \n    (((texture (sampler_blur3, uv).xyz * scale3) + bias3) - ((texture (sampler_blur1, uv).xyz * scale1) + bias1))\n  ), pow (hue_shader.zxy, ret_2)));\n  ret_2 = (ret_2 * ret_2);\n  vec4 tmpvar_8;\n  tmpvar_8.w = 1.0;\n  tmpvar_8.xyz = ret_2;\n  ret = tmpvar_8.xyz;\n }",
+  "warp": " shader_body {  \n  vec4 tmpvar_1;\n  tmpvar_1.w = 1.0;\n  tmpvar_1.xyz = (texture (sampler_main, (uv + (\n    (cos(((texture (sampler_main, uv).xy * 27.9) + (time * vec2(0.13, 0.25)))) * texsize.zw)\n   * 0.3))).xyz - 0.005);\n  ret = tmpvar_1.xyz;\n  }",
+  "comp": " shader_body {  \n  vec2 uv2_1;\n  vec3 ret_2;\n  uv2_1 = (uv + (vec2(1.0, 0.0) * texsize.zw));\n  float tmpvar_3;\n  tmpvar_3 = (((texture (sampler_main, uv2_1).xyz + \n    (((texture (sampler_blur1, uv2_1).xyz * scale1) + bias1) * 0.4)\n  ) + (\n    ((texture (sampler_blur2, uv2_1).xyz * scale2) + bias2)\n   * 0.15)) + ((\n    (texture (sampler_blur3, uv2_1).xyz * scale3)\n   + bias3) * 0.1)).x;\n  uv2_1 = (uv + (vec2(-1.0, 0.0) * texsize.zw));\n  float tmpvar_4;\n  tmpvar_4 = (((texture (sampler_main, uv2_1).xyz + \n    (((texture (sampler_blur1, uv2_1).xyz * scale1) + bias1) * 0.4)\n  ) + (\n    ((texture (sampler_blur2, uv2_1).xyz * scale2) + bias2)\n   * 0.15)) + ((\n    (texture (sampler_blur3, uv2_1).xyz * scale3)\n   + bias3) * 0.1)).x;\n  uv2_1 = (uv + (vec2(0.0, 1.0) * texsize.zw));\n  float tmpvar_5;\n  tmpvar_5 = (((texture (sampler_main, uv2_1).xyz + \n    (((texture (sampler_blur1, uv2_1).xyz * scale1) + bias1) * 0.4)\n  ) + (\n    ((texture (sampler_blur2, uv2_1).xyz * scale2) + bias2)\n   * 0.15)) + ((\n    (texture (sampler_blur3, uv2_1).xyz * scale3)\n   + bias3) * 0.1)).x;\n  uv2_1 = (uv + (vec2(0.0, -1.0) * texsize.zw));\n  vec3 tmpvar_6;\n  tmpvar_6.z = 0.14;\n  tmpvar_6.x = (tmpvar_3 - tmpvar_4);\n  tmpvar_6.y = (tmpvar_5 - ((\n    (texture (sampler_main, uv2_1).xyz + (((texture (sampler_blur1, uv2_1).xyz * scale1) + bias1) * 0.4))\n   + \n    (((texture (sampler_blur2, uv2_1).xyz * scale2) + bias2) * 0.15)\n  ) + (\n    ((texture (sampler_blur3, uv2_1).xyz * scale3) + bias3)\n   * 0.1)).x);\n  ret_2 = (0.5 + (0.5 * normalize(tmpvar_6)));\n  vec2 x_7;\n  x_7 = (ret_2.xy - 0.5);\n  ret_2 = (ret_2 * clamp ((\n    sqrt(dot (x_7, x_7))\n   * 5.0), 0.0, 1.0));\n  ret_2 = ret_2.xxy;\n  ret_2 = (ret_2 + 1.15);\n  ret_2 = (ret_2 * mix (ret_2, (ret_2 * \n    (((texture (sampler_blur3, uv).xyz * scale3) + bias3) - ((texture (sampler_blur1, uv).xyz * scale1) + bias1))\n  ), pow (hue_shader.zxy, ret_2)));\n  ret_2 = (ret_2 * ret_2);\n  vec4 tmpvar_8;\n  tmpvar_8.w = 1.0;\n  tmpvar_8.xyz = ret_2;\n  ret = tmpvar_8.xyz;\n  }",
   "presetParts": {
-    "presetVersion": 1,
+    "presetVersion": 2,
     "baseVals": {
       "rating": 5,
       "gammaadj": 1.9,
@@ -93,44 +93,64 @@
       {
         "baseVals": {
           "enabled": 0
-        }
+        },
+        "init_eqs_str": "",
+        "frame_eqs_str": "",
+        "point_eqs_str": ""
       },
       {
         "baseVals": {
           "enabled": 0
-        }
+        },
+        "init_eqs_str": "",
+        "frame_eqs_str": "",
+        "point_eqs_str": ""
       },
       {
         "baseVals": {
           "enabled": 0
-        }
+        },
+        "init_eqs_str": "",
+        "frame_eqs_str": "",
+        "point_eqs_str": ""
       },
       {
         "baseVals": {
           "enabled": 0
-        }
+        },
+        "init_eqs_str": "",
+        "frame_eqs_str": "",
+        "point_eqs_str": ""
       }
     ],
     "shapes": [
       {
         "baseVals": {
           "enabled": 0
-        }
+        },
+        "init_eqs_str": "",
+        "frame_eqs_str": ""
       },
       {
         "baseVals": {
           "enabled": 0
-        }
+        },
+        "init_eqs_str": "",
+        "frame_eqs_str": ""
       },
       {
         "baseVals": {
           "enabled": 0
-        }
+        },
+        "init_eqs_str": "",
+        "frame_eqs_str": ""
       },
       {
         "baseVals": {
           "enabled": 0
-        }
+        },
+        "init_eqs_str": "",
+        "frame_eqs_str": ""
       }
     ],
     "warp": "shader_body\n{  \n    float2 uv2 = uv;\n\n    // PAINTERLY EFFECT - base high-frequency motion on image colors\n    float mipbias = 0;//3 + 2*cos(_frame * 2);\n    float2 delta2 = 0;//texsize.zw*float2(1,1);\n    float3 blurry_color = tex2D( sampler_main, uv2 + delta2 ).xyz;\n    uv2.xy += cos(blurry_color.xy*27.9 + time*float2(0.13,0.25)) * texsize.zw*0.3;\n\n    // sample previous frame\n    ret = tex2D( sampler_main, uv2 ).xyz;\n    \n    // darken over time\n    ret -= 0.005; \n}\n ",

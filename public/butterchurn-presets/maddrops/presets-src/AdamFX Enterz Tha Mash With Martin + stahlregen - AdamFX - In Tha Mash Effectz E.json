@@ -15,7 +15,7 @@
         "border_a": 0
       },
       "init_eqs_str": "a['q22'] = 0; a['r0'] = 0; a['q24'] = 0; a['b0'] = 0; a['g0'] = 0;",
-      "frame_eqs_str": "a['a']=Math.min(div(a['q22'],4), 1); a['a2']=1; a['r0']=((bnot(a['q24'])*a['r0'])+div((a['q24']*Math.floor(randint(10))),10)); a['b0']=((bnot(a['q24'])*a['b0'])+div((a['q24']*Math.floor(randint(10))),10)); a['g0']=((bnot(a['q24'])*a['g0'])+div((a['q24']*Math.floor(randint(10))),10)); a['rad']=div(a['q22'],40); a['r']=a['r0']; a['b']=a['b0']; a['g']=a['g0']; a['r2']=0; a['b2']=0; a['g2']=0;"
+      "frame_eqs_str": "a['a']=Math.min(div(a['q22'],4), 1); a['a2']=1; a['r0']=((bnot(a['q24'])*a['r0'])+div((a['q24']*Math.floor(rand(10))),10)); a['b0']=((bnot(a['q24'])*a['b0'])+div((a['q24']*Math.floor(rand(10))),10)); a['g0']=((bnot(a['q24'])*a['g0'])+div((a['q24']*Math.floor(rand(10))),10)); a['rad']=div(a['q22'],40); a['r']=a['r0']; a['b']=a['b0']; a['g']=a['g0']; a['r2']=0; a['b2']=0; a['g2']=0;"
     },
     {
       "baseVals": {
@@ -38,7 +38,7 @@
         "border_a": 0
       },
       "init_eqs_str": "a['rot0'] = 0; a['q1'] = 0; a['posx'] = 0; a['q24'] = 0; a['posy'] = 0; a['rad0'] = 0;",
-      "frame_eqs_str": "a['textured']=1; a['rot0']=(a['rot0']+(div(1,a['fps'])*a['q1'])); a['posx']=(((1-a['q24'])*a['posx'])+(a['q24']*(0.3+div(Math.floor(randint(100)),200)))); a['posy']=(((1-a['q24'])*a['posy'])+(a['q24']*(0.3+div(Math.floor(randint(100)),200)))); a['rad0']=(((1-a['q24'])*a['rad0'])+(a['q24']*(0.05+div(Math.floor(randint(100)),300)))); a['rad']=a['rad0']; a['x']=a['posx']; a['y']=a['posy']; a['ang']=a['rot0'];"
+      "frame_eqs_str": "a['textured']=1; a['rot0']=(a['rot0']+(div(1,a['fps'])*a['q1'])); a['posx']=(((1-a['q24'])*a['posx'])+(a['q24']*(0.3+div(Math.floor(rand(100)),200)))); a['posy']=(((1-a['q24'])*a['posy'])+(a['q24']*(0.3+div(Math.floor(rand(100)),200)))); a['rad0']=(((1-a['q24'])*a['rad0'])+(a['q24']*(0.05+div(Math.floor(rand(100)),300)))); a['rad']=a['rad0']; a['x']=a['posx']; a['y']=a['posy']; a['ang']=a['rot0'];"
     },
     {
       "baseVals": {
@@ -54,7 +54,7 @@
         "border_a": 0
       },
       "init_eqs_str": "a['rot0'] = 0; a['q2'] = 0; a['posx'] = 0; a['q24'] = 0; a['posy'] = 0; a['rad0'] = 0; a['q26'] = 0;",
-      "frame_eqs_str": "a['textured']=1; a['rot0']=(a['rot0']+(div(0.1,a['fps'])*a['q2'])); a['posx']=(((1-a['q24'])*a['posx'])+(a['q24']*(0.3+div(Math.floor(randint(100)),200)))); a['posy']=(((1-a['q24'])*a['posy'])+(a['q24']*(0.3+div(Math.floor(randint(100)),200)))); a['rad0']=(((1-a['q24'])*a['rad0'])+(a['q24']*(0.05+div(Math.floor(randint(100)),400)))); a['rad']=a['rad0']; a['x']=(a['posx']+a['q26']); a['y']=a['posy']; a['ang']=a['rot0'];"
+      "frame_eqs_str": "a['textured']=1; a['rot0']=(a['rot0']+(div(0.1,a['fps'])*a['q2'])); a['posx']=(((1-a['q24'])*a['posx'])+(a['q24']*(0.3+div(Math.floor(rand(100)),200)))); a['posy']=(((1-a['q24'])*a['posy'])+(a['q24']*(0.3+div(Math.floor(rand(100)),200)))); a['rad0']=(((1-a['q24'])*a['rad0'])+(a['q24']*(0.05+div(Math.floor(rand(100)),400)))); a['rad']=a['rad0']; a['x']=(a['posx']+a['q26']); a['y']=a['posy']; a['ang']=a['rot0'];"
     },
     {
       "baseVals": {
@@ -127,10 +127,10 @@
     "mv_a": 0,
     "b1ed": 0
   },
-  "warp": " shader_body { \n  vec2 uv_1;\n  vec2 uv6_2;\n  uv_1 = (uv + (vec2(0.0, 0.01) * dot (\n    ((texture (sampler_blur1, uv).xyz * scale1) + bias1)\n  , vec3(0.32, 0.49, 0.29))));\n  uv6_2 = (0.4 * sin((\n    (uv_1 * 8.0)\n   + \n    (rand_frame * 6.0)\n  .xy)));\n  vec4 tmpvar_3;\n  tmpvar_3.w = 1.0;\n  tmpvar_3.xyz = (((\n    (texture (sampler_main, uv_1).xyz - (((texture (sampler_blur2, \n      fract(uv_1)\n    ).xyz * scale2) + bias2) * 0.03))\n   + \n    (0.1 * (vec3((0.1 / sqrt(\n      dot (uv6_2, uv6_2)\n    ))) * ((1.0 + roam_cos) / 2.0).xyz))\n  ) * 0.99) - 0.02);\n  ret = tmpvar_3.xyz;\n }",
-  "comp": "vec3 xlat_mutableret1;\n shader_body { \n  vec2 uv_1;\n  vec2 uv2_2;\n  uv_1 = (uv - 0.5);\n  uv_1 = (uv_1 * aspect.xy);\n  xlat_mutableret1 = max (vec3(0.0, 0.0, 0.0), texture (sampler_main, (uv_1 + 0.5)).xyz);\n  uv2_2.x = ((uv_1.x * 0.5004596) - (uv_1.y * 0.8657598));\n  uv2_2.y = ((uv_1.x * 0.8657598) + (uv_1.y * 0.5004596));\n  xlat_mutableret1 = max (xlat_mutableret1, texture (sampler_main, (uv2_2 + 0.5)).xyz);\n  uv2_2.x = ((uv_1.x * -0.4990803) - (uv_1.y * 0.8665558));\n  uv2_2.y = ((uv_1.x * 0.8665558) + (uv_1.y * -0.4990803));\n  xlat_mutableret1 = max (xlat_mutableret1, texture (sampler_main, (uv2_2 + 0.5)).xyz);\n  uv2_2.x = ((uv_1.x * -0.9999987) - (uv_1.y * 0.001592548));\n  uv2_2.y = ((uv_1.x * 0.001592548) + (uv_1.y * -0.9999987));\n  xlat_mutableret1 = max (xlat_mutableret1, texture (sampler_main, (uv2_2 + 0.5)).xyz);\n  uv2_2.x = ((uv_1.x * -0.5018377) - (uv_1.y * -0.8649619));\n  uv2_2.y = ((uv_1.x * -0.8649619) + (uv_1.y * -0.5018377));\n  xlat_mutableret1 = max (xlat_mutableret1, texture (sampler_main, (uv2_2 + 0.5)).xyz);\n  uv2_2.x = ((uv_1.x * 0.4976997) - (uv_1.y * -0.8673494));\n  uv2_2.y = ((uv_1.x * -0.8673494) + (uv_1.y * 0.4976997));\n  xlat_mutableret1 = max (xlat_mutableret1, texture (sampler_main, (uv2_2 + 0.5)).xyz);\n  uv2_2.x = ((uv_1.x * 0.9999949) - (uv_1.y * -0.003185092));\n  uv2_2.y = ((uv_1.x * -0.003185092) + (uv_1.y * 0.9999949));\n  xlat_mutableret1 = max (xlat_mutableret1, texture (sampler_main, (uv2_2 + 0.5)).xyz);\n  vec4 tmpvar_3;\n  tmpvar_3.w = 1.0;\n  tmpvar_3.xyz = (xlat_mutableret1 * 2.0);\n  ret = tmpvar_3.xyz;\n }",
+  "warp": " shader_body {  \n  vec2 uv_1;\n  vec2 uv6_2;\n  uv_1 = (uv + (vec2(0.0, 0.01) * dot (\n    ((texture (sampler_blur1, uv).xyz * scale1) + bias1)\n  , vec3(0.32, 0.49, 0.29))));\n  uv6_2 = (0.4 * sin((\n    (uv_1 * 8.0)\n   + \n    (rand_frame * 6.0)\n  .xy)));\n  vec4 tmpvar_3;\n  tmpvar_3.w = 1.0;\n  tmpvar_3.xyz = (((\n    (texture (sampler_main, uv_1).xyz - (((texture (sampler_blur2, \n      fract(uv_1)\n    ).xyz * scale2) + bias2) * 0.03))\n   + \n    (0.1 * (vec3((0.1 / sqrt(\n      dot (uv6_2, uv6_2)\n    ))) * ((1.0 + roam_cos) / 2.0).xyz))\n  ) * 0.99) - 0.02);\n  ret = tmpvar_3.xyz;\n  }",
+  "comp": "vec3 xlat_mutableret1;\n shader_body {  \n  vec2 uv_1;\n  vec2 uv2_2;\n  uv_1 = (uv - 0.5);\n  uv_1 = (uv_1 * aspect.xy);\n  xlat_mutableret1 = max (vec3(0.0, 0.0, 0.0), texture (sampler_main, (uv_1 + 0.5)).xyz);\n  uv2_2.x = ((uv_1.x * 0.5004596) - (uv_1.y * 0.8657598));\n  uv2_2.y = ((uv_1.x * 0.8657598) + (uv_1.y * 0.5004596));\n  xlat_mutableret1 = max (xlat_mutableret1, texture (sampler_main, (uv2_2 + 0.5)).xyz);\n  uv2_2.x = ((uv_1.x * -0.4990803) - (uv_1.y * 0.8665558));\n  uv2_2.y = ((uv_1.x * 0.8665558) + (uv_1.y * -0.4990803));\n  xlat_mutableret1 = max (xlat_mutableret1, texture (sampler_main, (uv2_2 + 0.5)).xyz);\n  uv2_2.x = ((uv_1.x * -0.9999987) - (uv_1.y * 0.001592548));\n  uv2_2.y = ((uv_1.x * 0.001592548) + (uv_1.y * -0.9999987));\n  xlat_mutableret1 = max (xlat_mutableret1, texture (sampler_main, (uv2_2 + 0.5)).xyz);\n  uv2_2.x = ((uv_1.x * -0.5018377) - (uv_1.y * -0.8649619));\n  uv2_2.y = ((uv_1.x * -0.8649619) + (uv_1.y * -0.5018377));\n  xlat_mutableret1 = max (xlat_mutableret1, texture (sampler_main, (uv2_2 + 0.5)).xyz);\n  uv2_2.x = ((uv_1.x * 0.4976997) - (uv_1.y * -0.8673494));\n  uv2_2.y = ((uv_1.x * -0.8673494) + (uv_1.y * 0.4976997));\n  xlat_mutableret1 = max (xlat_mutableret1, texture (sampler_main, (uv2_2 + 0.5)).xyz);\n  uv2_2.x = ((uv_1.x * 0.9999949) - (uv_1.y * -0.003185092));\n  uv2_2.y = ((uv_1.x * -0.003185092) + (uv_1.y * 0.9999949));\n  xlat_mutableret1 = max (xlat_mutableret1, texture (sampler_main, (uv2_2 + 0.5)).xyz);\n  vec4 tmpvar_3;\n  tmpvar_3.w = 1.0;\n  tmpvar_3.xyz = (xlat_mutableret1 * 2.0);\n  ret = tmpvar_3.xyz;\n  }",
   "presetParts": {
-    "presetVersion": 1,
+    "presetVersion": 2,
     "baseVals": {
       "rating": 5,
       "gammaadj": 1.98,
@@ -177,23 +177,53 @@
     "waves": [
       {
         "baseVals": {
+          "sep": 120,
+          "usedots": 1,
+          "additive": 1,
+          "scaling": 0.89152,
+          "smoothing": 0.82,
+          "a": 0.6,
           "enabled": 0
-        }
+        },
+        "init_eqs_str": "",
+        "frame_eqs_str": "t2 = t2 + bass_att;",
+        "point_eqs_str": "k1 = (sample*100)%8;\nk2 = bnot (k1);\nxi = value1*k2 + xi*(1-k2);\nyi = value2*(1-k2) + yi*k2;\n\ndx = dx*.99 + xi;\ndy = dy*.99 + yi;\n\nx = .5 + xi/2;\ny = .5 + yi/2;\n\na = q22/8; \na = min(a,.4);"
       },
       {
         "baseVals": {
+          "thick": 1,
+          "scaling": 0.89152,
+          "smoothing": 0.82,
+          "a": 0.02,
           "enabled": 0
-        }
+        },
+        "init_eqs_str": "",
+        "frame_eqs_str": "",
+        "point_eqs_str": ""
       },
       {
         "baseVals": {
+          "thick": 1,
+          "scaling": 0.89152,
+          "smoothing": 0.82,
+          "r": 0,
+          "g": 0.2,
+          "b": 0,
           "enabled": 0
-        }
+        },
+        "init_eqs_str": "",
+        "frame_eqs_str": "",
+        "point_eqs_str": ""
       },
       {
         "baseVals": {
+          "spectrum": 1,
+          "usedots": 1,
           "enabled": 0
-        }
+        },
+        "init_eqs_str": "",
+        "frame_eqs_str": "",
+        "point_eqs_str": ""
       }
     ],
     "shapes": [
@@ -255,8 +285,23 @@
       },
       {
         "baseVals": {
+          "sides": 63,
+          "textured": 1,
+          "y": 1,
+          "rad": 0.54822,
+          "tex_zoom": 0.49981,
+          "g": 1,
+          "b": 1,
+          "r2": 1,
+          "b2": 1,
+          "border_r": 0.5,
+          "border_g": 0.5,
+          "border_b": 0.5,
+          "border_a": 0,
           "enabled": 0
-        }
+        },
+        "init_eqs_str": "",
+        "frame_eqs_str": ""
       }
     ],
     "warp": "sampler sampler_worms;\nfloat3 color, mus;\nfloat dx,dy;\nshader_body {\nfloat2 uv1 = (uv-.5) * aspect.xy;\n\n\nfloat2 uv6 = uv1;\nfloat z = q29*2*length(uv1)+rand_frame * 64;\nfloat2 d = normalize(uv1);\nfloat2 rs = clamp(tan(z)*d,-8,8);\nuv += .01*lum(GetBlur1(uv))*float2 (0,1);\n\n\nuv6 = .4*sin(uv*8+rand_frame*6);\nmus = .1/(length(uv6));\nmus *= (1+roam_cos)/2;\n\nfloat3 blur = GetBlur2(frac(uv));\n\nfloat3 crisp= tex2D(sampler_main,uv);\n\nfloat3 ret1 = crisp - blur*.03 + .1*mus;\n//float2 uv2 = (uv_orig-.5)-float2(.5,.5+0.1*q25);\n\nq25 = 1;\nret = q25*(ret1*.99-.02) + (1-q25)* GetPixel(uv_orig);\n\n}",

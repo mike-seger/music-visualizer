@@ -79,10 +79,10 @@
     "ib_a": 1,
     "mv_a": 0
   },
-  "warp": " shader_body { \n  vec3 ret_1;\n  ret_1 = texture (sampler_fc_main, uv).xyz;\n  ret_1 = (ret_1 + ((\n    (texture (sampler_noise_lq, (((uv_orig * texsize.xy) * texsize_noise_lq.zw) + rand_frame.xy)).y * 2.0)\n   - 1.0) * 0.002));\n  vec2 tmpvar_2;\n  tmpvar_2.x = (0.5 + (0.5 * sin(\n    -(uv.x)\n  )));\n  tmpvar_2.y = (0.8 - uv.y);\n  ret_1 = (ret_1 + ((\n    ((((texture (sampler_blur1, \n      (tmpvar_2 + 0.1)\n    ).xyz * scale1) + bias1).zzz * tmpvar_2.y) * tmpvar_2.y)\n   * tmpvar_2.y) * 0.005));\n  ret_1 = (ret_1 * 0.978);\n  vec4 tmpvar_3;\n  tmpvar_3.w = 1.0;\n  tmpvar_3.xyz = ret_1;\n  ret = tmpvar_3.xyz;\n }",
-  "comp": " shader_body { \n  vec3 crisp_1;\n  vec2 uv3_2;\n  vec2 uv2_3;\n  vec2 tmpvar_4;\n  tmpvar_4 = ((uv - 0.5) * aspect.xy);\n  float tmpvar_5;\n  tmpvar_5 = (0.1 / (sqrt(\n    dot (tmpvar_4, tmpvar_4)\n  ) + 0.05));\n  vec2 tmpvar_6;\n  float tmpvar_7;\n  tmpvar_7 = (ang / 3.14);\n  tmpvar_6.x = tmpvar_7;\n  tmpvar_6.y = (tmpvar_5 * 1.5);\n  uv2_3.y = (tmpvar_6.y + (0.1 * time));\n  uv2_3.x = (tmpvar_7 + (0.02 * time));\n  uv3_2.y = (tmpvar_5 + q30);\n  uv3_2.x = (tmpvar_7 + (time / 32.0));\n  crisp_1 = ((texture (sampler_main, uv2_3).xyz + (2.0 * texture (sampler_main, uv3_2).xyz)) + ((2.0 * \n    ((texture (sampler_blur2, fract(uv2_3)).xyz * scale2) + bias2)\n  ) + (2.0 * \n    ((texture (sampler_blur2, fract(uv3_2)).xyz * scale2) + bias2)\n  )));\n  crisp_1 = ((3.0 * crisp_1) * rad);\n  float tmpvar_8;\n  tmpvar_8 = clamp ((1.0 - (4.0 * rad)), 0.0, 1.0);\n  vec4 tmpvar_9;\n  tmpvar_9.w = 1.0;\n  tmpvar_9.xyz = ((crisp_1 + (\n    ((vec3(1.0, 0.0, 1.0) * uv.y) * pow ((1.0 - rad), 8.0))\n   * tmpvar_8)) + (tmpvar_8 * texture (sampler_main, uv).xyz));\n  ret = tmpvar_9.xyz;\n }",
+  "warp": " shader_body {  \n  vec3 ret_1;\n  ret_1 = texture (sampler_fc_main, uv).xyz;\n  ret_1 = (ret_1 + ((\n    (texture (sampler_noise_lq, (((uv_orig * texsize.xy) * texsize_noise_lq.zw) + rand_frame.xy)).y * 2.0)\n   - 1.0) * 0.002));\n  vec2 tmpvar_2;\n  tmpvar_2.x = (0.5 + (0.5 * sin(\n    -(uv.x)\n  )));\n  tmpvar_2.y = (0.8 - uv.y);\n  ret_1 = (ret_1 + ((\n    ((((texture (sampler_blur1, \n      (tmpvar_2 + 0.1)\n    ).xyz * scale1) + bias1).zzz * tmpvar_2.y) * tmpvar_2.y)\n   * tmpvar_2.y) * 0.005));\n  ret_1 = (ret_1 * 0.978);\n  vec4 tmpvar_3;\n  tmpvar_3.w = 1.0;\n  tmpvar_3.xyz = ret_1;\n  ret = tmpvar_3.xyz;\n  }",
+  "comp": " shader_body {  \n  vec3 crisp_1;\n  vec2 uv3_2;\n  vec2 uv2_3;\n  vec2 tmpvar_4;\n  tmpvar_4 = ((uv - 0.5) * aspect.xy);\n  float tmpvar_5;\n  tmpvar_5 = (0.1 / (sqrt(\n    dot (tmpvar_4, tmpvar_4)\n  ) + 0.05));\n  vec2 tmpvar_6;\n  float tmpvar_7;\n  tmpvar_7 = (ang / 3.14);\n  tmpvar_6.x = tmpvar_7;\n  tmpvar_6.y = (tmpvar_5 * 1.5);\n  uv2_3.y = (tmpvar_6.y + (0.1 * time));\n  uv2_3.x = (tmpvar_7 + (0.02 * time));\n  uv3_2.y = (tmpvar_5 + q30);\n  uv3_2.x = (tmpvar_7 + (time / 32.0));\n  crisp_1 = ((texture (sampler_main, uv2_3).xyz + (2.0 * texture (sampler_main, uv3_2).xyz)) + ((2.0 * \n    ((texture (sampler_blur2, fract(uv2_3)).xyz * scale2) + bias2)\n  ) + (2.0 * \n    ((texture (sampler_blur2, fract(uv3_2)).xyz * scale2) + bias2)\n  )));\n  crisp_1 = ((3.0 * crisp_1) * rad);\n  float tmpvar_8;\n  tmpvar_8 = clamp ((1.0 - (4.0 * rad)), 0.0, 1.0);\n  vec4 tmpvar_9;\n  tmpvar_9.w = 1.0;\n  tmpvar_9.xyz = ((crisp_1 + (\n    ((vec3(1.0, 0.0, 1.0) * uv.y) * pow ((1.0 - rad), 8.0))\n   * tmpvar_8)) + (tmpvar_8 * texture (sampler_main, uv).xyz));\n  ret = tmpvar_9.xyz;\n  }",
   "presetParts": {
-    "presetVersion": 1,
+    "presetVersion": 2,
     "baseVals": {
       "rating": 5,
       "gammaadj": 2.05,
@@ -123,44 +123,64 @@
       {
         "baseVals": {
           "enabled": 0
-        }
+        },
+        "init_eqs_str": "",
+        "frame_eqs_str": "",
+        "point_eqs_str": ""
       },
       {
         "baseVals": {
           "enabled": 0
-        }
+        },
+        "init_eqs_str": "",
+        "frame_eqs_str": "",
+        "point_eqs_str": ""
       },
       {
         "baseVals": {
           "enabled": 0
-        }
+        },
+        "init_eqs_str": "",
+        "frame_eqs_str": "",
+        "point_eqs_str": ""
       },
       {
         "baseVals": {
           "enabled": 0
-        }
+        },
+        "init_eqs_str": "",
+        "frame_eqs_str": "",
+        "point_eqs_str": ""
       }
     ],
     "shapes": [
       {
         "baseVals": {
           "enabled": 0
-        }
+        },
+        "init_eqs_str": "",
+        "frame_eqs_str": ""
       },
       {
         "baseVals": {
           "enabled": 0
-        }
+        },
+        "init_eqs_str": "",
+        "frame_eqs_str": ""
       },
       {
         "baseVals": {
           "enabled": 0
-        }
+        },
+        "init_eqs_str": "",
+        "frame_eqs_str": ""
       },
       {
         "baseVals": {
           "enabled": 0
-        }
+        },
+        "init_eqs_str": "",
+        "frame_eqs_str": ""
       }
     ],
     "warp": "shader_body\n{\n    // sample previous frame\n    ret.xyz = tex2D( sampler_fc_main, uv ).xyz;\n    \n    float2 noise_uv = uv_orig * texsize.xy*texsize_noise_lq.zw + rand_frame.xy;\n    float4 noiseVal = tex2D(sampler_noise_lq, noise_uv);\n\n    ret.xyz += (noiseVal.y*2-1) *0.002;\n    //ret.y += (noiseVal.y*2-1) *0.0015;\n    //ret.z += (noiseVal.z*2-1) *0.0015;\n    //ret.x -= (noiseVal.x*2-1) *0.01;    \n     float2 uvrot = float2(0.5 + 0.5*sin(-uv.x),0.8-uv.y);    \n     ret.xyz += GetBlur1(uvrot+0.1).zzz*uvrot.y*uvrot.y*uvrot.y*0.005;\n    // darken (decay) over time\n    //ret.x *= plastic*GetPixel(uv).x;\n    ret.xyz *= 0.98 - 0.002; \n}",

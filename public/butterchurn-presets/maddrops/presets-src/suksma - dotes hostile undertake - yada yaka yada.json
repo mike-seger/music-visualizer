@@ -14,7 +14,7 @@
         "border_a": 0
       },
       "init_eqs_str": "a['trans'] = 0; a['q30'] = 0; a['trans2'] = 0; a['trans3'] = 0; a['q1'] = 0; a['q2'] = 0; a['q3'] = 0;",
-      "frame_eqs_str": "a['trans']=((div(Math.floor(randint(Math.floor(a['q30']))),5)+a['instance'])-a['instance']); a['trans2']=((div(Math.floor(randint(Math.floor(a['q30']))),5)+a['instance'])-a['instance']); a['trans3']=((div(Math.floor(randint(Math.floor(a['q30']))),5)+a['instance'])-a['instance']); a['a']=a['trans']; a['a2']=a['trans2']; a['border_a']=a['trans3']; a['x']=(((a['q1']+(((Math.floor(randint(15))*0.01)*a['bass_att'])*((Math.abs(equal(Math.floor(randint(2)), 1))>0.00001)?(1):(-1))))+a['instance'])-a['instance']); a['y']=(((a['q2']+(((Math.floor(randint(15))*0.01)*a['bass_att'])*((Math.abs(equal(Math.floor(randint(2)), 1))>0.00001)?(1):(-1))))+a['instance'])-a['instance']); a['rad']=(((0.09+div(Math.floor(randint(Math.floor(a['q30']))),15))+a['instance'])-a['instance']); a['r']=(((Math.floor(randint(a['q3']))*0.1)+a['instance'])-a['instance']); a['g']=(((Math.floor(randint(a['q3']))*0.1)+a['instance'])-a['instance']); a['b']=(((Math.floor(randint(a['q3']))*0.1)+a['instance'])-a['instance']); a['r2']=(((Math.floor(randint(a['q3']))*0.1)+a['instance'])-a['instance']); a['g2']=(((Math.floor(randint(a['q3']))*0.1)+a['instance'])-a['instance']); a['b2']=(((Math.floor(randint(a['q3']))*0.1)+a['instance'])-a['instance']); a['border_r']=(((Math.floor(randint(a['q3']))*0.1)+a['instance'])-a['instance']); a['border_g']=(((Math.floor(randint(a['q3']))*0.1)+a['instance'])-a['instance']); a['border_b']=(((Math.floor(randint(a['q3']))*0.1)+a['instance'])-a['instance']);"
+      "frame_eqs_str": "a['trans']=((div(Math.floor(rand(Math.floor(a['q30']))),5)+a['instance'])-a['instance']); a['trans2']=((div(Math.floor(rand(Math.floor(a['q30']))),5)+a['instance'])-a['instance']); a['trans3']=((div(Math.floor(rand(Math.floor(a['q30']))),5)+a['instance'])-a['instance']); a['a']=a['trans']; a['a2']=a['trans2']; a['border_a']=a['trans3']; a['x']=(((a['q1']+(((Math.floor(rand(15))*0.01)*a['bass_att'])*((Math.abs(equal(Math.floor(rand(2)), 1))>0.00001)?(1):(-1))))+a['instance'])-a['instance']); a['y']=(((a['q2']+(((Math.floor(rand(15))*0.01)*a['bass_att'])*((Math.abs(equal(Math.floor(rand(2)), 1))>0.00001)?(1):(-1))))+a['instance'])-a['instance']); a['rad']=(((0.09+div(Math.floor(rand(Math.floor(a['q30']))),15))+a['instance'])-a['instance']); a['r']=(((Math.floor(rand(a['q3']))*0.1)+a['instance'])-a['instance']); a['g']=(((Math.floor(rand(a['q3']))*0.1)+a['instance'])-a['instance']); a['b']=(((Math.floor(rand(a['q3']))*0.1)+a['instance'])-a['instance']); a['r2']=(((Math.floor(rand(a['q3']))*0.1)+a['instance'])-a['instance']); a['g2']=(((Math.floor(rand(a['q3']))*0.1)+a['instance'])-a['instance']); a['b2']=(((Math.floor(rand(a['q3']))*0.1)+a['instance'])-a['instance']); a['border_r']=(((Math.floor(rand(a['q3']))*0.1)+a['instance'])-a['instance']); a['border_g']=(((Math.floor(rand(a['q3']))*0.1)+a['instance'])-a['instance']); a['border_b']=(((Math.floor(rand(a['q3']))*0.1)+a['instance'])-a['instance']);"
     },
     {
       "baseVals": {
@@ -31,7 +31,7 @@
         "border_a": 0
       },
       "init_eqs_str": "a['trans'] = 0; a['q30'] = 0; a['trans2'] = 0; a['trans3'] = 0; a['q1'] = 0; a['q2'] = 0; a['q3'] = 0;",
-      "frame_eqs_str": "a['trans']=((div(Math.floor(randint(Math.floor(a['q30']))),5)+a['instance'])-a['instance']); a['trans2']=((div(Math.floor(randint(Math.floor(a['q30']))),5)+a['instance'])-a['instance']); a['trans3']=((div(Math.floor(randint(Math.floor(a['q30']))),5)+a['instance'])-a['instance']); a['a']=a['trans']; a['a2']=a['trans2']; a['border_a']=a['trans3']; a['x']=(((a['q1']+(((Math.floor(randint(15))*0.01)*a['mid_att'])*((Math.abs(equal(Math.floor(randint(2)), 1))>0.00001)?(1):(-1))))+a['instance'])-a['instance']); a['y']=(((a['q2']+(((Math.floor(randint(15))*0.01)*a['mid_att'])*((Math.abs(equal(Math.floor(randint(2)), 1))>0.00001)?(1):(-1))))+a['instance'])-a['instance']); a['rad']=(((0.09+div(Math.floor(randint(Math.floor(a['q30']))),15))+a['instance'])-a['instance']); a['r']=(((Math.floor(randint(a['q3']))*0.1)+a['instance'])-a['instance']); a['g']=(((Math.floor(randint(a['q3']))*0.1)+a['instance'])-a['instance']); a['b']=(((Math.floor(randint(a['q3']))*0.1)+a['instance'])-a['instance']); a['r2']=(((Math.floor(randint(a['q3']))*0.1)+a['instance'])-a['instance']); a['g2']=(((Math.floor(randint(a['q3']))*0.1)+a['instance'])-a['instance']); a['b2']=(((Math.floor(randint(a['q3']))*0.1)+a['instance'])-a['instance']); a['border_r']=(((Math.floor(randint(a['q3']))*0.1)+a['instance'])-a['instance']); a['border_g']=(((Math.floor(randint(a['q3']))*0.1)+a['instance'])-a['instance']); a['border_b']=(((Math.floor(randint(a['q3']))*0.1)+a['instance'])-a['instance']);"
+      "frame_eqs_str": "a['trans']=((div(Math.floor(rand(Math.floor(a['q30']))),5)+a['instance'])-a['instance']); a['trans2']=((div(Math.floor(rand(Math.floor(a['q30']))),5)+a['instance'])-a['instance']); a['trans3']=((div(Math.floor(rand(Math.floor(a['q30']))),5)+a['instance'])-a['instance']); a['a']=a['trans']; a['a2']=a['trans2']; a['border_a']=a['trans3']; a['x']=(((a['q1']+(((Math.floor(rand(15))*0.01)*a['mid_att'])*((Math.abs(equal(Math.floor(rand(2)), 1))>0.00001)?(1):(-1))))+a['instance'])-a['instance']); a['y']=(((a['q2']+(((Math.floor(rand(15))*0.01)*a['mid_att'])*((Math.abs(equal(Math.floor(rand(2)), 1))>0.00001)?(1):(-1))))+a['instance'])-a['instance']); a['rad']=(((0.09+div(Math.floor(rand(Math.floor(a['q30']))),15))+a['instance'])-a['instance']); a['r']=(((Math.floor(rand(a['q3']))*0.1)+a['instance'])-a['instance']); a['g']=(((Math.floor(rand(a['q3']))*0.1)+a['instance'])-a['instance']); a['b']=(((Math.floor(rand(a['q3']))*0.1)+a['instance'])-a['instance']); a['r2']=(((Math.floor(rand(a['q3']))*0.1)+a['instance'])-a['instance']); a['g2']=(((Math.floor(rand(a['q3']))*0.1)+a['instance'])-a['instance']); a['b2']=(((Math.floor(rand(a['q3']))*0.1)+a['instance'])-a['instance']); a['border_r']=(((Math.floor(rand(a['q3']))*0.1)+a['instance'])-a['instance']); a['border_g']=(((Math.floor(rand(a['q3']))*0.1)+a['instance'])-a['instance']); a['border_b']=(((Math.floor(rand(a['q3']))*0.1)+a['instance'])-a['instance']);"
     },
     {
       "baseVals": {
@@ -46,7 +46,7 @@
         "border_a": 0
       },
       "init_eqs_str": "a['trans'] = 0; a['q30'] = 0; a['trans2'] = 0; a['trans3'] = 0; a['q1'] = 0; a['q2'] = 0; a['q3'] = 0;",
-      "frame_eqs_str": "a['trans']=((div(Math.floor(randint(Math.floor(a['q30']))),5)+a['instance'])-a['instance']); a['trans2']=((div(Math.floor(randint(Math.floor(a['q30']))),5)+a['instance'])-a['instance']); a['trans3']=((div(Math.floor(randint(Math.floor(a['q30']))),5)+a['instance'])-a['instance']); a['a']=a['trans']; a['a2']=a['trans2']; a['border_a']=a['trans3']; a['x']=(((a['q1']+(((Math.floor(randint(15))*0.01)*a['treb_att'])*((Math.abs(equal(Math.floor(randint(2)), 1))>0.00001)?(1):(-1))))+a['instance'])-a['instance']); a['y']=(((a['q2']+(((Math.floor(randint(15))*0.01)*a['treb_att'])*((Math.abs(equal(Math.floor(randint(2)), 1))>0.00001)?(1):(-1))))+a['instance'])-a['instance']); a['rad']=(((0.09+div(Math.floor(randint(Math.floor(a['q30']))),15))+a['instance'])-a['instance']); a['r']=(((Math.floor(randint(a['q3']))*0.1)+a['instance'])-a['instance']); a['g']=(((Math.floor(randint(a['q3']))*0.1)+a['instance'])-a['instance']); a['b']=(((Math.floor(randint(a['q3']))*0.1)+a['instance'])-a['instance']); a['r2']=(((Math.floor(randint(a['q3']))*0.1)+a['instance'])-a['instance']); a['g2']=(((Math.floor(randint(a['q3']))*0.1)+a['instance'])-a['instance']); a['b2']=(((Math.floor(randint(a['q3']))*0.1)+a['instance'])-a['instance']); a['border_r']=(((Math.floor(randint(a['q3']))*0.1)+a['instance'])-a['instance']); a['border_g']=(((Math.floor(randint(a['q3']))*0.1)+a['instance'])-a['instance']); a['border_b']=(((Math.floor(randint(a['q3']))*0.1)+a['instance'])-a['instance']);"
+      "frame_eqs_str": "a['trans']=((div(Math.floor(rand(Math.floor(a['q30']))),5)+a['instance'])-a['instance']); a['trans2']=((div(Math.floor(rand(Math.floor(a['q30']))),5)+a['instance'])-a['instance']); a['trans3']=((div(Math.floor(rand(Math.floor(a['q30']))),5)+a['instance'])-a['instance']); a['a']=a['trans']; a['a2']=a['trans2']; a['border_a']=a['trans3']; a['x']=(((a['q1']+(((Math.floor(rand(15))*0.01)*a['treb_att'])*((Math.abs(equal(Math.floor(rand(2)), 1))>0.00001)?(1):(-1))))+a['instance'])-a['instance']); a['y']=(((a['q2']+(((Math.floor(rand(15))*0.01)*a['treb_att'])*((Math.abs(equal(Math.floor(rand(2)), 1))>0.00001)?(1):(-1))))+a['instance'])-a['instance']); a['rad']=(((0.09+div(Math.floor(rand(Math.floor(a['q30']))),15))+a['instance'])-a['instance']); a['r']=(((Math.floor(rand(a['q3']))*0.1)+a['instance'])-a['instance']); a['g']=(((Math.floor(rand(a['q3']))*0.1)+a['instance'])-a['instance']); a['b']=(((Math.floor(rand(a['q3']))*0.1)+a['instance'])-a['instance']); a['r2']=(((Math.floor(rand(a['q3']))*0.1)+a['instance'])-a['instance']); a['g2']=(((Math.floor(rand(a['q3']))*0.1)+a['instance'])-a['instance']); a['b2']=(((Math.floor(rand(a['q3']))*0.1)+a['instance'])-a['instance']); a['border_r']=(((Math.floor(rand(a['q3']))*0.1)+a['instance'])-a['instance']); a['border_g']=(((Math.floor(rand(a['q3']))*0.1)+a['instance'])-a['instance']); a['border_b']=(((Math.floor(rand(a['q3']))*0.1)+a['instance'])-a['instance']);"
     },
     {
       "baseVals": {
@@ -93,10 +93,10 @@
     "ob_a": 1,
     "mv_a": 0
   },
-  "warp": " shader_body { \n  vec4 tmpvar_1;\n  tmpvar_1.w = 1.0;\n  tmpvar_1.xyz = (texture (sampler_main, (uv + (\n    (texture (sampler_main, (uv + texsize.zw)).xy - 0.37)\n   * 0.03))).xyz - 0.004);\n  ret = tmpvar_1.xyz;\n }",
-  "comp": " shader_body { \u0007 }",
+  "warp": " shader_body {  \n  vec4 tmpvar_1;\n  tmpvar_1.w = 1.0;\n  tmpvar_1.xyz = (texture (sampler_main, (uv + (\n    (texture (sampler_main, (uv + texsize.zw)).xy - 0.37)\n   * 0.03))).xyz - 0.004);\n  ret = tmpvar_1.xyz;\n  }",
+  "comp": " shader_body {  \n    float rad_lq = ((rad * length(texsize.xy)) * 0.5);\n    float ang_lq = ang;\n    vec2 uv_temp1 = ((uv - 0.5) * texsize.xy);\n    float rad_hq = length(uv_temp1);\n\n    float ang_hq = atan( (-uv_temp1.y), uv_temp1.x);\n    vec2 uv2 = (uv - 0.5);\n    float rad2 = (rad_lq * 0.8);\n\n    float ang2 = (ang_lq * 0.1591549);\n\n    ang2 += (time * 0.025);\n\n    float fins = (3.0 + floor((rand_preset.z * 5.95)));\n    ang2 = (fract((ang2 * fins)) / fins);\n\n    ang2 = abs((ang2 - (0.5 / fins)));\n\n    ang2 *= 6.283185;\n    uv2 = (0.5 + ((rad2 * vec2( cos(ang2), sin(ang2))) * texsize.zw));\n    ret = texture( sampler_main, uv2).xyz;\n\n    ret *= 1.333;\n      }",
   "presetParts": {
-    "presetVersion": 1,
+    "presetVersion": 2,
     "baseVals": {
       "rating": 5,
       "wrap": 0,
@@ -118,22 +118,34 @@
       {
         "baseVals": {
           "enabled": 0
-        }
+        },
+        "init_eqs_str": "",
+        "frame_eqs_str": "",
+        "point_eqs_str": ""
       },
       {
         "baseVals": {
           "enabled": 0
-        }
+        },
+        "init_eqs_str": "",
+        "frame_eqs_str": "",
+        "point_eqs_str": ""
       },
       {
         "baseVals": {
           "enabled": 0
-        }
+        },
+        "init_eqs_str": "",
+        "frame_eqs_str": "",
+        "point_eqs_str": ""
       },
       {
         "baseVals": {
           "enabled": 0
-        }
+        },
+        "init_eqs_str": "",
+        "frame_eqs_str": "",
+        "point_eqs_str": ""
       }
     ],
     "shapes": [
@@ -188,7 +200,9 @@
       {
         "baseVals": {
           "enabled": 0
-        }
+        },
+        "init_eqs_str": "",
+        "frame_eqs_str": ""
       }
     ],
     "warp": "shader_body\n{\n    // PAINTERLY EFFECT:\n    float2 uv2 = uv;\n    const float mipbias = 0;\n    float2 delta2 = texsize.zw*float2(1,1);\n    float3 blurry_color = tex2D( sampler_main, uv2 + delta2 ).xyz;\n    uv2.xy += (blurry_color.xy-0.37) * 0.03;\n\n    // sample previous frame\n    ret = tex2D( sampler_main, uv2 ).xyz;\n\n    // darken over time\n    ret -= 0.004;\n}",

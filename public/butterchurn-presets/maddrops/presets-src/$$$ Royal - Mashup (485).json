@@ -136,10 +136,10 @@
     "mv_b": 0.5,
     "mv_a": 0
   },
-  "warp": " shader_body { \n  vec2 my_uv_1;\n  vec3 ret_2;\n  vec2 tmpvar_3;\n  tmpvar_3 = (0.02 * aspect.zw);\n  vec3 tmpvar_4;\n  tmpvar_4 = (((texture (sampler_blur2, \n    ((uv + (vec2(1.0, 0.0) * tmpvar_3)) - floor((uv + (vec2(1.0, 0.0) * tmpvar_3))))\n  ).xyz * scale2) + bias2) - ((texture (sampler_blur2, \n    ((uv - (vec2(1.0, 0.0) * tmpvar_3)) - floor((uv - (vec2(1.0, 0.0) * tmpvar_3))))\n  ).xyz * scale2) + bias2));\n  vec3 tmpvar_5;\n  tmpvar_5 = (((texture (sampler_blur2, \n    ((uv + (vec2(0.0, 1.0) * tmpvar_3)) - floor((uv + (vec2(0.0, 1.0) * tmpvar_3))))\n  ).xyz * scale2) + bias2) - ((texture (sampler_blur2, \n    ((uv - (vec2(0.0, 1.0) * tmpvar_3)) - floor((uv - (vec2(0.0, 1.0) * tmpvar_3))))\n  ).xyz * scale2) + bias2));\n  vec3 tmpvar_6;\n  tmpvar_6 = ((texture (sampler_blur1, uv).xyz * scale1) + bias1);\n  vec2 tmpvar_7;\n  tmpvar_7.x = tmpvar_4.y;\n  tmpvar_7.y = tmpvar_5.y;\n  vec2 tmpvar_8;\n  tmpvar_8.x = tmpvar_5.x;\n  tmpvar_8.y = -(tmpvar_4.x);\n  vec2 tmpvar_9;\n  tmpvar_9 = ((uv - (tmpvar_7 * vec2(0.01, 0.01))) - (tmpvar_8 * -0.02));\n  ret_2.y = texture (sampler_fc_main, (tmpvar_9 - floor(tmpvar_9))).y;\n  ret_2.y = (ret_2.y + ((\n    (ret_2.y - tmpvar_6.y)\n   * 0.02) + 0.005));\n  vec2 tmpvar_10;\n  tmpvar_10.x = tmpvar_4.x;\n  tmpvar_10.y = tmpvar_5.x;\n  vec2 tmpvar_11;\n  tmpvar_11.x = tmpvar_5.z;\n  tmpvar_11.y = -(tmpvar_4.z);\n  my_uv_1 = ((uv - (tmpvar_10 * vec2(0.01, 0.01))) - (tmpvar_11 * -0.02));\n  ret_2.x = texture (sampler_fc_main, (my_uv_1 - floor(my_uv_1))).x;\n  ret_2.x = (ret_2.x + ((\n    (ret_2.x - tmpvar_6.x)\n   * 0.02) + 0.005));\n  vec2 tmpvar_12;\n  tmpvar_12.x = tmpvar_4.z;\n  tmpvar_12.y = tmpvar_5.z;\n  vec2 tmpvar_13;\n  tmpvar_13.x = tmpvar_5.y;\n  tmpvar_13.y = -(tmpvar_4.y);\n  my_uv_1 = ((uv - (tmpvar_12 * vec2(0.01, 0.01))) - (tmpvar_13 * -0.02));\n  ret_2.z = texture (sampler_fc_main, (my_uv_1 - floor(my_uv_1))).z;\n  ret_2.z = (ret_2.z + ((\n    (ret_2.z - tmpvar_6.z)\n   * 0.02) + 0.005));\n  vec4 tmpvar_14;\n  tmpvar_14.w = 1.0;\n  tmpvar_14.xyz = ret_2;\n  ret = tmpvar_14.xyz;\n }",
-  "comp": " shader_body { \u0003 }",
+  "warp": " shader_body {  \n  vec2 my_uv_1;\n  vec3 ret_2;\n  vec2 tmpvar_3;\n  tmpvar_3 = (0.02 * aspect.zw);\n  vec3 tmpvar_4;\n  tmpvar_4 = (((texture (sampler_blur2, \n    ((uv + (vec2(1.0, 0.0) * tmpvar_3)) - floor((uv + (vec2(1.0, 0.0) * tmpvar_3))))\n  ).xyz * scale2) + bias2) - ((texture (sampler_blur2, \n    ((uv - (vec2(1.0, 0.0) * tmpvar_3)) - floor((uv - (vec2(1.0, 0.0) * tmpvar_3))))\n  ).xyz * scale2) + bias2));\n  vec3 tmpvar_5;\n  tmpvar_5 = (((texture (sampler_blur2, \n    ((uv + (vec2(0.0, 1.0) * tmpvar_3)) - floor((uv + (vec2(0.0, 1.0) * tmpvar_3))))\n  ).xyz * scale2) + bias2) - ((texture (sampler_blur2, \n    ((uv - (vec2(0.0, 1.0) * tmpvar_3)) - floor((uv - (vec2(0.0, 1.0) * tmpvar_3))))\n  ).xyz * scale2) + bias2));\n  vec3 tmpvar_6;\n  tmpvar_6 = ((texture (sampler_blur1, uv).xyz * scale1) + bias1);\n  vec2 tmpvar_7;\n  tmpvar_7.x = tmpvar_4.y;\n  tmpvar_7.y = tmpvar_5.y;\n  vec2 tmpvar_8;\n  tmpvar_8.x = tmpvar_5.x;\n  tmpvar_8.y = -(tmpvar_4.x);\n  vec2 tmpvar_9;\n  tmpvar_9 = ((uv - (tmpvar_7 * vec2(0.01, 0.01))) - (tmpvar_8 * -0.02));\n  ret_2.y = texture (sampler_fc_main, (tmpvar_9 - floor(tmpvar_9))).y;\n  ret_2.y = (ret_2.y + ((\n    (ret_2.y - tmpvar_6.y)\n   * 0.02) + 0.005));\n  vec2 tmpvar_10;\n  tmpvar_10.x = tmpvar_4.x;\n  tmpvar_10.y = tmpvar_5.x;\n  vec2 tmpvar_11;\n  tmpvar_11.x = tmpvar_5.z;\n  tmpvar_11.y = -(tmpvar_4.z);\n  my_uv_1 = ((uv - (tmpvar_10 * vec2(0.01, 0.01))) - (tmpvar_11 * -0.02));\n  ret_2.x = texture (sampler_fc_main, (my_uv_1 - floor(my_uv_1))).x;\n  ret_2.x = (ret_2.x + ((\n    (ret_2.x - tmpvar_6.x)\n   * 0.02) + 0.005));\n  vec2 tmpvar_12;\n  tmpvar_12.x = tmpvar_4.z;\n  tmpvar_12.y = tmpvar_5.z;\n  vec2 tmpvar_13;\n  tmpvar_13.x = tmpvar_5.y;\n  tmpvar_13.y = -(tmpvar_4.y);\n  my_uv_1 = ((uv - (tmpvar_12 * vec2(0.01, 0.01))) - (tmpvar_13 * -0.02));\n  ret_2.z = texture (sampler_fc_main, (my_uv_1 - floor(my_uv_1))).z;\n  ret_2.z = (ret_2.z + ((\n    (ret_2.z - tmpvar_6.z)\n   * 0.02) + 0.005));\n  vec4 tmpvar_14;\n  tmpvar_14.w = 1.0;\n  tmpvar_14.xyz = ret_2;\n  ret = tmpvar_14.xyz;\n  }",
+  "comp": " shader_body {  \n    float rad_lq = ((rad * length(texsize.xy)) * 0.5);\n    float ang_lq = ang;\n    vec2 uv_temp1 = ((uv - 0.5) * texsize.xy);\n    float rad_hq = length(uv_temp1);\n\n    float ang_hq = atan( (-uv_temp1.y), uv_temp1.x);\n    vec2 uv2 = (uv - 0.5);\n    float rad2 = (rad_lq * 0.75);\n\n    float ang2 = (ang_lq * 0.1591549);\n    ang2 += (time * 0.025);\n\n    float fins = 8.0;\n    ang2 = (cos(((ang2 * 6.283185) * fins)) * 0.023);\n\n    ang2 *= 6.283185;\n    uv2 = (0.5 + ((rad2 * vec2( cos(ang2), sin(ang2))) * texsize.zw));\n    ret = texture( sampler_main, uv2).xyz;\n\n    ret *= 1.0;\n      }",
   "presetParts": {
-    "presetVersion": 1,
+    "presetVersion": 2,
     "baseVals": {
       "rating": 5,
       "gammaadj": 1.9,
@@ -180,22 +180,34 @@
       {
         "baseVals": {
           "enabled": 0
-        }
+        },
+        "init_eqs_str": "",
+        "frame_eqs_str": "",
+        "point_eqs_str": ""
       },
       {
         "baseVals": {
           "enabled": 0
-        }
+        },
+        "init_eqs_str": "",
+        "frame_eqs_str": "",
+        "point_eqs_str": ""
       },
       {
         "baseVals": {
           "enabled": 0
-        }
+        },
+        "init_eqs_str": "",
+        "frame_eqs_str": "",
+        "point_eqs_str": ""
       },
       {
         "baseVals": {
           "enabled": 0
-        }
+        },
+        "init_eqs_str": "",
+        "frame_eqs_str": "",
+        "point_eqs_str": ""
       }
     ],
     "shapes": [

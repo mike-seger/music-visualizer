@@ -96,9 +96,9 @@
     "mv_a": 0
   },
   "warp": "",
-  "comp": " shader_body { \n  vec3 fret_1;\n  vec2 uvp_2;\n  uvp_2.x = uv.x;\n  uvp_2.y = (uv.y * 0.38);\n  fret_1 = (((1.0/(\n    ((texture (sampler_blur2, uvp_2).xyz * scale2) + bias2)\n  )) - (texture (sampler_main, uvp_2).xyz * \n    ((texture (sampler_blur1, uvp_2).xyz * scale1) + bias1)\n  )) - ((\n    (texture (sampler_blur2, uv).xyz * scale2)\n   + bias2) * 0.55));\n  vec4 tmpvar_3;\n  tmpvar_3.w = 1.0;\n  tmpvar_3.xyz = (1.0 - (fret_1 * fret_1));\n  ret = tmpvar_3.xyz;\n }",
+  "comp": " shader_body {  \n  vec3 fret_1;\n  vec2 uvp_2;\n  uvp_2.x = uv.x;\n  uvp_2.y = (uv.y * 0.38);\n  fret_1 = (((1.0/(\n    ((texture (sampler_blur2, uvp_2).xyz * scale2) + bias2)\n  )) - (texture (sampler_main, uvp_2).xyz * \n    ((texture (sampler_blur1, uvp_2).xyz * scale1) + bias1)\n  )) - ((\n    (texture (sampler_blur2, uv).xyz * scale2)\n   + bias2) * 0.55));\n  vec4 tmpvar_3;\n  tmpvar_3.w = 1.0;\n  tmpvar_3.xyz = (1.0 - (fret_1 * fret_1));\n  ret = tmpvar_3.xyz;\n  }",
   "presetParts": {
-    "presetVersion": 1,
+    "presetVersion": 2,
     "baseVals": {
       "rating": 5,
       "gammaadj": 1.93,
@@ -164,35 +164,61 @@
       },
       {
         "baseVals": {
+          "usedots": 1,
+          "thick": 1,
           "enabled": 0
-        }
+        },
+        "init_eqs_str": "",
+        "frame_eqs_str": "advance=advance+ 0.005;\nadvance=if( above(advance,2) , 0, advance);\nt1=advance",
+        "point_eqs_str": "s=sample*6.28;\n\n//plot random x position via function of sample pos;\nxp=sin(s)+sin(s*0.34)+sin(s*24.3)+sin(s*13.8);\nxp=xp*0.20;\n\n//plot random y position via function of sample pos;\nyp=cos(s)+sin(s*0.14)+cos(s*13.4)+sin(s*37.7);\nyp=yp*0.20;\n\n//plot random z position via function of sample pos;\nzp=cos(s)+cos(s*2.24)+cos(s*37.4)+cos(s*15.7);\nzp=zp*0.25;\n\n//pull stars toward screen\nzp=zp + 1 - t1;\n\n//correct when below 0\nzp=if( below(zp,0) , zp+2 , zp );\n\n//darken far stars\na=(1 - zp*0.5);\n\nzp=zp*0.7;\n\nx_screen=xp/zp + 0.5;\ny_screen=yp/zp + 0.5;\n\nx=x_screen;\ny=y_screen;\n\nr=1;\ng=1;\nb=1;"
       },
       {
         "baseVals": {
+          "usedots": 1,
+          "thick": 1,
           "enabled": 0
-        }
+        },
+        "init_eqs_str": "",
+        "frame_eqs_str": "advance=advance+ 0.005;\nadvance=if( above(advance,2) , 0, advance);\nt1=advance",
+        "point_eqs_str": "s=sample*6.28;\n\n//plot random x position via function of sample pos;\nxp=sin(s)+sin(s*0.34)+sin(s*14.3)+sin(s*19.8);\nxp=xp*0.20;\n\n//plot random y position via function of sample pos;\nyp=cos(s)+sin(s*0.34)+cos(s*17.4)+sin(s*37.7);\nyp=yp*0.20;\n\n//plot random z position via function of sample pos;\nzp=cos(s)+cos(s*5.24)+cos(s*27.4)+cos(s*14.7);\nzp=zp*0.25;\n\n//pull stars toward screen\nzp=zp + 1 - t1;\n\n//correct when below 0\nzp=if( below(zp,0) , zp+2 , zp );\n\n//darken far stars\na=(1 - zp*0.5);\n\nzp=zp*0.7;\n\nx_screen=xp/zp + 0.5;\ny_screen=yp/zp + 0.5;\n\nx=x_screen;\ny=y_screen;\n\nr=1;\ng=1;\nb=1;"
       }
     ],
     "shapes": [
       {
         "baseVals": {
+          "textured": 1,
+          "rad": 0.61163,
+          "tex_zoom": 0.73458,
+          "g": 0.9,
+          "b": 0.84,
+          "r2": 1,
+          "b2": 1,
+          "border_a": 0,
           "enabled": 0
-        }
+        },
+        "init_eqs_str": "",
+        "frame_eqs_str": "ang=sin(time*0.5)*0.004"
       },
       {
         "baseVals": {
           "enabled": 0
-        }
+        },
+        "init_eqs_str": "",
+        "frame_eqs_str": ""
       },
       {
         "baseVals": {
           "enabled": 0
-        }
+        },
+        "init_eqs_str": "",
+        "frame_eqs_str": ""
       },
       {
         "baseVals": {
           "enabled": 0
-        }
+        },
+        "init_eqs_str": "",
+        "frame_eqs_str": ""
       }
     ],
     "warp": "",

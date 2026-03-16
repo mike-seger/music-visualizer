@@ -161,10 +161,10 @@
     "mv_g": 0.5,
     "mv_a": 0.1
   },
-  "warp": " shader_body { \n  vec2 uv_1;\n  vec2 uv6_2;\n  uv_1 = (uv + ((0.004 * \n    ((texture (sampler_blur1, uv).xyz * scale1) + bias1)\n  ).xy * vec2(0.0, 1.0)));\n  uv6_2 = (0.4 * sin((\n    (((uv - 0.5) * aspect.xy) * 18.0)\n   * rand_frame.xy)));\n  vec4 tmpvar_3;\n  tmpvar_3.w = 1.0;\n  tmpvar_3.xyz = (((\n    (texture (sampler_main, uv_1).xyz - (((texture (sampler_blur2, \n      fract(uv_1)\n    ).xyz * scale2) + bias2) * 0.03))\n   + \n    (vec3((0.051 / sqrt(dot (uv6_2, uv6_2)))) * vec3(0.15, 0.12, 0.075))\n  ) * 0.99) - 0.02);\n  ret = tmpvar_3.xyz;\n }",
-  "comp": " shader_body { \n  vec2 uv3_1;\n  vec2 uv2_2;\n  vec2 tmpvar_3;\n  tmpvar_3 = ((uv - 0.5) * aspect.xy);\n  float tmpvar_4;\n  tmpvar_4 = (0.1 / (sqrt(\n    dot (tmpvar_3, tmpvar_3)\n  ) + 0.1));\n  vec2 tmpvar_5;\n  float tmpvar_6;\n  tmpvar_6 = (ang / 3.14);\n  tmpvar_5.x = tmpvar_6;\n  tmpvar_5.y = (q27 * tmpvar_4);\n  float tmpvar_7;\n  tmpvar_7 = (0.1 * q30);\n  uv2_2.y = (tmpvar_5.y + tmpvar_7);\n  uv2_2.x = (tmpvar_6 + (0.2 * time));\n  vec2 tmpvar_8;\n  tmpvar_8.x = tmpvar_6;\n  tmpvar_8.y = (4.0 * tmpvar_4);\n  uv3_1.x = tmpvar_8.x;\n  uv3_1.y = (tmpvar_8.y - tmpvar_7);\n  float tmpvar_9;\n  tmpvar_9 = clamp ((1.0 - (4.0 * rad)), 0.0, 1.0);\n  vec4 tmpvar_10;\n  tmpvar_10.w = 1.0;\n  tmpvar_10.xyz = (((\n    (3.0 * max (((2.0 * texture (sampler_main, uv2_2).xyz) + texture (sampler_main, uv3_1).xyz), ((2.0 * \n      ((texture (sampler_blur2, fract(uv2_2)).xyz * scale2) + bias2)\n    ) + (\n      (texture (sampler_blur2, fract(uv3_1)).xyz * scale2)\n     + bias2))))\n   * rad) + (\n    ((vec3(0.0, 0.0, 1.0) * uv.y) * pow ((1.0 - rad), 8.0))\n   * tmpvar_9)) + ((tmpvar_9 * 2.0) * (\n    (texture (sampler_blur1, uv).xyz * scale1)\n   + bias1)));\n  ret = tmpvar_10.xyz;\n }",
+  "warp": " shader_body {  \n  vec2 uv_1;\n  vec2 uv6_2;\n  uv_1 = (uv + ((0.004 * \n    ((texture (sampler_blur1, uv).xyz * scale1) + bias1)\n  ).xy * vec2(0.0, 1.0)));\n  uv6_2 = (0.4 * sin((\n    (((uv - 0.5) * aspect.xy) * 18.0)\n   * rand_frame.xy)));\n  vec4 tmpvar_3;\n  tmpvar_3.w = 1.0;\n  tmpvar_3.xyz = (((\n    (texture (sampler_main, uv_1).xyz - (((texture (sampler_blur2, \n      fract(uv_1)\n    ).xyz * scale2) + bias2) * 0.03))\n   + \n    (vec3((0.051 / sqrt(dot (uv6_2, uv6_2)))) * vec3(0.15, 0.12, 0.075))\n  ) * 0.99) - 0.02);\n  ret = tmpvar_3.xyz;\n  }",
+  "comp": " shader_body {  \n  vec2 uv3_1;\n  vec2 uv2_2;\n  vec2 tmpvar_3;\n  tmpvar_3 = ((uv - 0.5) * aspect.xy);\n  float tmpvar_4;\n  tmpvar_4 = (0.1 / (sqrt(\n    dot (tmpvar_3, tmpvar_3)\n  ) + 0.1));\n  vec2 tmpvar_5;\n  float tmpvar_6;\n  tmpvar_6 = (ang / 3.14);\n  tmpvar_5.x = tmpvar_6;\n  tmpvar_5.y = (q27 * tmpvar_4);\n  float tmpvar_7;\n  tmpvar_7 = (0.1 * q30);\n  uv2_2.y = (tmpvar_5.y + tmpvar_7);\n  uv2_2.x = (tmpvar_6 + (0.2 * time));\n  vec2 tmpvar_8;\n  tmpvar_8.x = tmpvar_6;\n  tmpvar_8.y = (4.0 * tmpvar_4);\n  uv3_1.x = tmpvar_8.x;\n  uv3_1.y = (tmpvar_8.y - tmpvar_7);\n  float tmpvar_9;\n  tmpvar_9 = clamp ((1.0 - (4.0 * rad)), 0.0, 1.0);\n  vec4 tmpvar_10;\n  tmpvar_10.w = 1.0;\n  tmpvar_10.xyz = (((\n    (3.0 * max (((2.0 * texture (sampler_main, uv2_2).xyz) + texture (sampler_main, uv3_1).xyz), ((2.0 * \n      ((texture (sampler_blur2, fract(uv2_2)).xyz * scale2) + bias2)\n    ) + (\n      (texture (sampler_blur2, fract(uv3_1)).xyz * scale2)\n     + bias2))))\n   * rad) + (\n    ((vec3(0.0, 0.0, 1.0) * uv.y) * pow ((1.0 - rad), 8.0))\n   * tmpvar_9)) + ((tmpvar_9 * 2.0) * (\n    (texture (sampler_blur1, uv).xyz * scale1)\n   + bias1)));\n  ret = tmpvar_10.xyz;\n  }",
   "presetParts": {
-    "presetVersion": 1,
+    "presetVersion": 2,
     "baseVals": {
       "rating": 5,
       "gammaadj": 1,
@@ -219,8 +219,13 @@
       },
       {
         "baseVals": {
+          "thick": 1,
+          "r": 0,
           "enabled": 0
-        }
+        },
+        "init_eqs_str": "",
+        "frame_eqs_str": "",
+        "point_eqs_str": "st = sample*4;\nstt = st - int(st);\n\nx = stt;\nx = if( above(st,1) , 1 , x );\nx = if( above(st,2) , 1-stt , x );\nx = if( above(st,3) , 0 , x );\n\ny = 0;\ny = if( above(st,1) , stt , y );\ny = if( above(st,2) , 1 , y );\ny = if( above(st,3) , 1-stt , y );\n\n\nphs=time*0.26;\n\n//w=sin(sample*6.283 * 6 + time*0.5) * 0.5 + 0.6;\nw = above( sin(time*3) , 0);\n\n\nr=( (sample*0.3+phs) - int(sample*0.3+phs) )*1.5;\nr=if( above(r,1) , 2-r , r ) * w;\nr=1- pow(1-r,2);\n\ng=( (sample*0.3+phs+0.66) - int(sample*0.3+phs+0.66) )*1.5;\ng=if( above(g,1) , 2-g , g ) * w;\ng=1- pow(1-g,2);\n\nb=( (sample*0.3+phs+1.33) - int(sample*0.3+phs+1.33) )*1.5;\nb=if( above(b,1) , 2-b , b ) * w;\nb=1- pow(1-b,2);\n"
       },
       {
         "baseVals": {
@@ -234,8 +239,14 @@
       },
       {
         "baseVals": {
+          "usedots": 1,
+          "thick": 1,
+          "additive": 1,
           "enabled": 0
-        }
+        },
+        "init_eqs_str": "",
+        "frame_eqs_str": "",
+        "point_eqs_str": ""
       }
     ],
     "shapes": [

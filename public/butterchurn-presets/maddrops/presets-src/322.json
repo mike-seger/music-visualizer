@@ -137,10 +137,10 @@
     "mv_b": 0,
     "mv_a": 0
   },
-  "warp": " shader_body { \n  vec2 uv_1;\n  vec2 uv6_2;\n  uv_1 = (uv + ((0.004 * \n    ((texture (sampler_blur1, uv).xyz * scale1) + bias1)\n  ).xy * vec2(0.0, 1.0)));\n  uv6_2 = (0.4 * sin((\n    (((uv - 0.5) * aspect.xy) * 22.0)\n   * rand_frame.xy)));\n  vec4 tmpvar_3;\n  tmpvar_3.w = 1.0;\n  tmpvar_3.xyz = (((\n    (texture (sampler_main, uv_1).xyz - (((texture (sampler_blur2, \n      fract(uv_1)\n    ).xyz * scale2) + bias2) * 0.3))\n   + \n    (vec3((0.071 / sqrt(dot (uv6_2, uv6_2)))) * vec3(0.15, 0.12, 0.075))\n  ) * 0.99) - 0.02);\n  ret = tmpvar_3.xyz;\n }",
-  "comp": " shader_body { \n  vec3 ret_1;\n  vec2 tmpvar_2;\n  tmpvar_2.x = rad;\n  tmpvar_2.y = uv.y;\n  ret_1 = (texture (sampler_main, tmpvar_2).xyz + ((texture (sampler_blur1, tmpvar_2).xyz * scale1) + bias1));\n  ret_1 = (ret_1 * vec3(1.04, 0.64, 0.4));\n  vec4 tmpvar_3;\n  tmpvar_3.w = 1.0;\n  tmpvar_3.xyz = ret_1;\n  ret = tmpvar_3.xyz;\n }",
+  "warp": " shader_body {  \n  vec2 uv_1;\n  vec2 uv6_2;\n  uv_1 = (uv + ((0.004 * \n    ((texture (sampler_blur1, uv).xyz * scale1) + bias1)\n  ).xy * vec2(0.0, 1.0)));\n  uv6_2 = (0.4 * sin((\n    (((uv - 0.5) * aspect.xy) * 22.0)\n   * rand_frame.xy)));\n  vec4 tmpvar_3;\n  tmpvar_3.w = 1.0;\n  tmpvar_3.xyz = (((\n    (texture (sampler_main, uv_1).xyz - (((texture (sampler_blur2, \n      fract(uv_1)\n    ).xyz * scale2) + bias2) * 0.3))\n   + \n    (vec3((0.071 / sqrt(dot (uv6_2, uv6_2)))) * vec3(0.15, 0.12, 0.075))\n  ) * 0.99) - 0.02);\n  ret = tmpvar_3.xyz;\n  }",
+  "comp": " shader_body {  \n  vec3 ret_1;\n  vec2 tmpvar_2;\n  tmpvar_2.x = rad;\n  tmpvar_2.y = uv.y;\n  ret_1 = (texture (sampler_main, tmpvar_2).xyz + ((texture (sampler_blur1, tmpvar_2).xyz * scale1) + bias1));\n  ret_1 = (ret_1 * vec3(1.04, 0.64, 0.4));\n  vec4 tmpvar_3;\n  tmpvar_3.w = 1.0;\n  tmpvar_3.xyz = ret_1;\n  ret = tmpvar_3.xyz;\n  }",
   "presetParts": {
-    "presetVersion": 1,
+    "presetVersion": 2,
     "baseVals": {
       "rating": 5,
       "gammaadj": 1.56,
@@ -188,23 +188,51 @@
     "waves": [
       {
         "baseVals": {
+          "thick": 1,
+          "additive": 1,
+          "r": 0.45,
+          "g": 0.65,
           "enabled": 0
-        }
+        },
+        "init_eqs_str": "",
+        "frame_eqs_str": "advance=advance+0.006*q6;\nadvance=if(above(advance,1), advance-1, advance);\nt1=advance;",
+        "point_eqs_str": "n=sample*6.283;\nstep=sample*128;\nstep2=(int(step)/128)*6.283;\nstep3=(step - int(step));\ntm = t1 * 6.283 - 3.1415;\n\n//star lines\nxp=sin(step2) * 0.4;\nyp=cos(step2) * 0.4;\nzp=sin(step2*19.3)*3.1415 + step3*0.35 - tm;\nzp=if(below(zp,-3.1415), zp+6.283 , zp);\n\n\n//kill stray lines from front to back\na=if(below(step3,0.36) , 0 , 1);\na=if(above(step3,0.64) , 0 , a);\na=if(below(zp,-3) , 0 , a);\na=if(above(zp,3) , 0 , a);\n\n//a=a*(zp/6.08);\na=a*(1-step3);\na=min( max(a,0) , 1);\n\n\nzp=zp*2 - 3.1415;\n\n//zp=if(below(zp,-3.1415), zp+6.283 , zp);\n\na=a * (1-(zp+2.1415)/6.283);\n\na=if(below(zp,-1.5) , 0 , a);\na=if(above(zp,4.0) , 0 , a);\n\n//shift back when pointing away from camera\nzp=zp-q4*2;\n\n//z rotation\nsang=sin(q1);cang=cos(q1);\nxn=xp*sang + yp*cang;\nyn=xp*cang - yp*sang;\nzn=zp;\nxp=xn;yp=yn;zp=zn;\n\n//y rotation;\nsang=sin(q2);cang=cos(q2);\nxn=xp*sang + zp*(cang);\nyn=yp;\nzn=xp*cang - zp*sang;\nxp=xn;yp=yn;zp=zn;\n\n//x rotation;\nsang=sin(q3);cang=cos(q3);\nxn=xp;\nyn=yp*sang + zp*cang;\nzn=yp*cang - zp*sang;\nxp=xn;yp=yn;zp=zn;\n\n\n\nzp=zp*2+1.55;\n\n//near clipping plane\na=a*above(zp,0.75);\n//a=a*below(zp,8.55);\n\nx=xp/zp+ 0.5;\ny=yp/zp * 1.3 + 0.5;\n\na=a*0.5"
       },
       {
         "baseVals": {
+          "thick": 1,
+          "additive": 1,
+          "r": 0.45,
+          "g": 0.65,
           "enabled": 0
-        }
+        },
+        "init_eqs_str": "",
+        "frame_eqs_str": "advance=advance+0.005*q6;\nadvance=advance * below(advance,1);\nt1=advance;",
+        "point_eqs_str": "n=sample*6.283;\nstep=sample*128;\nstep2=(int(step)/128)*6.283;\nstep3=(step - int(step));\ntm = t1 * 6.283 - 3.1415;\n\n//star lines\nxp=sin(step2) * 0.4;\nyp=cos(step2) * 0.4;\nzp=sin(step2*19.3)*3.1415 + step3*0.35 - tm;\nzp=if(below(zp,-3.1415), zp+6.283 , zp);\n\n\n//kill stray lines from front to back\na=if(below(step3,0.36) , 0 , 1);\na=if(above(step3,0.64) , 0 , a);\na=if(below(zp,-3) , 0 , a);\na=if(above(zp,3) , 0 , a);\n\n//a=a*(zp/6.08);\na=a*(1-step3);\na=min( max(a,0) , 1);\n\n\nzp=zp*2 - 3.1415;\n\n//zp=if(below(zp,-3.1415), zp+6.283 , zp);\n\na=a * (1-(zp+2.1415)/6.283);\n\na=if(below(zp,-1.5) , 0 , a);\na=if(above(zp,4.0) , 0 , a);\n\n//shift back when pointing away from camera\nzp=zp-q4*2;\n\n//z rotation\nsang=sin(q1);cang=cos(q1);\nxn=xp*sang + yp*cang;\nyn=xp*cang - yp*sang;\nzn=zp;\nxp=xn;yp=yn;zp=zn;\n\n//y rotation;\nsang=sin(q2);cang=cos(q2);\nxn=xp*sang + zp*(cang);\nyn=yp;\nzn=xp*cang - zp*sang;\nxp=xn;yp=yn;zp=zn;\n\n//x rotation;\nsang=sin(q3);cang=cos(q3);\nxn=xp;\nyn=yp*sang + zp*cang;\nzn=yp*cang - zp*sang;\nxp=xn;yp=yn;zp=zn;\n\n\n\nzp=zp*2+1.55;\n\n//near clipping plane\na=a*above(zp,0.75);\n//a=a*below(zp,8.55);\n\nx=-xp/zp+ 0.5;\ny=yp/zp * 1.3 + 0.5;\na=a*0.5"
       },
       {
         "baseVals": {
+          "thick": 1,
+          "additive": 1,
+          "r": 0.3,
+          "g": 0.6,
           "enabled": 0
-        }
+        },
+        "init_eqs_str": "",
+        "frame_eqs_str": "advance=advance+0.005*q6;\nadvance=advance * below(advance,1);\nt1=advance;",
+        "point_eqs_str": "n=sample*6.283;\nstep=sample*128;\nstep2=(int(step)/128)*6.283;\nstep3=(step - int(step));\ntm = t1 * 6.283 - 3.1415;\n\n//star lines\nxp=sin(step2) * 1.1;\nyp=cos(step2) * 1.1;\nzp=sin(step2*15.3)*3.1415 + step3*0.35 - tm;\nzp=if(below(zp,-3.1415), zp+6.283 , zp);\n\n\n//kill stray lines from front to back\na=if(below(step3,0.36) , 0 , 1);\na=if(above(step3,0.64) , 0 , a);\na=if(below(zp,-3) , 0 , a);\na=if(above(zp,3) , 0 , a);\n\n//a=a*(zp/6.08);\na=a*(1-step3);\na=min( max(a,0) , 1);\n\n\nzp=zp*2 - 3.1415;\n\n//zp=if(below(zp,-3.1415), zp+6.283 , zp);\n\na=a * (1-(zp+2.1415)/6.283);\n\na=if(below(zp,-1.5) , 0 , a);\na=if(above(zp,4.0) , 0 , a);\n\n//shift back when pointing away from camera\nzp=zp-q4*2;\n\n\n//z rotation\nsang=sin(q1);cang=cos(q1);\nxn=xp*sang + yp*cang;\nyn=xp*cang - yp*sang;\nzn=zp;\nxp=xn;yp=yn;zp=zn;\n\n//y rotation;\nsang=sin(q2);cang=cos(q2);\nxn=xp*sang + zp*(cang);\nyn=yp;\nzn=xp*cang - zp*sang;\nxp=xn;yp=yn;zp=zn;\n\n//x rotation;\nsang=sin(q3);cang=cos(q3);\nxn=xp;\nyn=yp*sang + zp*cang;\nzn=yp*cang - zp*sang;\nxp=xn;yp=yn;zp=zn;\n\n\n\nzp=zp*2+1.55;\n\n//near clipping plane\na=a*above(zp,0.75);\n//a=a*below(zp,8.55);\n\nx=xp/zp+ 0.5;\ny=yp/zp * 1.3 + 0.5;"
       },
       {
         "baseVals": {
+          "thick": 1,
+          "additive": 1,
+          "r": 0,
+          "g": 0.4,
           "enabled": 0
-        }
+        },
+        "init_eqs_str": "",
+        "frame_eqs_str": "advance=advance+0.004*q6;\nadvance=advance * below(advance,1);\nt1=advance;",
+        "point_eqs_str": "n=sample*6.283;\nstep=sample*128;\nstep2=(int(step)/128)*6.283;\nstep3=(step - int(step));\ntm = t1 * 6.283 - 3.1415;\n\n//star lines\nxp=sin(step2) * 1.6;\nyp=cos(step2) * 1.6;\nzp=sin(step2*11.3)*3.1415 + step3*0.35 - tm;\nzp=if(below(zp,-3.1415), zp+6.283 , zp);\n\n\n//kill stray lines from front to back\na=if(below(step3,0.36) , 0 , 1);\na=if(above(step3,0.64) , 0 , a);\na=if(below(zp,-3) , 0 , a);\na=if(above(zp,3) , 0 , a);\n\n//a=a*(zp/6.08);\na=a*(1-step3);\na=min( max(a,0) , 1);\n\n\nzp=zp*2 - 3.1415;\n\n//zp=if(below(zp,-3.1415), zp+6.283 , zp);\n\na=a * (1-(zp+2.1415)/6.283);\n\na=if(below(zp,-1.5) , 0 , a);\na=if(above(zp,4.0) , 0 , a);\n\n//shift back when pointing away from camera\nzp=zp-q4*2;\n\n\n//z rotation\nsang=sin(q1);cang=cos(q1);\nxn=xp*sang + yp*cang;\nyn=xp*cang - yp*sang;\nzn=zp;\nxp=xn;yp=yn;zp=zn;\n\n//y rotation;\nsang=sin(q2);cang=cos(q2);\nxn=xp*sang + zp*(cang);\nyn=yp;\nzn=xp*cang - zp*sang;\nxp=xn;yp=yn;zp=zn;\n\n//x rotation;\nsang=sin(q3);cang=cos(q3);\nxn=xp;\nyn=yp*sang + zp*cang;\nzn=yp*cang - zp*sang;\nxp=xn;yp=yn;zp=zn;\n\n\n\nzp=zp*2+1.55;\n\n//near clipping plane\na=a*above(zp,0.75);\n//a=a*below(zp,8.55);\n\nx=xp/zp+ 0.5;\ny=yp/zp * 1.3 + 0.5;"
       }
     ],
     "shapes": [

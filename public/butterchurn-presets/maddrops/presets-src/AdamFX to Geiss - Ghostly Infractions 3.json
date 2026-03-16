@@ -85,7 +85,7 @@
       },
       "init_eqs_str": "a['ax'] = 0; a['ay'] = 0; a['az'] = 0; a['q4'] = 0; a['fx'] = 0; a['fy'] = 0;",
       "frame_eqs_str": "",
-      "point_eqs_str": "a['ax']=Math.cos((((100*a['sample'])+43.35)+Math.sin(((231.54*a['sample'])+0.543)))); a['ay']=Math.sin((((431*a['sample'])+2.34)+Math.cos(((443.54*a['sample'])+4.23)))); a['az']=(Math.sin((((546*a['sample'])+74.24)+Math.sin(((524.54*a['sample'])+23.987))))+(2*((a['q4']+(0.2*a['time']))-Math.floor((a['q4']+(0.2*a['time'])))))); a['az']=((Math.abs(above(a['az'], 1))>0.00001)?((a['az']-2)):(a['az'])); a['fx']=(0.5+div((0.5*a['ax']),(1-a['az']))); a['fy']=(0.5+div((0.5*a['ay']),(1-a['az']))); a['x']=a['fx']; a['y']=a['fy']; a['r']=(1-div((0.5*Math.floor(randint(100))),100)); a['g']=(1-div((0.5*Math.floor(randint(100))),100)); a['b']=(1-div((0.5*Math.floor(randint(100))),100)); a['a']=pow(div((a['az']+1),2), 3);"
+      "point_eqs_str": "a['ax']=Math.cos((((100*a['sample'])+43.35)+Math.sin(((231.54*a['sample'])+0.543)))); a['ay']=Math.sin((((431*a['sample'])+2.34)+Math.cos(((443.54*a['sample'])+4.23)))); a['az']=(Math.sin((((546*a['sample'])+74.24)+Math.sin(((524.54*a['sample'])+23.987))))+(2*((a['q4']+(0.2*a['time']))-Math.floor((a['q4']+(0.2*a['time'])))))); a['az']=((Math.abs(above(a['az'], 1))>0.00001)?((a['az']-2)):(a['az'])); a['fx']=(0.5+div((0.5*a['ax']),(1-a['az']))); a['fy']=(0.5+div((0.5*a['ay']),(1-a['az']))); a['x']=a['fx']; a['y']=a['fy']; a['r']=(1-div((0.5*Math.floor(rand(100))),100)); a['g']=(1-div((0.5*Math.floor(rand(100))),100)); a['b']=(1-div((0.5*Math.floor(rand(100))),100)); a['a']=pow(div((a['az']+1),2), 3);"
     },
     {
       "baseVals": {
@@ -146,10 +146,10 @@
     "mv_b": 0.329,
     "mv_a": 0
   },
-  "warp": " shader_body { \n  vec2 uv_1;\n  vec2 tmpvar_2;\n  tmpvar_2 = normalize((uv_orig - 0.5));\n  float tmpvar_3;\n  tmpvar_3 = (time * 7.0);\n  uv_1 = (mix (uv_orig, uv, vec2((\n    clamp ((((bass / bass_att) - 0.9) * 13.0), 0.0, 1.0)\n   * 0.3))) + ((\n    (tmpvar_2 * texsize.zw)\n   * \n    cos(((rad * 170.0) - tmpvar_3))\n  ) * 2.0));\n  uv_1 = (uv_1 + ((\n    (vec2(5.0, -5.0) * texsize.zw)\n   * \n    cos(((ang * 30.0) - tmpvar_3))\n  ) * tmpvar_2.yx));\n  vec4 tmpvar_4;\n  tmpvar_4.w = 1.0;\n  tmpvar_4.xyz = ((texture (sampler_main, uv_1).xyz - 0.004) * 0.83);\n  ret = tmpvar_4.xyz;\n }",
-  "comp": " shader_body { \n  vec2 uv2_1;\n  vec3 ret_2;\n  uv2_1 = (uv + (vec2(1.0, 0.0) * texsize.zw));\n  float tmpvar_3;\n  tmpvar_3 = (((texture (sampler_main, uv2_1).xyz + \n    (((texture (sampler_blur1, uv2_1).xyz * scale1) + bias1) * 0.4)\n  ) + (\n    ((texture (sampler_blur2, uv2_1).xyz * scale2) + bias2)\n   * 0.15)) + ((\n    (texture (sampler_blur3, uv2_1).xyz * scale3)\n   + bias3) * 0.1)).x;\n  uv2_1 = (uv + (vec2(-1.0, 0.0) * texsize.zw));\n  float tmpvar_4;\n  tmpvar_4 = (((texture (sampler_main, uv2_1).xyz + \n    (((texture (sampler_blur1, uv2_1).xyz * scale1) + bias1) * 0.4)\n  ) + (\n    ((texture (sampler_blur2, uv2_1).xyz * scale2) + bias2)\n   * 0.15)) + ((\n    (texture (sampler_blur3, uv2_1).xyz * scale3)\n   + bias3) * 0.1)).x;\n  uv2_1 = (uv + (vec2(0.0, 1.0) * texsize.zw));\n  float tmpvar_5;\n  tmpvar_5 = (((texture (sampler_main, uv2_1).xyz + \n    (((texture (sampler_blur1, uv2_1).xyz * scale1) + bias1) * 0.4)\n  ) + (\n    ((texture (sampler_blur2, uv2_1).xyz * scale2) + bias2)\n   * 0.15)) + ((\n    (texture (sampler_blur3, uv2_1).xyz * scale3)\n   + bias3) * 0.1)).x;\n  uv2_1 = (uv + (vec2(0.0, -1.0) * texsize.zw));\n  vec3 tmpvar_6;\n  tmpvar_6.z = 0.14;\n  tmpvar_6.x = (tmpvar_3 - tmpvar_4);\n  tmpvar_6.y = (tmpvar_5 - ((\n    (texture (sampler_main, uv2_1).xyz + (((texture (sampler_blur1, uv2_1).xyz * scale1) + bias1) * 0.4))\n   + \n    (((texture (sampler_blur2, uv2_1).xyz * scale2) + bias2) * 0.15)\n  ) + (\n    ((texture (sampler_blur3, uv2_1).xyz * scale3) + bias3)\n   * 0.1)).x);\n  ret_2 = (0.5 + (0.5 * normalize(tmpvar_6)));\n  vec2 x_7;\n  x_7 = (ret_2.xy - 0.5);\n  ret_2 = (ret_2 * clamp ((\n    sqrt(dot (x_7, x_7))\n   * 5.0), 0.0, 1.0));\n  ret_2 = ret_2.xxy;\n  vec4 tmpvar_8;\n  tmpvar_8.w = 1.0;\n  tmpvar_8.xyz = ret_2;\n  ret = tmpvar_8.xyz;\n }",
+  "warp": " shader_body {  \n  vec2 uv_1;\n  vec2 tmpvar_2;\n  tmpvar_2 = normalize((uv_orig - 0.5));\n  float tmpvar_3;\n  tmpvar_3 = (time * 7.0);\n  uv_1 = (mix (uv_orig, uv, vec2((\n    clamp ((((bass / bass_att) - 0.9) * 13.0), 0.0, 1.0)\n   * 0.3))) + ((\n    (tmpvar_2 * texsize.zw)\n   * \n    cos(((rad * 170.0) - tmpvar_3))\n  ) * 2.0));\n  uv_1 = (uv_1 + ((\n    (vec2(5.0, -5.0) * texsize.zw)\n   * \n    cos(((ang * 30.0) - tmpvar_3))\n  ) * tmpvar_2.yx));\n  vec4 tmpvar_4;\n  tmpvar_4.w = 1.0;\n  tmpvar_4.xyz = ((texture (sampler_main, uv_1).xyz - 0.004) * 0.83);\n  ret = tmpvar_4.xyz;\n  }",
+  "comp": " shader_body {  \n  vec2 uv2_1;\n  vec3 ret_2;\n  uv2_1 = (uv + (vec2(1.0, 0.0) * texsize.zw));\n  float tmpvar_3;\n  tmpvar_3 = (((texture (sampler_main, uv2_1).xyz + \n    (((texture (sampler_blur1, uv2_1).xyz * scale1) + bias1) * 0.4)\n  ) + (\n    ((texture (sampler_blur2, uv2_1).xyz * scale2) + bias2)\n   * 0.15)) + ((\n    (texture (sampler_blur3, uv2_1).xyz * scale3)\n   + bias3) * 0.1)).x;\n  uv2_1 = (uv + (vec2(-1.0, 0.0) * texsize.zw));\n  float tmpvar_4;\n  tmpvar_4 = (((texture (sampler_main, uv2_1).xyz + \n    (((texture (sampler_blur1, uv2_1).xyz * scale1) + bias1) * 0.4)\n  ) + (\n    ((texture (sampler_blur2, uv2_1).xyz * scale2) + bias2)\n   * 0.15)) + ((\n    (texture (sampler_blur3, uv2_1).xyz * scale3)\n   + bias3) * 0.1)).x;\n  uv2_1 = (uv + (vec2(0.0, 1.0) * texsize.zw));\n  float tmpvar_5;\n  tmpvar_5 = (((texture (sampler_main, uv2_1).xyz + \n    (((texture (sampler_blur1, uv2_1).xyz * scale1) + bias1) * 0.4)\n  ) + (\n    ((texture (sampler_blur2, uv2_1).xyz * scale2) + bias2)\n   * 0.15)) + ((\n    (texture (sampler_blur3, uv2_1).xyz * scale3)\n   + bias3) * 0.1)).x;\n  uv2_1 = (uv + (vec2(0.0, -1.0) * texsize.zw));\n  vec3 tmpvar_6;\n  tmpvar_6.z = 0.14;\n  tmpvar_6.x = (tmpvar_3 - tmpvar_4);\n  tmpvar_6.y = (tmpvar_5 - ((\n    (texture (sampler_main, uv2_1).xyz + (((texture (sampler_blur1, uv2_1).xyz * scale1) + bias1) * 0.4))\n   + \n    (((texture (sampler_blur2, uv2_1).xyz * scale2) + bias2) * 0.15)\n  ) + (\n    ((texture (sampler_blur3, uv2_1).xyz * scale3) + bias3)\n   * 0.1)).x);\n  ret_2 = (0.5 + (0.5 * normalize(tmpvar_6)));\n  vec2 x_7;\n  x_7 = (ret_2.xy - 0.5);\n  ret_2 = (ret_2 * clamp ((\n    sqrt(dot (x_7, x_7))\n   * 5.0), 0.0, 1.0));\n  ret_2 = ret_2.xxy;\n  vec4 tmpvar_8;\n  tmpvar_8.w = 1.0;\n  tmpvar_8.xyz = ret_2;\n  ret = tmpvar_8.xyz;\n  }",
   "presetParts": {
-    "presetVersion": 1,
+    "presetVersion": 2,
     "baseVals": {
       "rating": 5,
       "decay": 0.99,
@@ -192,8 +192,16 @@
       },
       {
         "baseVals": {
+          "spectrum": 1,
+          "usedots": 1,
+          "thick": 1,
+          "additive": 1,
+          "smoothing": 0,
           "enabled": 0
-        }
+        },
+        "init_eqs_str": "",
+        "frame_eqs_str": "",
+        "point_eqs_str": "sw1=below(sample,.5);\nsample=2*(sw1*sample+(1-sw1)*(sample-.5));\n\nax = 1-3.58*sample*sw1;\nay = 0;//2*sin(sample*6.2831);\naz = 0;\n\nbx = ax;\nby = ay*cos(q1) - az*sin(q1);\nbz = ay*sin(q1) + az*cos(q1);\n\nax = bx*cos(q2) - bz*sin(q2);\nay = by;\naz = bx*sin(q2) + bz*cos(q2);\n\nbx = ax*cos(q3) - ay*sin(q3);\nby = ax*sin(q3) + ay*cos(q3);\nbz = az;\n\nvx=bx; vy=by; vz=bz;\n\nx=vx/abs(vz-10)+.5;\ny=vy/abs(vz-10)+.5;\n\nas=above(cos(q3+1.57)*cos(q2)*vx+sin(q3+1.57)*sin(q1)*vy+sin(q2)*vz,0);\nas=1;\na=1;"
       },
       {
         "baseVals": {
