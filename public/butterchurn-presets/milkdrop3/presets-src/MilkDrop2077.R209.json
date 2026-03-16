@@ -80,8 +80,8 @@
     "mv_b": 0.35,
     "mv_a": 0
   },
-  "warp": " shader_body { \n  vec4 tmpvar_1;\n  tmpvar_1.w = 1.0;\n  tmpvar_1.xyz = (texture (sampler_fc_main, uv).xyz * 0.96);\n  ret = tmpvar_1.xyz;\n }",
-  "comp": " shader_body { \n  vec3 tmpvar_1;\n  tmpvar_1 = mix (((texture (sampler_blur2, uv).xyz * scale2) + bias2), texture (sampler_main, uv).xyz, vec3(0.4, 0.4, 0.4));\n  vec4 tmpvar_2;\n  tmpvar_2.w = 1.0;\n  tmpvar_2.xyz = (((tmpvar_1.y - \n    (tmpvar_1.x * 0.5)\n  ) * mix (vec3(2.1, 1.4, 0.1), vec3(1.0, 1.0, 1.0), tmpvar_1.xxx)) * 2.4);\n  ret = tmpvar_2.xyz;\n }",
+  "warp": " shader_body {  \n  vec4 tmpvar_1;\n  tmpvar_1.w = 1.0;\n  tmpvar_1.xyz = (texture (sampler_fc_main, uv).xyz * 0.96);\n  ret = tmpvar_1.xyz;\n  }",
+  "comp": " shader_body {  \n  vec3 tmpvar_1;\n  tmpvar_1 = mix (((texture (sampler_blur2, uv).xyz * scale2) + bias2), texture (sampler_main, uv).xyz, vec3(0.4, 0.4, 0.4));\n  vec4 tmpvar_2;\n  tmpvar_2.w = 1.0;\n  tmpvar_2.xyz = (((tmpvar_1.y - \n    (tmpvar_1.x * 0.5)\n  ) * mix (vec3(2.1, 1.4, 0.1), vec3(1.0, 1.0, 1.0), tmpvar_1.xxx)) * 2.4);\n  ret = tmpvar_2.xyz;\n  }",
   "presetParts": {
     "presetVersion": 2,
     "baseVals": {

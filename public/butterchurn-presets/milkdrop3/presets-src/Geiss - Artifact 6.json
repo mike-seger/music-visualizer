@@ -64,8 +64,8 @@
     "wave_b": 0.8,
     "mv_a": 0
   },
-  "warp": " shader_body { \n  vec3 ret_1;\n  vec4 tmpvar_2;\n  tmpvar_2 = ((texture (sampler_noise_lq, (rand_frame.xy + \n    ((uv * texsize_noise_lq.zw) * texsize.xy)\n  )) * 2.0) - 1.0);\n  ret_1 = (texture (sampler_pw_main, (uv + (\n    (tmpvar_2.zw * texsize.zw)\n   * 0.5))).xyz + ((0.52 - \n    (0.2 * rad)\n  ) * tmpvar_2.xyz));\n  vec3 tmpvar_3;\n  tmpvar_3 = clamp (((\n    (ret_1 - 0.5)\n   * 3.0) + 0.5), 0.0, 1.0);\n  ret_1.x = tmpvar_3.x;\n  ret_1.yz = tmpvar_3.xx;\n  vec4 tmpvar_4;\n  tmpvar_4.w = 1.0;\n  tmpvar_4.xyz = ret_1;\n  ret = tmpvar_4.xyz;\n }",
-  "comp": " shader_body { \n  vec3 ret_1;\n  ret_1 = (texture (sampler_main, uv).xyz + ((texture (sampler_blur1, uv).xyz * scale1) + bias1));\n  ret_1 = (ret_1 * vec3(1.3, 0.8, 0.5));\n  vec4 tmpvar_2;\n  tmpvar_2.w = 1.0;\n  tmpvar_2.xyz = ret_1;\n  ret = tmpvar_2.xyz;\n }",
+  "warp": " shader_body {  \n  vec3 ret_1;\n  vec4 tmpvar_2;\n  tmpvar_2 = ((texture (sampler_noise_lq, (rand_frame.xy + \n    ((uv * texsize_noise_lq.zw) * texsize.xy)\n  )) * 2.0) - 1.0);\n  ret_1 = (texture (sampler_pw_main, (uv + (\n    (tmpvar_2.zw * texsize.zw)\n   * 0.5))).xyz + ((0.52 - \n    (0.2 * rad)\n  ) * tmpvar_2.xyz));\n  vec3 tmpvar_3;\n  tmpvar_3 = clamp (((\n    (ret_1 - 0.5)\n   * 3.0) + 0.5), 0.0, 1.0);\n  ret_1.x = tmpvar_3.x;\n  ret_1.yz = tmpvar_3.xx;\n  vec4 tmpvar_4;\n  tmpvar_4.w = 1.0;\n  tmpvar_4.xyz = ret_1;\n  ret = tmpvar_4.xyz;\n  }",
+  "comp": " shader_body {  \n  vec3 ret_1;\n  ret_1 = (texture (sampler_main, uv).xyz + ((texture (sampler_blur1, uv).xyz * scale1) + bias1));\n  ret_1 = (ret_1 * vec3(1.3, 0.8, 0.5));\n  vec4 tmpvar_2;\n  tmpvar_2.w = 1.0;\n  tmpvar_2.xyz = ret_1;\n  ret = tmpvar_2.xyz;\n  }",
   "presetParts": {
     "presetVersion": 2,
     "baseVals": {

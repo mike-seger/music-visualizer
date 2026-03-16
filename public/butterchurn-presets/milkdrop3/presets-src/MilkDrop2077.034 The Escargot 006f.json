@@ -17,7 +17,7 @@
         "b2": 0.5,
         "border_a": 0
       },
-      "init_eqs_str": "a['i'] = 0; a['k1'] = 0; a['zmax'] = 0; a['speed'] = 0; a['z'] = 0; a['out'] = 0; a['i']=0; for(var mdparser_idx261=0;mdparser_idx261<1024;mdparser_idx261++){a['z']=(randint(1)+0.1); a['megabuf'][Math.floor((a['i']+2))]=a['z']; a['megabuf'][Math.floor(a['i'])]=div((randint(1)-0.5),a['z']); a['megabuf'][Math.floor((a['i']+1))]=div((randint(1)-0.5),a['z']); a['i']+=3;}",
+      "init_eqs_str": "a['i'] = 0; a['k1'] = 0; a['zmax'] = 0; a['speed'] = 0; a['z'] = 0; a['out'] = 0; a['i']=0; for(var mdparser_idx299=0;mdparser_idx299<1024;mdparser_idx299++){a['z']=(randint(1)+0.1); a['megabuf'][Math.floor((a['i']+2))]=a['z']; a['megabuf'][Math.floor(a['i'])]=div((randint(1)-0.5),a['z']); a['megabuf'][Math.floor((a['i']+1))]=div((randint(1)-0.5),a['z']); a['i']+=3;}",
       "frame_eqs_str": "a['i']=a['instance']; a['k1']=div(a['i'],a['num_inst']); a['zmax']=7; a['speed']=0.15; a['z']=a['megabuf'][Math.floor(((3*a['i'])+2))]; a['x']=(div(a['megabuf'][Math.floor((3*a['i']))],a['z'])+0.5); a['y']=((div(a['megabuf'][Math.floor(((3*a['i'])+1))],a['z'])*a['reg32'])+0.5); a['rad']=(div(0.022,(a['z']*a['zmax']))*a['reg32']); a['out']=((((((((((a['x']>1)?1:0)||((a['x']<0)?1:0))?1:0)||((a['y']>1)?1:0))?1:0)||((a['y']<0)?1:0))?1:0)||((a['z']<0)?1:0))?1:0); ((Math.abs(a['out'])>0.00001)?((function(){a['megabuf'][Math.floor((3*a['i']))]=(randint(2)-1); a['megabuf'][Math.floor(((3*a['i'])+1))]=(randint(2)-1); return a['megabuf'][Math.floor(((3*a['i'])+2))]=1;})()):(a['megabuf'][Math.floor(((a['i']*3)+2))]-=div(a['speed'],a['fps']))); a['a']=(1-pow(a['z'], 4)); a['a']*=0.6;"
     },
     {
@@ -112,8 +112,8 @@
     "mv_a": 0,
     "b1ed": 0
   },
-  "warp": "uniform sampler2D sampler_Pattern_045;\n shader_body { \n  vec4 tmpvar_1;\n  tmpvar_1.w = 1.0;\n  tmpvar_1.xyz = texture (sampler_Pattern_045, uv).xyz;\n  ret = tmpvar_1.xyz;\n }",
-  "comp": "vec3 xlat_mutablenoise;\nvec2 xlat_mutablers;\n shader_body { \n  vec2 uv_1;\n  vec2 uv1_2;\n  uv_1 = (0.05 + (0.9 * uv));\n  uv1_2 = (((uv_1 - 0.5) * aspect.xy) * aspect.yx);\n  float tmpvar_3;\n  tmpvar_3 = ((3.0 + (q1 * 4.0)) / abs(uv1_2.y));\n  xlat_mutablers.x = (uv1_2.x * tmpvar_3);\n  xlat_mutablers.y = (tmpvar_3 + (time * 3.0));\n  vec2 tmpvar_4;\n  tmpvar_4 = sin(xlat_mutablers);\n  vec3 tmpvar_5;\n  tmpvar_5 = vec3((1.0 - sqrt(sqrt(\n    dot (tmpvar_4, tmpvar_4)\n  ))));\n  xlat_mutablenoise = (tmpvar_5 * (vec3(\n    greaterThanEqual (tmpvar_5, vec3(0.1, 0.1, 0.1))\n  ) * clamp (\n    (1.0 - (tmpvar_3 / 40.0))\n  , 0.0, 1.0)));\n  vec4 tmpvar_6;\n  tmpvar_6.w = 1.0;\n  tmpvar_6.xyz = ((texture (sampler_main, (uv_1 + \n    (xlat_mutablenoise / 2.0)\n  .xy)).xyz * 1.5) - (0.1 * xlat_mutablenoise));\n  ret = tmpvar_6.xyz;\n }",
+  "warp": "uniform sampler2D sampler_Pattern_045;\n shader_body {  \n  vec4 tmpvar_1;\n  tmpvar_1.w = 1.0;\n  tmpvar_1.xyz = texture (sampler_Pattern_045, uv).xyz;\n  ret = tmpvar_1.xyz;\n  }",
+  "comp": "vec3 xlat_mutablenoise_v;\nvec2 xlat_mutablers;\n shader_body {  \n  vec2 uv_1;\n  vec2 uv1_2;\n  uv_1 = (0.05 + (0.9 * uv));\n  uv1_2 = (((uv_1 - 0.5) * aspect.xy) * aspect.yx);\n  float tmpvar_3;\n  tmpvar_3 = ((3.0 + (q1 * 4.0)) / abs(uv1_2.y));\n  xlat_mutablers.x = (uv1_2.x * tmpvar_3);\n  xlat_mutablers.y = (tmpvar_3 + (time * 3.0));\n  vec2 tmpvar_4;\n  tmpvar_4 = sin(xlat_mutablers);\n  vec3 tmpvar_5;\n  tmpvar_5 = vec3((1.0 - sqrt(sqrt(\n    dot (tmpvar_4, tmpvar_4)\n  ))));\n  xlat_mutablenoise_v = (tmpvar_5 * (vec3(\n    greaterThanEqual (tmpvar_5, vec3(0.1, 0.1, 0.1))\n  ) * clamp (\n    (1.0 - (tmpvar_3 / 40.0))\n  , 0.0, 1.0)));\n  vec4 tmpvar_6;\n  tmpvar_6.w = 1.0;\n  tmpvar_6.xyz = ((texture (sampler_main, (uv_1 + \n    (xlat_mutablenoise_v / 2.0)\n  .xy)).xyz * 1.5) - (0.1 * xlat_mutablenoise_v));\n  ret = tmpvar_6.xyz;\n  }",
   "presetParts": {
     "presetVersion": 1,
     "baseVals": {

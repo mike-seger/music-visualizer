@@ -91,8 +91,8 @@
     "mv_b": 0.5,
     "mv_a": 0
   },
-  "warp": " shader_body { \n  vec3 ret_1;\n  ret_1 = (texture (sampler_main, uv).xyz + ((\n    (texture (sampler_noise_lq, (((uv_orig * texsize.xy) * texsize_noise_lq.zw) + rand_frame.xy)).xyz - 0.5)\n   / 256.0) * 3.0));\n  vec3 tmpvar_2;\n  tmpvar_2 = fract((ret_1 - 0.005));\n  ret_1 = tmpvar_2;\n  vec4 tmpvar_3;\n  tmpvar_3.w = 1.0;\n  tmpvar_3.xyz = tmpvar_2;\n  ret = tmpvar_3.xyz;\n }",
-  "comp": "uniform sampler2D sampler_fw_clouds;\n shader_body { \n  vec3 ret_1;\n  ret_1 = (texture (sampler_main, uv).xyz + ((texture (sampler_blur2, uv).xyz * scale2) + bias2));\n  ret_1 = texture (sampler_fw_clouds, ((ret_1.xy * (0.1 + \n    ((0.7 * rand_preset.x) * rand_preset.y)\n  )) + ((uv * vec2(1.0, -1.0)) * aspect.xy))).xyz;\n  vec4 tmpvar_2;\n  tmpvar_2.w = 1.0;\n  tmpvar_2.xyz = ret_1;\n  ret = tmpvar_2.xyz;\n }",
+  "warp": " shader_body {  \n  vec3 ret_1;\n  ret_1 = (texture (sampler_main, uv).xyz + ((\n    (texture (sampler_noise_lq, (((uv_orig * texsize.xy) * texsize_noise_lq.zw) + rand_frame.xy)).xyz - 0.5)\n   / 256.0) * 3.0));\n  vec3 tmpvar_2;\n  tmpvar_2 = fract((ret_1 - 0.005));\n  ret_1 = tmpvar_2;\n  vec4 tmpvar_3;\n  tmpvar_3.w = 1.0;\n  tmpvar_3.xyz = tmpvar_2;\n  ret = tmpvar_3.xyz;\n  }",
+  "comp": "uniform sampler2D sampler_fw_clouds;\n shader_body {  \n  vec3 ret_1;\n  ret_1 = (texture (sampler_main, uv).xyz + ((texture (sampler_blur2, uv).xyz * scale2) + bias2));\n  ret_1 = texture (sampler_fw_clouds, ((ret_1.xy * (0.1 + \n    ((0.7 * rand_preset.x) * rand_preset.y)\n  )) + ((uv * vec2(1.0, -1.0)) * aspect.xy))).xyz;\n  vec4 tmpvar_2;\n  tmpvar_2.w = 1.0;\n  tmpvar_2.xyz = ret_1;\n  ret = tmpvar_2.xyz;\n  }",
   "presetParts": {
     "presetVersion": 1,
     "baseVals": {

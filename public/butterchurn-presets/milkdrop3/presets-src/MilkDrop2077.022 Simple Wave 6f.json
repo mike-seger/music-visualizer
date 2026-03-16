@@ -71,8 +71,8 @@
     "mv_b": 0.35,
     "mv_a": 0
   },
-  "warp": " shader_body { \n  vec4 tmpvar_1;\n  tmpvar_1.w = 1.0;\n  tmpvar_1.xyz = (texture (sampler_main, uv).xyz * 0.94);\n  ret = tmpvar_1.xyz;\n }",
-  "comp": " shader_body { \n  vec3 ret_1;\n  ret_1 = ((texture (sampler_main, uv).xyz * 0.7) + ((\n    (texture (sampler_blur2, uv).xyz * scale2)\n   + bias2) * 2.75));\n  ret_1 = (ret_1 * 0.89);\n  vec4 tmpvar_2;\n  tmpvar_2.w = 1.0;\n  tmpvar_2.xyz = ret_1;\n  ret = tmpvar_2.xyz;\n }",
+  "warp": " shader_body {  \n  vec4 tmpvar_1;\n  tmpvar_1.w = 1.0;\n  tmpvar_1.xyz = (texture (sampler_main, uv).xyz * 0.94);\n  ret = tmpvar_1.xyz;\n  }",
+  "comp": " shader_body {  \n  vec3 ret_1;\n  ret_1 = ((texture (sampler_main, uv).xyz * 0.7) + ((\n    (texture (sampler_blur2, uv).xyz * scale2)\n   + bias2) * 2.75));\n  ret_1 = (ret_1 * 0.89);\n  vec4 tmpvar_2;\n  tmpvar_2.w = 1.0;\n  tmpvar_2.xyz = ret_1;\n  ret = tmpvar_2.xyz;\n  }",
   "presetParts": {
     "presetVersion": 2,
     "baseVals": {

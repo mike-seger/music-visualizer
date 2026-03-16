@@ -17,7 +17,7 @@
         "b2": 0.5,
         "border_a": 0
       },
-      "init_eqs_str": "a['i'] = 0; a['k1'] = 0; a['zmax'] = 0; a['speed'] = 0; a['z'] = 0; a['out'] = 0; a['i']=0; for(var mdparser_idx358=0;mdparser_idx358<1024;mdparser_idx358++){a['z']=(rand(1)+0.1); a['megabuf'][Math.floor((a['i']+2))]=a['z']; a['megabuf'][Math.floor(a['i'])]=div((rand(1)-0.5),a['z']); a['megabuf'][Math.floor((a['i']+1))]=div((rand(1)-0.5),a['z']); a['i']+=3;}",
+      "init_eqs_str": "a['i'] = 0; a['k1'] = 0; a['zmax'] = 0; a['speed'] = 0; a['z'] = 0; a['out'] = 0; a['i']=0; for(var mdparser_idx396=0;mdparser_idx396<1024;mdparser_idx396++){a['z']=(rand(1)+0.1); a['megabuf'][Math.floor((a['i']+2))]=a['z']; a['megabuf'][Math.floor(a['i'])]=div((rand(1)-0.5),a['z']); a['megabuf'][Math.floor((a['i']+1))]=div((rand(1)-0.5),a['z']); a['i']+=3;}",
       "frame_eqs_str": "a['i']=a['instance']; a['k1']=div(a['i'],a['num_inst']); a['zmax']=7; a['speed']=0.15; a['z']=a['megabuf'][Math.floor(((3*a['i'])+2))]; a['x']=(div(a['megabuf'][Math.floor((3*a['i']))],a['z'])+0.5); a['y']=((div(a['megabuf'][Math.floor(((3*a['i'])+1))],a['z'])*a['reg32'])+0.5); a['rad']=(div(0.022,(a['z']*a['zmax']))*a['reg32']); a['out']=((((((((((a['x']>1)?1:0)||((a['x']<0)?1:0))?1:0)||((a['y']>1)?1:0))?1:0)||((a['y']<0)?1:0))?1:0)||((a['z']<0)?1:0))?1:0); ((Math.abs(a['out'])>0.00001)?((function(){a['megabuf'][Math.floor((3*a['i']))]=(rand(2)-1); a['megabuf'][Math.floor(((3*a['i'])+1))]=(rand(2)-1); return a['megabuf'][Math.floor(((3*a['i'])+2))]=1;})()):(a['megabuf'][Math.floor(((a['i']*3)+2))]-=div(a['speed'],a['fps']))); a['a']=(1-pow(a['z'], 4)); a['a']*=0.6;"
     },
     {
@@ -97,8 +97,8 @@
     "mv_b": 0,
     "mv_a": 0
   },
-  "warp": " shader_body { ؛a }",
-  "comp": " shader_body { \n  vec3 ret_1;\n  ret_1 = (texture (sampler_main, uv).xyz * 1.28);\n  ret_1 = (ret_1 * hue_shader);\n  ret_1 = (ret_1 * ret_1);\n  vec4 tmpvar_2;\n  tmpvar_2.w = 1.0;\n  tmpvar_2.xyz = ret_1;\n  ret = tmpvar_2.xyz;\n }",
+  "warp": " shader_body {  \n    float aspect = (aspect_1.x / aspect_1.y);\n    vec2 aspect_scale = vec2( aspect, 1.0);\n\n    vec2 uv_centered = ((uv - 0.5) * 1.8);\n    vec2 p = (uv_centered * aspect_scale);\n\n    float angle = (time * 0.05);\n    float sin_rot = sin(angle);\n    float cos_rot = cos(angle);\n    p = vec2( ((p.x * cos_rot) - (p.y * sin_rot)), ((p.x * sin_rot) + (p.y * cos_rot)));\n\n    float d = ((length(p) - 0.5) + (0.01 / (p.x + p.y)));\n    float o = (0.1 / abs(d));\n\n    ret = vec3( o, o, o);\n      }",
+  "comp": " shader_body {  \n  vec3 ret_1;\n  ret_1 = (texture (sampler_main, uv).xyz * 1.28);\n  ret_1 = (ret_1 * hue_shader);\n  ret_1 = (ret_1 * ret_1);\n  vec4 tmpvar_2;\n  tmpvar_2.w = 1.0;\n  tmpvar_2.xyz = ret_1;\n  ret = tmpvar_2.xyz;\n  }",
   "presetParts": {
     "presetVersion": 2,
     "baseVals": {

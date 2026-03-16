@@ -115,8 +115,8 @@
     "ib_a": 1,
     "mv_a": 0
   },
-  "warp": "uniform sampler2D sampler_MilkDrop3_022;\n shader_body { \n  vec4 tmpvar_1;\n  tmpvar_1.w = 0.0;\n  tmpvar_1.xyz = texture (sampler_MilkDrop3_022, uv).xyz;\n  vec4 tmpvar_2;\n  tmpvar_2.w = 1.0;\n  tmpvar_2.xyz = mix (tmpvar_1, texture (sampler_main, uv_orig), vec4(-0.3, -0.3, -0.3, -0.3)).xyz;\n  ret = tmpvar_2.xyz;\n }",
-  "comp": " shader_body { \n  vec4 tmpvar_1;\n  tmpvar_1.w = 1.0;\n  tmpvar_1.xyz = texture (sampler_main, (1.0 - abs((\n    (fract((0.75 * (uv - 0.5))) * 2.0)\n   - 1.0)))).xyz;\n  ret = tmpvar_1.xyz;\n }",
+  "warp": "uniform sampler2D sampler_MilkDrop3_022;\n shader_body {  \n  vec4 tmpvar_1;\n  tmpvar_1.w = 0.0;\n  tmpvar_1.xyz = texture (sampler_MilkDrop3_022, uv).xyz;\n  vec4 tmpvar_2;\n  tmpvar_2.w = 1.0;\n  tmpvar_2.xyz = mix (tmpvar_1, texture (sampler_main, uv_orig), vec4(-0.3, -0.3, -0.3, -0.3)).xyz;\n  ret = tmpvar_2.xyz;\n  }",
+  "comp": " shader_body {  \n  vec4 tmpvar_1;\n  tmpvar_1.w = 1.0;\n  tmpvar_1.xyz = texture (sampler_main, (1.0 - abs((\n    (fract((0.75 * (uv - 0.5))) * 2.0)\n   - 1.0)))).xyz;\n  ret = tmpvar_1.xyz;\n  }",
   "presetParts": {
     "presetVersion": 2,
     "baseVals": {

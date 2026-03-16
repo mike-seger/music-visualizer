@@ -114,8 +114,8 @@
     "mv_b": 0.71,
     "b1ed": 0
   },
-  "warp": "uniform sampler2D sampler_Pattern_045;\n shader_body { \n  vec4 tmpvar_1;\n  tmpvar_1.w = 1.0;\n  tmpvar_1.xyz = texture (sampler_Pattern_045, uv).xyz;\n  ret = tmpvar_1.xyz;\n }",
-  "comp": " shader_body { \n  vec3 ret_1;\n  ret_1 = (texture (sampler_main, (0.05 + (0.9 * uv))).xyz * 1.42);\n  ret_1 = (ret_1 * ret_1);\n  vec4 tmpvar_2;\n  tmpvar_2.w = 1.0;\n  tmpvar_2.xyz = ret_1;\n  ret = tmpvar_2.xyz;\n }",
+  "warp": "uniform sampler2D sampler_Pattern_045;\n shader_body {  \n  vec4 tmpvar_1;\n  tmpvar_1.w = 1.0;\n  tmpvar_1.xyz = texture (sampler_Pattern_045, uv).xyz;\n  ret = tmpvar_1.xyz;\n  }",
+  "comp": " shader_body {  \n  vec3 ret_1;\n  ret_1 = (texture (sampler_main, (0.05 + (0.9 * uv))).xyz * 1.42);\n  ret_1 = (ret_1 * ret_1);\n  vec4 tmpvar_2;\n  tmpvar_2.w = 1.0;\n  tmpvar_2.xyz = ret_1;\n  ret = tmpvar_2.xyz;\n  }",
   "presetParts": {
     "presetVersion": 2,
     "baseVals": {

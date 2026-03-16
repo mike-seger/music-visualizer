@@ -130,8 +130,8 @@
     "mv_g": 0.44,
     "mv_b": 0.9
   },
-  "warp": " shader_body { Error:\n(128,17): error: syntax error, unexpected NEW_IDENTIFIER, expecting '{'\n }",
-  "comp": " shader_body { \n  vec4 tmpvar_1;\n  tmpvar_1 = texture (sampler_main, uv);\n  vec4 tmpvar_2;\n  tmpvar_2.w = 1.0;\n  tmpvar_2.xyz = ((tmpvar_1.xyz * tmpvar_1.xyz) * tmpvar_1.xyz);\n  ret = tmpvar_2.xyz;\n }",
+  "warp": "uniform sampler2D sampler_MilkDrop3_010;\n shader_body { vec2 _uv = uv; \n \n    vec2 xy1 = vec2( 0.0);\n    vec2 xymod = (_uv - 0.5);\n    xy1.x = ((sin((time / 3.0)) * xymod.x) - ((cos((time / 3.0)) * xymod.y) / 3.0));\n\n    xy1.y = ((cos((time / 3.0)) * xymod.x) + (sin((time / 3.0)) * xymod.y));\n    _uv = (xy1 + aspect.xy);\n\n    ret = texture( sampler_MilkDrop3_010, _uv).xyz;\n\n      }",
+  "comp": " shader_body {  \n  vec4 tmpvar_1;\n  tmpvar_1 = texture (sampler_main, uv);\n  vec4 tmpvar_2;\n  tmpvar_2.w = 1.0;\n  tmpvar_2.xyz = ((tmpvar_1.xyz * tmpvar_1.xyz) * tmpvar_1.xyz);\n  ret = tmpvar_2.xyz;\n  }",
   "presetParts": {
     "presetVersion": 2,
     "baseVals": {

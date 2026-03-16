@@ -159,7 +159,7 @@
     "mv_a": 0
   },
   "warp": "",
-  "comp": " shader_body { \n  vec3 ret_1;\n  ret_1 = ((texture (sampler_main, uv).xyz * 1.5) - 0.1);\n  ret_1.y = (ret_1 * 0.7).y;\n  ret_1.x = (((texture (sampler_blur1, uv).xyz * scale1) + bias1).x * 2.0);\n  ret_1.z = (((texture (sampler_blur2, uv).xyz * scale2) + bias2).z * 3.0);\n  vec4 tmpvar_2;\n  tmpvar_2.w = 1.0;\n  tmpvar_2.xyz = ret_1;\n  ret = tmpvar_2.xyz;\n }",
+  "comp": " shader_body {  \n  vec3 ret_1;\n  ret_1 = ((texture (sampler_main, uv).xyz * 1.5) - 0.1);\n  ret_1.y = (ret_1 * 0.7).y;\n  ret_1.x = (((texture (sampler_blur1, uv).xyz * scale1) + bias1).x * 2.0);\n  ret_1.z = (((texture (sampler_blur2, uv).xyz * scale2) + bias2).z * 3.0);\n  vec4 tmpvar_2;\n  tmpvar_2.w = 1.0;\n  tmpvar_2.xyz = ret_1;\n  ret = tmpvar_2.xyz;\n  }",
   "presetParts": {
     "presetVersion": 2,
     "baseVals": {
